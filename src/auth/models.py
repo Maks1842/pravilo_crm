@@ -1,5 +1,8 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, JSON
+from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, TIMESTAMP, ForeignKey
 from datetime import datetime
+from fastapi_users.db import SQLAlchemyBaseUserTable
+
+from src.database import Base
 
 '''
 Создаю необходимые модели, далее запускаю миграции:
@@ -27,6 +30,21 @@ user = Table(
     Column("is_active", Boolean, default=True, nullable=False),
     Column("is_verified", Boolean, default=False, nullable=False)
 )
+
+
+class User(SQLAlchemyBaseUserTable[int], Base):
+    id = Column(Integer, primary_key=True)
+    username = Column(String(20), nullable=False, unique=True)
+    hashed_password: str = Column(String(length=1024), nullable=False)
+    is_superuser: bool = Column(Boolean, default=False, nullable=False)
+    last_name = Column(String(length=20), nullable=False)
+    first_name = Column(String(length=50), nullable=False)
+    birthday = Column(TIMESTAMP)
+    date_registered = Column(TIMESTAMP, default=datetime.utcnow)
+    email: str = Column(String(length=320), unique=True, index=True, nullable=False)
+    is_active: bool = Column(Boolean, default=True, nullable=False)
+    is_verified: bool = Column(Boolean, default=False, nullable=False)
+
 
 # Отделы
 department = Table(

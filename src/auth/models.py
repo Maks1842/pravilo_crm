@@ -14,6 +14,7 @@ from src.database import Base
 
 metadata = MetaData()
 
+# Императивный подход в описании Моделей (типа удобнее работать с миграциями и ORM)
 # Пользователи
 user = Table(
     "user",
@@ -32,6 +33,7 @@ user = Table(
 )
 
 
+# Декларативный подход в описании Моделей
 class User(SQLAlchemyBaseUserTable[int], Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(20), nullable=False, unique=True)

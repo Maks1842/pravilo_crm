@@ -54,6 +54,7 @@ ref_tribunal = Table(
     Column("address", String(50), doc='Адрес суда'),
     Column("email", String(100), doc='Email'),
     Column("phone", String(100), doc='Телефоны'),
+    Column("gaspravosudie", Boolean, default=False, doc='Признак возможности подачи через Гасправосудие'),
 )
 
 # Финансовый управляющий

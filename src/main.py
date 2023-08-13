@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from src.auth.base_config import auth_backend, fastapi_users
 from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
-# from operations.router import router as router_operation
+from src.debts.router import router_cession_info
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -12,21 +12,21 @@ app = FastAPI(
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth",
-    tags=["auth"],
+    tags=["Auth"],
 )
 
 # Роутер для регистрации
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
-    tags=["auth"],
+    tags=["Auth"],
 )
 
 # Роутер для управления пользователями
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
-    tags=["users"],
+    tags=["Users"],
 )
 
-# app.include_router(router_operation)
+app.include_router(router_cession_info)

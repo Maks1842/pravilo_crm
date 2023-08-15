@@ -17,7 +17,6 @@ cession = Table(
     Column("cedent", String(100), doc='Цедент'),
     Column("cessionari", String(100), doc='Цессионарий'),
     Column("date_old_cession", String(100), doc='Даты предыдущих цессий'),
-    Column("path", String(200), doc='Путь к папке с Цессией'),
 )
 
 # Должники

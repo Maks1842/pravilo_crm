@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from src.auth.base_config import auth_backend, fastapi_users
 from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
-from src.debts.router import router_cession_info
+from src.debts.router import router_cession, router_debtor
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -29,4 +29,5 @@ app.include_router(
     tags=["Users"],
 )
 
-app.include_router(router_cession_info)
+app.include_router(router_cession)
+app.include_router(router_debtor)

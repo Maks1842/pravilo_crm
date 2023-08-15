@@ -7,18 +7,21 @@ from src.database import get_async_session
 from src.debts.models import *
 from src.debts.schemas import CessionCreate
 
-router_cession_info = APIRouter(
-    prefix="/CessionInfo",
+router_cession = APIRouter(
+    prefix="/Cession",
     tags=["Debts"]
 )
 
 
-@router_cession_info.get("/")
-async def get_cession(credit_id: int, session: AsyncSession = Depends(get_async_session)):
-    if credit_id is not None:
-        cession_id = select(credit.c.cession_id).where(credit.c.id == credit_id)
+@router_cession.get("/")
+async def get_cession(credit_id, session: AsyncSession = Depends(get_async_session)):
+    print(credit_id)
+    if credit_id:
+        cession_id = select(credit.c.cession_id).where(credit.c.id == int(credit_id))
+        print(f'cession_id111 = {cession_id}')
         query = select(cession).where(cession.c.id == cession_id)
     else:
+        print('xxxx')
         query = select(cession)
 
     # query = select(cession).where(cession.c.name == cedent_name)
@@ -26,7 +29,7 @@ async def get_cession(credit_id: int, session: AsyncSession = Depends(get_async_
     return [dict(r._mapping) for r in result]
 
 
-@router_cession_info.post("/")
+@router_cession.post("/")
 async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depends(get_async_session)):
 
     req_data = new_cession.model_dump()
@@ -47,6 +50,29 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
     await session.execute(post_data)
     await session.commit()
     return {"message": "success"}
+
+
+router_debtor = APIRouter(
+    prefix="/Debtor",
+    tags=["Debts"]
+)
+
+
+@router_debtor.get("/")
+async def get_debtor(page: int, per_page: int, session: AsyncSession = Depends(get_async_session)):
+
+    query = select(debtor)
+    items = query.limit(per_page).offset((page - 1) * per_page)
+
+    # total =
+    # summ =
+
+    result = await session.execute(items)
+
+    return {"data": [dict(r._mapping) for r in result]}
+
+
+
 
 
 # class CessionInfoAPIView(APIView):

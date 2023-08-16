@@ -11,6 +11,8 @@ from src.database import Base
 3. $ alembic revision --autogenerate -m "Database creation" - создать миграцию, сравнивает текущее состояние в БД с тем, что есть на сервере
 4.1 $ alembic upgrade c67289f4ce04 - Применяю миграции (создаю таблицы в БД), указывая хэш (находится в конкретном файле миграции) до какой миграции надо обновиться или
 4.2 $ alembic upgrade head - Применяю миграции (создаю таблицы в БД), применить до последней миграции
+
+$ uvicorn src.main:app --reload - Старт проекта
 '''
 
 metadata = MetaData()

@@ -14,19 +14,29 @@ router_cession = APIRouter(
 
 
 @router_cession.get("/")
-async def get_cession(credit_id, session: AsyncSession = Depends(get_async_session)):
-    print(credit_id)
-    if credit_id:
-        cession_id = select(credit.c.cession_id).where(credit.c.id == int(credit_id))
-        print(f'cession_id111 = {cession_id}')
-        query = select(cession).where(cession.c.id == cession_id)
-    else:
-        print('xxxx')
-        query = select(cession)
+async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        if credit_id:
+            cession_id = select(credit.c.cession_id).where(credit.c.id == credit_id)
+            print(f'cession_id111 = {cession_id}')
+            query = select(cession).where(cession.c.id == cession_id)
+        else:
+            query = select(cession)
 
-    # query = select(cession).where(cession.c.name == cedent_name)
-    result = await session.execute(query)
-    return [dict(r._mapping) for r in result]
+        # query = select(cession).where(cession.c.name == cedent_name)
+        answer = await session.execute(query)
+        result = [dict(r._mapping) for r in answer]
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
 
 
 @router_cession.post("/")
@@ -49,7 +59,11 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
     post_data = insert(cession).values(data)
     await session.execute(post_data)
     await session.commit()
-    return {"message": "success"}
+    return {
+        'status': 'success',
+        'data': None,
+        'details': None
+    }
 
 
 router_debtor = APIRouter(
@@ -67,9 +81,14 @@ async def get_debtor(page: int, per_page: int, session: AsyncSession = Depends(g
     # total =
     # summ =
 
-    result = await session.execute(items)
+    answer = await session.execute(items)
+    result = [dict(r._mapping) for r in answer]
 
-    return {"data": [dict(r._mapping) for r in result]}
+    return {
+        'status': 'success',
+        'data': result,
+        'details': None
+    }
 
 
 

@@ -101,7 +101,7 @@ ref_department_presentation = Table(
     Column("region_id", Integer, ForeignKey(ref_region.c.id), doc='Регион_id'),
 )
 
-# Причина окончания ИП
+# Причины окончания ИП
 ref_reason_end_ep = Table(
     "ref_reason_end_ep",
     metadata,
@@ -123,4 +123,58 @@ ref_type_state_duty = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(100), nullable=False, unique=True, doc='Тип госпошлины'),
+)
+
+# Разделы карточки должника
+ref_section_card_debtor = Table(
+    "ref_section_card_debtor",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Раздел карточки должника'),
+)
+
+# Разделы юридической работы
+ref_legal_section = Table(
+    "ref_legal_section",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Раздел юридической работы'),
+)
+
+# Типы шаблонов документов
+ref_type_templates = Table(
+    "ref_type_templates",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Тип шаблона документов'),
+)
+
+# Наименование юридических документов
+ref_legal_docs = Table(
+    "ref_legal_docs",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Наименование юридических документов'),
+    Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
+    Column("legal_section_id", Integer, ForeignKey(ref_legal_section.c.id), doc='Раздел юридической работы_id'),
+)
+
+# Варианты результатов/резолюций по обращениям
+ref_result_statement = Table(
+    "ref_result_statement",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Результат по обращению'),
+    Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения_id'),
+)
+
+# Виды задач
+ref_task = Table(
+    "ref_task",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Задача'),
+    Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
+    Column("legal_doc_id", Integer, ForeignKey(ref_legal_docs.c.id), doc='Юридический документ_id'),
+    Column("result_statement_id", Integer, ForeignKey(ref_result_statement.c.id), doc='Результат_id'),
 )

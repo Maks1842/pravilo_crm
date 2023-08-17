@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 
 
 class CessionSchema(BaseModel):
+    id: int = None
     name: str
     number: str
     date: date = None
@@ -10,14 +12,13 @@ class CessionSchema(BaseModel):
     cedent: str = None
     cessionari: str = None
     date_old_cession: str = None
-    path: str = None
 
-    class Config:
-        orm_mode = True
+    # class Config:
+    #     orm_mode = True
 
 
 class CessionCreate(BaseModel):
-    id: int
+    id: Optional[int] = None
     name: str
     number: str
     date: date
@@ -25,4 +26,3 @@ class CessionCreate(BaseModel):
     cedent: str
     cessionari: str
     date_old_cession: str
-    path: str

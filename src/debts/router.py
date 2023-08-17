@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, func, distinct, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.types import List
 
 from src.database import get_async_session
 from src.debts.models import *
-from src.debts.schemas import CessionCreate
+from src.debts.schemas import CessionSchema, CessionCreate
+
 
 router_cession = APIRouter(
     prefix="/Cession",
@@ -13,17 +14,17 @@ router_cession = APIRouter(
 )
 
 
+# Получить цессии
 @router_cession.get("/")
 async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         if credit_id:
-            cession_id = select(credit.c.cession_id).where(credit.c.id == credit_id)
-            print(f'cession_id111 = {cession_id}')
-            query = select(cession).where(cession.c.id == cession_id)
+            cession_query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
+            cession_id = cession_query.one()[0]
+            query = select(cession).where(cession.c.id == int(cession_id))
         else:
             query = select(cession)
 
-        # query = select(cession).where(cession.c.name == cedent_name)
         answer = await session.execute(query)
         result = [dict(r._mapping) for r in answer]
         return {
@@ -39,31 +40,51 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
         }
 
 
+# Добавить/изменить цессию
 @router_cession.post("/")
 async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depends(get_async_session)):
 
     req_data = new_cession.model_dump()
 
-    data = {"name": req_data["name"],
-            "number": req_data["number"],
-            "date": req_data["date"],
-            "summa": req_data["summa"],
-            "cedent": req_data["cedent"],
-            "cessionari": req_data["cessionari"],
-            "date_old_cession": req_data['date_old_cession'],
-            "path": 'test/test/'}
+    try:
 
-    print(data)
+        if req_data["id"]:
+            cession_id = int(req_data["id"])
+            data = {
+                    "name": req_data["name"],
+                    "number": req_data["number"],
+                    "date": req_data["date"],
+                    "summa": req_data["summa"],
+                    "cedent": req_data["cedent"],
+                    "cessionari": req_data["cessionari"],
+                    "date_old_cession": req_data['date_old_cession'],
+                    }
+            post_data = update(cession).where(cession.c.id == cession_id).values(data)
+        else:
+            data = {"name": req_data["name"],
+                    "number": req_data["number"],
+                    "date": req_data["date"],
+                    "summa": req_data["summa"],
+                    "cedent": req_data["cedent"],
+                    "cessionari": req_data["cessionari"],
+                    "date_old_cession": req_data['date_old_cession'],
+                    }
+            post_data = insert(cession).values(data)
 
-    # post_data = insert(cession).values(**new_cession.model_dump())
-    post_data = insert(cession).values(data)
-    await session.execute(post_data)
-    await session.commit()
-    return {
-        'status': 'success',
-        'data': None,
-        'details': None
-    }
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Цессия успешно сохранена'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
+        }
 
 
 router_debtor = APIRouter(
@@ -75,20 +96,25 @@ router_debtor = APIRouter(
 @router_debtor.get("/")
 async def get_debtor(page: int, per_page: int, session: AsyncSession = Depends(get_async_session)):
 
-    query = select(debtor)
-    items = query.limit(per_page).offset((page - 1) * per_page)
+    try:
+        items = select(debtor).limit(per_page).offset((page - 1) * per_page)
 
-    # total =
-    # summ =
+        total = await session.execute(func.count(distinct(debtor.c.id)))
 
-    answer = await session.execute(items)
-    result = [dict(r._mapping) for r in answer]
+        answer = await session.execute(items)
+        result = [dict(r._mapping) for r in answer]
 
-    return {
-        'status': 'success',
-        'data': result,
-        'details': None
-    }
+        return {
+            'status': 'success',
+            'data': result,
+            'details': {"total": total}
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
 
 
 

@@ -10,7 +10,7 @@ cession = Table(
     "cession",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(50), nullable=False, doc='Наименование цессии'),
+    Column("name", String(50), nullable=False, unique=True, doc='Наименование цессии'),
     Column("number", String(50), nullable=False, doc='Номер цессии'),
     Column("date", DATE, doc='Дата цессии'),
     Column("summa", Numeric(12, 2), doc='Сумма цессии'),

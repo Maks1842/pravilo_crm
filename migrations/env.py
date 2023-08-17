@@ -9,6 +9,7 @@ from src.debts.models import metadata as metadata_debts
 from src.references.models import metadata as metadata_references
 from src.directory_docs.models import metadata as directory_docs
 from src.collection_debt.models import metadata as collection_debt
+from src.legal_work.models import metadata as legal_work
 
 from src.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
@@ -37,7 +38,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = [metadata_auth, metadata_debts, metadata_references, directory_docs, collection_debt]
+target_metadata = [metadata_auth, metadata_debts, metadata_references, directory_docs, collection_debt, legal_work]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

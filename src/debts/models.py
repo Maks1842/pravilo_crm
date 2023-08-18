@@ -61,7 +61,7 @@ credit = Table(
     Column("summa_by_cession", Numeric(12, 2), doc='Сумма по цессии'),
     Column("summa", Numeric(12, 2), doc='Сумма КД'),
     Column("interest_rate", Numeric(5, 2), doc='Процентная ставка по КД'),
-    Column("overdue_od", Boolean, default=False, doc='Просроченный ОД'),
+    Column("overdue_od", Numeric(12, 2), doc='Просроченный ОД'),
     Column("overdue_percent", Numeric(12, 2), doc='Просроченные проценты'),
     Column("penalty", Numeric(12, 2), doc='Штрафы, пени'),
     Column("percent_of_od", Numeric(12, 2), doc='Проценты на ОД'),

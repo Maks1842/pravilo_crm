@@ -1,7 +1,7 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey, DATE, Numeric
 
 from src.references.models import ref_claimer_ed, ref_tribunal, ref_type_ed, ref_status_ed, ref_reason_end_ep, \
-    ref_department_presentation, ref_type_department, ref_reason_cansel_ed
+    ref_rosp, ref_type_department, ref_reason_cansel_ed
 from src.debts.models import credit, debtor
 from src.auth.models import user
 
@@ -44,7 +44,7 @@ executive_productions = Table(
     Column("curent_debt", Numeric(12, 2), doc='Текущая задолженность'),
     Column("summa_debt", Numeric(12, 2), doc='Основной долг'),
     Column("gov_toll", Numeric(10, 2), doc='Исполнительский сбор'),
-    Column("rosp_id", Integer, ForeignKey(ref_department_presentation.c.id), doc='РОСП_id'),
+    Column("rosp_id", Integer, ForeignKey(ref_rosp.c.id), doc='РОСП_id'),
     Column("pristav", String(50), doc='Пристав'),
     Column("pristav_phone", String(50), doc='Телефон пристава'),
     Column("date_request", DATE, doc='Дата получения данных из РОСП'),
@@ -55,13 +55,21 @@ executive_productions = Table(
     Column("comment", String(200), doc='Комментарий'),
 )
 
+# Департамент предъявления ИД
+department_presentation = Table(
+    "department_presentation",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("department_presentation_id", Integer, nullable=False, doc='Учреждение предъявления_id'),
+    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента_id'),
+)
+
 # Движение исполнительного документа
 collection_debt = Table(
     "collection_debt",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), doc='Тип учреждения предъявления_id'),
-    Column("department_presentation_id", Integer, ForeignKey(ref_department_presentation.c.id), doc='Наименование учреждения предъявления_id'),
+    Column("department_presentation_id", Integer, ForeignKey(department_presentation.c.id), nullable=False, doc='Учреждение предъявления_id'),
     Column("executive_document_id", Integer, ForeignKey(executive_document.c.id), doc='Исполнительный документ_id'),
     Column("credit_id", Integer, ForeignKey(credit.c.id), doc='Кредитный договор_id'),
     Column("date_start", DATE, doc='Дата предъявления ИД'),

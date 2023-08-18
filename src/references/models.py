@@ -87,18 +87,51 @@ ref_region = Table(
     Column("index", Integer, nullable=False, unique=True, doc='Индекс региона'),
 )
 
-# Департаменты предъявления ИД
-ref_department_presentation = Table(
-    "ref_department_presentation",
+# Роспы
+ref_rosp = Table(
+    "ref_rosp",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(200), nullable=False, unique=True, doc='Департамент предъявления ИД'),
-    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), doc='Тип департамента_id'),
-    Column("address", String(200), doc='Адрес департамента'),
-    Column("address_index", String(6), doc='Индекс департамента'),
+    Column("name", String(200), nullable=False, unique=True, doc='РОСП'),
+    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента_id'),
+    Column("address", String(200), doc='Адрес'),
+    Column("address_index", String(6), doc='Индекс'),
+    Column("region_id", Integer, ForeignKey(ref_region.c.id), doc='Регион_id'),
     Column("phone", String(100), doc='Телефоны'),
     Column("email", String(100), doc='Email'),
+    Column("class_code", String(15), unique=True, doc='Класс код РОСПа'),
+)
+
+# Банки
+ref_bank = Table(
+    "ref_bank",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(200), nullable=False, unique=True, doc='Банк'),
+    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента_id'),
+    Column("address", String(200), doc='Адрес'),
+    Column("address_index", String(6), doc='Индекс'),
     Column("region_id", Integer, ForeignKey(ref_region.c.id), doc='Регион_id'),
+    Column("phone", String(100), doc='Телефоны'),
+    Column("email", String(100), doc='Email'),
+    Column("bik", String(9), nullable=False, unique=True, doc='БИК'),
+    Column("inn", String(10), doc='ИНН'),
+    Column("corr_account", String(20), doc='Корсчет'),
+)
+
+# ПФР/ИФНС
+ref_pfr = Table(
+    "ref_pfr",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(200), nullable=False, unique=True, doc='ПФР/ИФНС'),
+    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента_id'),
+    Column("address", String(200), doc='Адрес'),
+    Column("address_index", String(6), doc='Индекс'),
+    Column("region_id", Integer, ForeignKey(ref_region.c.id), doc='Регион_id'),
+    Column("phone", String(100), doc='Телефоны'),
+    Column("email", String(100), doc='Email'),
+    Column("class_code", String(15), unique=True, doc='Класс код'),
 )
 
 # Причины окончания ИП

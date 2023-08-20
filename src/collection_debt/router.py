@@ -18,44 +18,83 @@ router_ed_debtor = APIRouter(
 @router_ed_debtor.get("/")
 async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_async_session)):
     try:
-        query = select(executive_document).where(executive_document.c.credit_id == credit_id)
+        query = select(executive_document).filter(executive_document.c.credit_id == credit_id)
 
         answer = await session.execute(query)
-        print(answer)
 
         result = []
         for item in answer.all():
-            print(item)
             data = dict(item._mapping)
             print(data)
 
+            if len(data) > 0:
+                type_ed = ''
+                type_ed_id = ''
+                claimer_ed_name = ''
+                claimer_ed_id = ''
+                tribunal = ''
+                tribunal_id = ''
+                address_tribunal = ''
+                email_tribunal = ''
+                phone_tribunal = ''
+                status_name = ''
+                status_id = ''
 
-            status_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(data['status_cd_id'])))
-            status_set = dict(status_query.one()._mapping)
-            status = status_set['name']
+                if data['type_ed_id'] is not None and data['type_ed_id'] != '':
+                    type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(data['type_ed_id'])))
+                    type_ed = dict(type_ed_query.one()._mapping)
 
-            result.append({
-                'id': data['id'],
-                'debtor_id': data['debtor_id'],
-                'status_cd': status,
-                'status_cd_id': data['status_cd_id'],
-                'creditor': data['creditor'],
-                'number': data['number'],
-                'date_start': data['date_start'],
-                'date_end': data['date_end'],
-                'summa': data['summa'],
-                'summa_by_cession': data['summa_by_cession'],
-                'interest_rate': data['interest_rate'],
-                'percent_of_od': data['percent_of_od'],
-                'overdue_od': data['overdue_od'],
-                'overdue_percent': data['overdue_percent'],
-                'penalty': data['penalty'],
-                'gov_toll': data['gov_toll'],
-                'cession_id': data['cession_id'],
-                'balance_debt': data['balance_debt'],
-                'credits_old': data['credits_old'],
-                'comment': data['comment'],
-            })
+                    type_ed = type_ed['name']
+                    type_ed_id = type_ed['id']
+
+                if data['claimer_ed_id'] is not None and data['claimer_ed_id'] != '':
+                    claimer_ed_query = await session.execute(select(ref_claimer_ed).where(ref_claimer_ed.c.id == int(data['claimer_ed_id'])))
+                    claimer_ed = dict(claimer_ed_query.one()._mapping)
+
+                    claimer_ed_name = claimer_ed['name']
+                    claimer_ed_id = claimer_ed['id']
+
+                if data['tribunal_id'] is not None and data['tribunal_id'] != '':
+                    tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(data['tribunal_id'])))
+                    tribunal_set = dict(tribunal_query.one()._mapping)
+
+                    tribunal_id = data['tribunal_id']
+                    tribunal = tribunal_set['name']
+                    address_tribunal = tribunal_set['address']
+                    email_tribunal = tribunal_set['email']
+                    phone_tribunal = tribunal_set['phone']
+
+                if data['status_ed_id'] is not None and data['status_ed_id'] != '':
+                    status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(data['status_ed_id'])))
+                    status_ed = dict(status_ed_query.one()._mapping)
+
+                    status_name = status_ed['name']
+                    status_id = status_ed['id']
+
+                result.append({
+                    'id': data['id'],
+                    'typeED': type_ed,
+                    'type_ed_id': type_ed_id,
+                    'numberED': data['number'],
+                    'dateED': data['date'],
+                    'caseNumber': data['case_number'],
+                    'dateReceiptED': data['date_of_receipt_ed'],
+                    'dateDecision': data['date_decision'],
+                    'summaDebtDecision': data['summa_debt_decision'],
+                    'stateDuty': data['state_duty'],
+                    'statusED': status_name,
+                    'status_ed_id': status_id,
+                    'succession': data['succession'],
+                    'dateEntryForce': data['date_entry_force'],
+                    'claimer_ed': claimer_ed_name,
+                    'claimer_ed_id': claimer_ed_id,
+                    "tribunal": tribunal,
+                    "tribunal_id": tribunal_id,
+                    "addressTribunal": address_tribunal,
+                    "emailTribun": email_tribunal,
+                    "phoneTribun": phone_tribunal,
+                    'comment': data['comment'],
+                })
         return {
             'status': 'success',
             'data': result,

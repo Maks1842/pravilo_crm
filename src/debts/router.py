@@ -1,9 +1,12 @@
+import re
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.debts.models import *
+from src.debts.models import cession, credit, debtor
+from src.references.models import ref_status_credit
 from src.debts.schemas import CessionCreate, CreditCreate
 
 
@@ -19,8 +22,10 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
     try:
         if credit_id:
             cession_query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
-            cession_id = cession_query.one()[0]
-            query = select(cession).where(cession.c.id == int(cession_id))
+            cession_item = cession_query.one()
+            cession_id = dict(cession_item._mapping)
+
+            query = select(cession).where(cession.c.id == int(cession_id['cession_id']))
         else:
             query = select(cession)
 
@@ -86,16 +91,15 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
         }
 
 
-
-router_credits_debtor = APIRouter(
-    prefix="/CreditsDebtor",
+router_credits = APIRouter(
+    prefix="/Credit",
     tags=["Debts"]
 )
 
 
-# Получить информацию о кредитах
-@router_credits_debtor.get("/")
-async def get_credits_debtor(credit_id: int = None, debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+# Получить кредиты
+@router_credits.get("/")
+async def get_credits(credit_id: int = None, debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         if credit_id:
             query = select(credit).where(credit.c.id == credit_id)
@@ -148,8 +152,8 @@ async def get_credits_debtor(credit_id: int = None, debtor_id: int = None, sessi
 
 
 # Изменить данные о КД
-@router_credits_debtor.post("/")
-async def add_cession(new_credit: CreditCreate, session: AsyncSession = Depends(get_async_session)):
+@router_credits.post("/")
+async def add_credits(new_credit: CreditCreate, session: AsyncSession = Depends(get_async_session)):
 
     req_data = new_credit.model_dump()
 
@@ -216,6 +220,157 @@ async def add_cession(new_credit: CreditCreate, session: AsyncSession = Depends(
             "data": None,
             "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
+
+
+router_credit_debtor = APIRouter(
+    prefix="/GetCreditDebtor",
+    tags=["Debts"]
+)
+
+
+# Получить ФИО + КД
+@router_credit_debtor.get("/")
+async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        if re.findall(r'\d+', fragment):
+            credits_query = await session.execute(select(credit).where(credit.c.number.icontains(fragment)))
+            credits_set = credits_query.all()
+        else:
+            debtors_query = await session.execute(select(debtor))
+            debtors_set = debtors_query.all()
+
+
+
+            debtors_id = ()
+            for item in debtors_set:
+
+                debtor_item = dict(item._mapping)
+
+                if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+                          f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+                else:
+                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+
+                if re.findall(rf'(?i){fragment}', fio):
+                    debtors_id = debtors_id + (debtor_item['id'],)
+
+            credits_query = await session.execute(select(credit).where(credit.c.debtor_id.in_(debtors_id)))
+            credits_set = credits_query.all()
+
+        result = []
+        for item_cd in credits_set:
+
+            credit_item = dict(item_cd._mapping)
+
+            number = credit_item['number']
+
+            debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
+            debtor_set = debtor_query.one()
+            debtor_item = dict(debtor_set._mapping)
+
+            value_id = {"credit_id": credit_item['id'],
+                        "debtor_id": debtor_item['id']}
+
+            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+                      f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            else:
+                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+
+            result.append({
+                "value": value_id,
+                "text": f'{fio}, {number}',
+            })
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+router_debtor_inn = APIRouter(
+    prefix="/GetDebtorInn",
+    tags=["Debts"]
+)
+
+
+# Получить ФИО + КД
+@router_debtor_inn.get("/")
+async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        if re.findall(r'\d+', fragment):
+            credits_query = await session.execute(select(credit).where(credit.c.number.icontains(fragment)))
+            credits_set = credits_query.all()
+        else:
+            debtors_query = await session.execute(select(debtor))
+            debtors_set = debtors_query.all()
+
+
+
+            debtors_id = ()
+            for item in debtors_set:
+
+                debtor_item = dict(item._mapping)
+
+                if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+                          f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+                else:
+                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+
+                if re.findall(rf'(?i){fragment}', fio):
+                    debtors_id = debtors_id + (debtor_item['id'],)
+
+            credits_query = await session.execute(select(credit).where(credit.c.debtor_id.in_(debtors_id)))
+            credits_set = credits_query.all()
+
+        result = []
+        for item_cd in credits_set:
+
+            credit_item = dict(item_cd._mapping)
+
+            number = credit_item['number']
+
+            debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
+            debtor_set = debtor_query.one()
+            debtor_item = dict(debtor_set._mapping)
+
+            value_id = {"credit_id": credit_item['id'],
+                        "debtor_id": debtor_item['id']}
+
+            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+                      f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            else:
+                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+
+            result.append({
+                "value": value_id,
+                "text": f'{fio}, {number}',
+            })
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+
 
 
 

@@ -22,7 +22,7 @@ class CessionCreate(BaseModel):
     name: str
     number: str
     date: date
-    summa: float
+    summa: int
     cedent: str
     cessionari: str
     date_old_cession: str
@@ -34,15 +34,15 @@ class CreditCreate(BaseModel):
     number: str
     date_start: date
     date_end: str
-    summa_by_cession: float
-    summa: float
+    summa_by_cession: int
+    summa: int
     interest_rate: float
-    overdue_od: float
-    overdue_percent: float
-    penalty: float
-    percent_of_od: float
-    gov_toll: float
-    balance_debt: float
+    overdue_od: int
+    overdue_percent: int
+    penalty: int
+    percent_of_od: int
+    gov_toll: int
+    balance_debt: int
     debtor_id: int
     cession_id: int
     status_cd_id: int

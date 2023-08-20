@@ -10,6 +10,7 @@ from src.references.models import metadata as metadata_references
 from src.directory_docs.models import metadata as directory_docs
 from src.collection_debt.models import metadata as collection_debt
 from src.legal_work.models import metadata as legal_work
+from src.payments.models import metadata as payments
 
 from src.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
@@ -38,7 +39,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = [metadata_auth, metadata_debts, metadata_references, directory_docs, collection_debt, legal_work]
+target_metadata = [metadata_auth, metadata_debts, metadata_references, directory_docs, collection_debt, legal_work,
+                   payments]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -64,6 +66,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -85,7 +88,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
         )
 
         with context.begin_transaction():

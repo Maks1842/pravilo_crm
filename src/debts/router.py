@@ -302,19 +302,20 @@ router_debtor_inn = APIRouter(
 )
 
 
-# Получить ФИО + КД
+# Получить ФИО + ИНН
 @router_debtor_inn.get("/")
 async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_async_session)):
 
     try:
+
+
+
         if re.findall(r'\d+', fragment):
-            credits_query = await session.execute(select(credit).where(credit.c.number.icontains(fragment)))
-            credits_set = credits_query.all()
+            debtors_query = await session.execute(select(debtor).where(debtor.c.inn.icontains(fragment)))
+            debtors_set = debtors_query.all()
         else:
             debtors_query = await session.execute(select(debtor))
             debtors_set = debtors_query.all()
-
-
 
             debtors_id = ()
             for item in debtors_set:
@@ -330,22 +331,15 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
                 if re.findall(rf'(?i){fragment}', fio):
                     debtors_id = debtors_id + (debtor_item['id'],)
 
-            credits_query = await session.execute(select(credit).where(credit.c.debtor_id.in_(debtors_id)))
-            credits_set = credits_query.all()
+            debtors_query = await session.execute(select(debtor).where(debtor.c.id.in_(debtors_id)))
+            debtors_set = debtors_query.all()
 
         result = []
-        for item_cd in credits_set:
+        for item_debt in debtors_set:
 
-            credit_item = dict(item_cd._mapping)
+            debtor_item = dict(item_debt._mapping)
 
-            number = credit_item['number']
-
-            debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
-            debtor_set = debtor_query.one()
-            debtor_item = dict(debtor_set._mapping)
-
-            value_id = {"credit_id": credit_item['id'],
-                        "debtor_id": debtor_item['id']}
+            inn = debtor_item['inn']
 
             if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
                 fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
@@ -354,8 +348,8 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
                 fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
 
             result.append({
-                "value": value_id,
-                "text": f'{fio}, {number}',
+                "debtor_id": debtor_item['id'],
+                "text": f'{fio}, {inn}',
             })
         return {
             'status': 'success',
@@ -368,6 +362,109 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
             "data": None,
             "details": ex
         }
+
+
+router_debt_information = APIRouter(
+    prefix="/GetDebtInformation",
+    tags=["Debts"]
+)
+
+
+# Получить информацию о долге
+@router_debt_information.get("/")
+async def get_debt_information(credit_id: int, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
+        credit_item = dict(credit_query.one()._mapping)
+
+        debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
+        debtor_item = dict(debtor_query.one()._mapping)
+
+        cession_query = await session.execute(select(cession).where(cession.c.id == int(credit_item['cession_id'])))
+        cession_item = dict(cession_query.one()._mapping)
+
+        status_cd_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(credit_item['status_cd_id'])))
+        status_cd_item = dict(status_cd_query.one()._mapping)
+        status_cd = status_cd_item['name']
+
+        summa_all = '0.00'
+        summa_last = '0.00'
+        date_last = ''
+        ed_id = ''
+        edType = ''
+        edNum = ''
+        edSumma = '0.00'
+        edSuccession = ''
+        claimer_ep = ''
+    except:
+        pass
+
+    #     payment_query = await session.execute(select(payment).where(payments.c.id == int(credit_item['cession_id'])))
+    #     payments_set = payment_query.all()
+    #
+    #     if data['type_ed_id'] is not None and data['type_ed_id'] != '':
+    #         type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(data['type_ed_id'])))
+    #         type_ed = dict(type_ed_query.one()._mapping)
+    #
+    #         type_ed = type_ed['name']
+    #         type_ed_id = type_ed['id']
+    #
+    #
+    #
+    #     if re.findall(r'\d+', fragment):
+    #         debtors_query = await session.execute(select(debtor).where(debtor.c.inn.icontains(fragment)))
+    #         debtors_set = debtors_query.all()
+    #     else:
+    #         debtors_query = await session.execute(select(debtor))
+    #         debtors_set = debtors_query.all()
+    #
+    #         debtors_id = ()
+    #         for item in debtors_set:
+    #
+    #             debtor_item = dict(item._mapping)
+    #
+    #             if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+    #                 fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+    #                       f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+    #             else:
+    #                 fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+    #
+    #             if re.findall(rf'(?i){fragment}', fio):
+    #                 debtors_id = debtors_id + (debtor_item['id'],)
+    #
+    #         debtors_query = await session.execute(select(debtor).where(debtor.c.id.in_(debtors_id)))
+    #         debtors_set = debtors_query.all()
+    #
+    #     result = []
+    #     for item_debt in debtors_set:
+    #
+    #         debtor_item = dict(item_debt._mapping)
+    #
+    #         inn = debtor_item['inn']
+    #
+    #         if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
+    #             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
+    #                   f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+    #         else:
+    #             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+    #
+    #         result.append({
+    #             "debtor_id": debtor_item['id'],
+    #             "text": f'{fio}, {inn}',
+    #         })
+    #     return {
+    #         'status': 'success',
+    #         'data': result,
+    #         'details': None
+    #     }
+    # except Exception as ex:
+    #     return {
+    #         "status": "error",
+    #         "data": None,
+    #         "details": ex
+    #     }
+
 
 
 

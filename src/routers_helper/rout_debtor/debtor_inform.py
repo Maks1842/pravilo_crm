@@ -9,7 +9,7 @@ from src.debts.models import debtor
 
 
 router_calculating_pensioner = APIRouter(
-    prefix="/CalculatingPensioner",
+    prefix="/v1/CalculatingPensioner",
     tags=["Debts"]
 )
 

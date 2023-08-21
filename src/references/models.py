@@ -208,6 +208,7 @@ ref_task = Table(
     Column("id", Integer, primary_key=True),
     Column("name", String(100), nullable=False, unique=True, doc='Задача'),
     Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
+    Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения_id'),
     Column("legal_doc_id", Integer, ForeignKey(ref_legal_docs.c.id), doc='Юридический документ_id'),
     Column("result_statement_id", Integer, ForeignKey(ref_result_statement.c.id), doc='Результат_id'),
 )

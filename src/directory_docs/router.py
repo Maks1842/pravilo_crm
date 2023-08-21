@@ -8,6 +8,6 @@ from src.debts.models import *
 from src.debts.schemas import CessionCreate
 
 router_cession_info = APIRouter(
-    prefix="/CessionInfo",
+    prefix="/v1/CessionInfo",
     tags=["Debts"]
 )

@@ -9,8 +9,8 @@ from src.collection_debt.schemas import EDocCreate
 
 
 router_ed_debtor = APIRouter(
-    prefix="/EDocDebtor",
-    tags=["collection_debt"]
+    prefix="/v1/EDocDebtor",
+    tags=["Collection_debt"]
 )
 
 

@@ -13,7 +13,7 @@ from src.collection_debt.models import executive_document, executive_productions
 
 
 router_cession = APIRouter(
-    prefix="/Cession",
+    prefix="/v1/Cession",
     tags=["Debts"]
 )
 
@@ -112,7 +112,7 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
 
 
 router_credits = APIRouter(
-    prefix="/Credit",
+    prefix="/v1/Credit",
     tags=["Debts"]
 )
 
@@ -292,7 +292,7 @@ async def add_credits(new_credit: CreditCreate, session: AsyncSession = Depends(
 
 
 router_credit_debtor = APIRouter(
-    prefix="/GetCreditDebtor",
+    prefix="/v1/GetCreditDebtor",
     tags=["Debts"]
 )
 
@@ -366,7 +366,7 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
 
 
 router_debtor_inn = APIRouter(
-    prefix="/GetDebtorInn",
+    prefix="/v1/GetDebtorInn",
     tags=["Debts"]
 )
 
@@ -431,7 +431,7 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
 
 
 router_debt_information = APIRouter(
-    prefix="/GetDebtInformation",
+    prefix="/v1/GetDebtInformation",
     tags=["Debts"]
 )
 
@@ -493,10 +493,8 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         try:
             ep_query = await session.execute(select(executive_productions.c.claimer).where(executive_productions.c.credit_id == credit_id).order_by(desc(executive_productions.c.date_on)))
             claimer_ep = ep_query.scalar()
-            print(claimer_ep)
         except:
             claimer_ep = ''
-        print('test')
 
         if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \

@@ -9,7 +9,7 @@ from src.references.schemas import RefStatusCreditCreate
 
 
 router_ref_status_credit = APIRouter(
-    prefix="/RefStatusCredit",
+    prefix="/v1/RefStatusCredit",
     tags=["References"]
 )
 

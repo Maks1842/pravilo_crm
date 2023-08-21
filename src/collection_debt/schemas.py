@@ -14,8 +14,8 @@ class EDocCreate(BaseModel):
     status_ed_id: Optional[int] = None
     credit_id: int
     user_id: Optional[int] = None
-    summa_debt_decision: int
-    state_duty: int
+    summa_debt_decision: float
+    state_duty: float
     succession: date
     date_entry_force: date
     claimer_ed_id: Optional[int] = None

@@ -18,14 +18,11 @@ router_ed_debtor = APIRouter(
 @router_ed_debtor.get("/")
 async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_async_session)):
     try:
-        query = select(executive_document).filter(executive_document.c.credit_id == credit_id)
-
-        answer = await session.execute(query)
+        query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id))
 
         result = []
-        for item in answer.all():
+        for item in query.all():
             data = dict(item._mapping)
-            print(data)
 
             if len(data) > 0:
                 type_ed = ''
@@ -39,6 +36,14 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 phone_tribunal = ''
                 status_name = ''
                 status_id = ''
+                summa_debt_decision = 0
+                state_duty = 0
+
+                if data['summa_debt_decision'] is not None and data['summa_debt_decision'] != '':
+                    summa_debt_decision = data['summa_debt_decision'] / 100
+
+                if data['state_duty'] is not None and data['state_duty'] != '':
+                    state_duty = data['state_duty'] / 100
 
                 if data['type_ed_id'] is not None and data['type_ed_id'] != '':
                     type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(data['type_ed_id'])))
@@ -80,8 +85,8 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     'caseNumber': data['case_number'],
                     'dateReceiptED': data['date_of_receipt_ed'],
                     'dateDecision': data['date_decision'],
-                    'summaDebtDecision': data['summa_debt_decision'],
-                    'stateDuty': data['state_duty'],
+                    'summaDebtDecision': summa_debt_decision,
+                    'stateDuty': state_duty,
                     'statusED': status_name,
                     'status_ed_id': status_id,
                     'succession': data['succession'],
@@ -114,6 +119,9 @@ async def add_ed_debtor(new_ed_debtor: EDocCreate, session: AsyncSession = Depen
 
     req_data = new_ed_debtor.model_dump()
 
+    summa_debt_decision = req_data["summa_debt_decision"] * 100
+    state_duty = req_data["state_duty"] * 100
+
     try:
         if req_data["id"]:
             ed_id = int(req_data["id"])
@@ -127,8 +135,8 @@ async def add_ed_debtor(new_ed_debtor: EDocCreate, session: AsyncSession = Depen
                 "status_ed_id": req_data['status_ed_id'],
                 "credit_id": req_data["credit_id"],
                 "user_id": req_data["user_id"],
-                "summa_debt_decision": req_data["summa_debt_decision"],
-                "state_duty": req_data["state_duty"],
+                "summa_debt_decision": summa_debt_decision,
+                "state_duty": state_duty,
                 "succession": req_data["succession"],
                 "date_entry_force": req_data["date_entry_force"],
                 "claimer_ed_id": req_data['claimer_ed_id'],
@@ -149,8 +157,8 @@ async def add_ed_debtor(new_ed_debtor: EDocCreate, session: AsyncSession = Depen
                 "status_ed_id": req_data['status_ed_id'],
                 "credit_id": req_data["credit_id"],
                 "user_id": req_data["user_id"],
-                "summa_debt_decision": req_data["summa_debt_decision"],
-                "state_duty": req_data["state_duty"],
+                "summa_debt_decision": summa_debt_decision,
+                "state_duty": state_duty,
                 "succession": req_data["succession"],
                 "date_entry_force": req_data["date_entry_force"],
                 "claimer_ed_id": req_data['claimer_ed_id'],

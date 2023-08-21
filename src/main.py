@@ -7,6 +7,7 @@ from src.debts.router import router_cession, router_debtor, router_credits, rout
     router_debt_information
 from src.references.router import router_ref_status_credit
 from src.collection_debt.router import router_ed_debtor
+from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -46,6 +47,9 @@ app.include_router(router_ref_status_credit)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)
+
+# Для routers_helper
+app.include_router(router_calculating_pensioner)
 
 
 origins = [

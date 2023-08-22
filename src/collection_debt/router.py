@@ -78,26 +78,26 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
 
                 result.append({
                     'id': data['id'],
-                    'typeED': type_ed,
+                    'type_ed': type_ed,
                     'type_ed_id': type_ed_id,
-                    'numberED': data['number'],
-                    'dateED': data['date'],
-                    'caseNumber': data['case_number'],
-                    'dateReceiptED': data['date_of_receipt_ed'],
-                    'dateDecision': data['date_decision'],
-                    'summaDebtDecision': summa_debt_decision,
-                    'stateDuty': state_duty,
-                    'statusED': status_name,
+                    'number': data['number'],
+                    'date': data['date'],
+                    'case_number': data['case_number'],
+                    'date_of_receipt_ed': data['date_of_receipt_ed'],
+                    'date_decision': data['date_decision'],
+                    'summa_debt_decision': summa_debt_decision,
+                    'state_duty': state_duty,
+                    'status_ed': status_name,
                     'status_ed_id': status_id,
                     'succession': data['succession'],
-                    'dateEntryForce': data['date_entry_force'],
+                    'date_entry_force': data['date_entry_force'],
                     'claimer_ed': claimer_ed_name,
                     'claimer_ed_id': claimer_ed_id,
                     "tribunal": tribunal,
                     "tribunal_id": tribunal_id,
-                    "addressTribunal": address_tribunal,
-                    "emailTribun": email_tribunal,
-                    "phoneTribun": phone_tribunal,
+                    "address_tribunal": address_tribunal,
+                    "email_tribunal": email_tribunal,
+                    "phone_tribunal": phone_tribunal,
                     'comment': data['comment'],
                 })
         return {
@@ -123,48 +123,30 @@ async def add_ed_debtor(new_ed_debtor: EDocCreate, session: AsyncSession = Depen
     state_duty = req_data["state_duty"] * 100
 
     try:
+        data = {
+            "number": req_data["number"],
+            "date": req_data["date"],
+            "case_number": req_data["case_number"],
+            "date_of_receipt_ed": req_data["date_of_receipt_ed"],
+            "date_decision": req_data["date_decision"],
+            "type_ed_id": req_data["type_ed_id"],
+            "status_ed_id": req_data['status_ed_id'],
+            "credit_id": req_data["credit_id"],
+            "user_id": req_data["user_id"],
+            "summa_debt_decision": summa_debt_decision,
+            "state_duty": state_duty,
+            "succession": req_data["succession"],
+            "date_entry_force": req_data["date_entry_force"],
+            "claimer_ed_id": req_data['claimer_ed_id'],
+            "tribunal_id": req_data["tribunal_id"],
+            "comment": req_data["comment"],
+        }
         if req_data["id"]:
             ed_id = int(req_data["id"])
-            data = {
-                "number": req_data["number"],
-                "date": req_data["date"],
-                "case_number": req_data["case_number"],
-                "date_of_receipt_ed": req_data["date_of_receipt_ed"],
-                "date_decision": req_data["date_decision"],
-                "type_ed_id": req_data["type_ed_id"],
-                "status_ed_id": req_data['status_ed_id'],
-                "credit_id": req_data["credit_id"],
-                "user_id": req_data["user_id"],
-                "summa_debt_decision": summa_debt_decision,
-                "state_duty": state_duty,
-                "succession": req_data["succession"],
-                "date_entry_force": req_data["date_entry_force"],
-                "claimer_ed_id": req_data['claimer_ed_id'],
-                "tribunal_id": req_data["tribunal_id"],
-                "comment": req_data["comment"],
-            }
 
             # Не срабатывает исключение, если нет указанного id в БД
             post_data = update(executive_document).where(executive_document.c.id == ed_id).values(data)
         else:
-            data = {
-                "number": req_data["number"],
-                "date": req_data["date"],
-                "case_number": req_data["case_number"],
-                "date_of_receipt_ed": req_data["date_of_receipt_ed"],
-                "date_decision": req_data["date_decision"],
-                "type_ed_id": req_data["type_ed_id"],
-                "status_ed_id": req_data['status_ed_id'],
-                "credit_id": req_data["credit_id"],
-                "user_id": req_data["user_id"],
-                "summa_debt_decision": summa_debt_decision,
-                "state_duty": state_duty,
-                "succession": req_data["succession"],
-                "date_entry_force": req_data["date_entry_force"],
-                "claimer_ed_id": req_data['claimer_ed_id'],
-                "tribunal_id": req_data["tribunal_id"],
-                "comment": req_data["comment"],
-            }
             post_data = insert(executive_document).values(data)
 
         await session.execute(post_data)

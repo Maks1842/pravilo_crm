@@ -560,5 +560,512 @@ async def add_rosp(new_rosp: RefRospCreate, session: AsyncSession = Depends(get_
         }
 
 
+# Получить/добавить Банк
+router_ref_bank = APIRouter(
+    prefix="/v1/RefBank",
+    tags=["References"]
+)
+
+
+@router_ref_bank.get("/")
+async def get_bank(fragment: str, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_bank).where(ref_bank.c.name.icontains(fragment)))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "bank_name": item_dic['name'],
+                "value": {
+                    "bank_id": item_dic["id"],
+                    "type_department_id": item_dic["type_department_id"],
+                    "address": item_dic["address"],
+                    "address_index": item_dic["address_index"],
+                    "region_id": item_dic["region_id"],
+                    "phone": item_dic['phone'],
+                    "email": item_dic["email"],
+                    "bik": item_dic["bik"],
+                    "inn": item_dic["inn"],
+                    "corr_account": item_dic["corr_account"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+@router_ref_bank.post("/")
+async def add_bank(new_bank: RefBankCreate, session: AsyncSession = Depends(get_async_session)):
+
+    req_data = new_bank.model_dump()
+
+    try:
+        data = {
+            "name": req_data['bank_name'],
+            "type_department_id": req_data['type_department_id'],
+            "address": req_data['address'],
+            "address_index": req_data['address_index'],
+            "region_id": req_data['region_id'],
+            "phone": req_data['phone'],
+            "email": req_data['email'],
+            "bik": req_data['bik'],
+            "inn": req_data['inn'],
+            "corr_account": req_data['corr_account'],
+        }
+        if req_data["id"]:
+            bank_id = int(req_data["id"])
+            post_data = update(ref_bank).where(ref_bank.c.id == bank_id).values(data)
+        else:
+            post_data = insert(ref_bank).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Банк успешно сохранен'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
+        }
+
+
+# Получить/добавить ПФР/ИФНС
+router_ref_pfr = APIRouter(
+    prefix="/v1/RefPfr",
+    tags=["References"]
+)
+
+
+@router_ref_pfr.get("/")
+async def get_pfr(fragment: str, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_pfr).where(ref_pfr.c.name.icontains(fragment)))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "pfr_name": item_dic['name'],
+                "value": {
+                    "pfr_id": item_dic["id"],
+                    "type_department_id": item_dic["type_department_id"],
+                    "address": item_dic["address"],
+                    "address_index": item_dic["address_index"],
+                    "region_id": item_dic["region_id"],
+                    "phone": item_dic['phone'],
+                    "email": item_dic["email"],
+                    "class_code": item_dic["class_code"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+@router_ref_pfr.post("/")
+async def add_pfr(new_pfr: RefPfrCreate, session: AsyncSession = Depends(get_async_session)):
+
+    req_data = new_pfr.model_dump()
+
+    try:
+        data = {
+            "name": req_data['pfr_name'],
+            "type_department_id": req_data['type_department_id'],
+            "address": req_data['address'],
+            "address_index": req_data['address_index'],
+            "region_id": req_data['region_id'],
+            "phone": req_data['phone'],
+            "email": req_data['email'],
+            "class_code": req_data['class_code'],
+        }
+        if req_data["id"]:
+            pfr_id = int(req_data["id"])
+            post_data = update(ref_pfr).where(ref_pfr.c.id == pfr_id).values(data)
+        else:
+            post_data = insert(ref_pfr).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'ПФР/ИФНС успешно сохранен'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
+        }
+
+
+# Получить/добавить Причина окончания ИП
+router_ref_reason_end_ep = APIRouter(
+    prefix="/v1/RefReasonEndEP",
+    tags=["References"]
+)
+
+
+@router_ref_reason_end_ep.get("/")
+async def get_reason_end_ep(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_reason_end_ep))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "reason_end_ep": item_dic['name'],
+                "value": {
+                    "reason_end_ep_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Тип обращения
+router_ref_type_statement = APIRouter(
+    prefix="/v1/RefTypeStatement",
+    tags=["References"]
+)
+
+
+@router_ref_type_statement.get("/")
+async def get_type_statement(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_type_statement))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "type_statement": item_dic['name'],
+                "value": {
+                    "type_statement_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Тип госпошлины
+router_ref_type_state_duty = APIRouter(
+    prefix="/v1/RefTypeStateDuty",
+    tags=["References"]
+)
+
+
+@router_ref_type_state_duty.get("/")
+async def get_type_state_duty(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_type_state_duty))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "type_state_duty": item_dic['name'],
+                "value": {
+                    "type_state_duty_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Разделы карточки должника
+router_ref_section_card_debtor = APIRouter(
+    prefix="/v1/RefSectionCardDebtor",
+    tags=["References"]
+)
+
+
+@router_ref_section_card_debtor.get("/")
+async def get_section_card_debtor(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_section_card_debtor))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "section_card_debtor": item_dic['name'],
+                "value": {
+                    "section_card_debtor_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Разделы юридической работы
+router_ref_legal_section = APIRouter(
+    prefix="/v1/RefLegalSection",
+    tags=["References"]
+)
+
+
+@router_ref_legal_section.get("/")
+async def get_legal_section(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_legal_section))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "legal_section": item_dic['name'],
+                "value": {
+                    "legal_section_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Типы шаблонов документов
+router_ref_type_templates = APIRouter(
+    prefix="/v1/RefTypeTemplates",
+    tags=["References"]
+)
+
+
+@router_ref_type_templates.get("/")
+async def get_type_templates(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_type_templates))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "type_templates": item_dic['name'],
+                "value": {
+                    "type_templates_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Наименование юридических документов
+router_ref_legal_docs = APIRouter(
+    prefix="/v1/RefLegalDocs",
+    tags=["References"]
+)
+
+
+@router_ref_legal_docs.get("/")
+async def get_legal_docs(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_legal_docs))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "legal_docs": item_dic['name'],
+                "value": {
+                    "legal_docs_id": item_dic["id"],
+                    "section_card_id": item_dic["section_card_id"],
+                    "legal_section_id": item_dic["legal_section_id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Варианты результатов/резолюций по обращениям
+router_ref_result_statement = APIRouter(
+    prefix="/v1/RefResultStatement",
+    tags=["References"]
+)
+
+
+@router_ref_result_statement.get("/")
+async def get_result_statement(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_result_statement))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "result_statement": item_dic['name'],
+                "value": {
+                    "result_statement_id": item_dic["id"],
+                    "type_statement_id": item_dic["type_statement_id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить/добавить Виды задач
+router_ref_task = APIRouter(
+    prefix="/v1/RefTask",
+    tags=["References"]
+)
+
+
+@router_ref_task.get("/")
+async def get_task(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_task))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "task_name": item_dic['name'],
+                "value": {
+                    "task_name_id": item_dic["id"],
+                    "section_card_id": item_dic["section_card_id"],
+                    "type_statement_id": item_dic["type_statement_id"],
+                    "legal_doc_id": item_dic["legal_doc_id"],
+                    "result_statement_id": item_dic["result_statement_id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
 
 

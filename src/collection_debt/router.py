@@ -26,16 +26,16 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
 
             if len(data) > 0:
                 type_ed = ''
-                type_ed_id = ''
+                type_ed_id = None
                 claimer_ed_name = ''
-                claimer_ed_id = ''
+                claimer_ed_id = None
                 tribunal = ''
-                tribunal_id = ''
+                tribunal_id = None
                 address_tribunal = ''
                 email_tribunal = ''
                 phone_tribunal = ''
                 status_name = ''
-                status_id = ''
+                status_id = None
                 summa_debt_decision = 0
                 state_duty = 0
 

@@ -106,6 +106,43 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
         }
 
 
+# Получить наименование цессий
+router_get_cession_name = APIRouter(
+    prefix="/v1/GetCessionName",
+    tags=["Debts"]
+)
+
+
+@router_get_cession_name.get("/")
+async def get_cession_name(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(cession))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "cession_name": item_dic['name'],
+                "value": {
+                    "cession_id": item_dic["id"],
+                },
+            })
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
 # Получить/добавить кредит
 router_credits = APIRouter(
     prefix="/v1/Credit",
@@ -459,7 +496,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             edSumma = ed_set['summa_debt_decision'] / 100
             edSuccession = ed_set['succession']
         except:
-            ed_id = ''
+            ed_id = None
             edType = ''
             edNum = ''
             edSumma = 0

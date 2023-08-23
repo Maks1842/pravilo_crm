@@ -8,13 +8,12 @@ from src.database import get_async_session
 from src.auth.models import user
 
 
+# Получить профиль пользователя
 router_profile_user = APIRouter(
     prefix="/v1/GetProfileUser",
     tags=["Admin"]
 )
 
-
-# Получить профиль пользователя
 @router_profile_user.get("/")
 async def get_profile_user(email: str = None, user_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
@@ -36,6 +35,42 @@ async def get_profile_user(email: str = None, user_id: int = None, session: Asyn
             "birthday": user_item['birthday'],
             "email": user_item['email'],
         }
+
+        return {
+            'status': 'success',
+            'data': result,
+            'details': None
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить списки юзеров
+router_list_users = APIRouter(
+    prefix="/v1/GetListUsers",
+    tags=["Admin"]
+)
+
+@router_list_users.get("/")
+async def get_list_users(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(user))
+
+        result = []
+        for item in query.all():
+            item_dic = dict(item._mapping)
+
+            result.append({
+                "name_full": f'{item_dic["first_name"]} {item_dic["last_name"] or ""}',
+                "value": {
+                    "user_id": item_dic["id"],
+                },
+            })
 
         return {
             'status': 'success',

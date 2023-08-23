@@ -53,11 +53,11 @@ async def get_cession(credit_id: int = None, section_card_debtor_id: int = None,
             item_task = dict(item._mapping)
 
             section_task = ''
-            section_task_id = ''
+            section_task_id = None
             type_statement = ''
-            type_statement_id = ''
+            type_statement_id = None
             result_statement = ''
-            result_statement_id = ''
+            result_statement_id = None
 
             name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item_task['name_id'])))
             name_task = name_task_query.scalar()
@@ -206,11 +206,11 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
             item_task = dict(item._mapping)
 
             section_task = ''
-            section_task_id = ''
+            section_task_id = None
             type_statement = ''
-            type_statement_id = ''
+            type_statement_id = None
             result_statement = ''
-            result_statement_id = ''
+            result_statement_id = None
 
             credit_id = int(item_task['credit_id'])
             credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))

@@ -8,10 +8,11 @@ from src.debts.router import router_cession, router_credits, router_credit_debto
 from src.references.router import router_ref_status_credit
 from src.collection_debt.router import router_ed_debtor
 from src.tasks.router import router_task, router_task_all
-
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
 from src.routers_helper.rout_admin.user_api import router_profile_user, router_list_users
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
+from src.routers_helper.rout_debt_import.upload_to_database import router_post_database
+from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -53,15 +54,21 @@ app.include_router(router_ref_status_credit)
 # Для collection_debt
 app.include_router(router_ed_debtor)
 
+# Для routers_task
+app.include_router(router_task)
+app.include_router(router_task_all)
+
+# Для routers_registries
+app.include_router(router_registry_headers)
+app.include_router(router_registry_structures)
+app.include_router(router_registry_structur_json)
+
 # Для routers_helper
 app.include_router(router_calculating_pensioner)
 app.include_router(router_profile_user)
 app.include_router(router_list_users)
 app.include_router(router_import_headers_excel)
-
-# Для routers_task
-app.include_router(router_task)
-app.include_router(router_task_all)
+app.include_router(router_post_database)
 
 
 origins = [

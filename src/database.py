@@ -1,3 +1,4 @@
+import json
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -13,7 +14,7 @@ class Base(DeclarativeBase):
     pass
 
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL, json_serializer=lambda x: json.dumps(x, ensure_ascii=False))
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 

@@ -104,11 +104,7 @@ async def get_cession(credit_id: int = None, section_card_debtor_id: int = None,
                 "result_id": result_statement_id,
                 "comment": item_task['comment'],
             })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -278,11 +274,7 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
 
         result = {'data_tasks': data_tasks, 'num_page_all': num_page_all}
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",

@@ -51,11 +51,7 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
                 "cessionari": data['cessionari'],
                 "date_old_cession": data['date_old_cession']
             })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -130,11 +126,7 @@ async def get_cession_name(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -230,11 +222,7 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
                 'credits_old': data['credits_old'],
                 'comment': data['comment'],
             })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -364,11 +352,7 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
                 "value": value_id,
                 "text": f'{fio}, {number}',
             })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -429,11 +413,7 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
                 "debtor_id": debtor_item['id'],
                 "text": f'{fio}, {inn}',
             })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -546,11 +526,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             "summaPayLast": pay_last,
             "datePayLast": date_last,
         }
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",

@@ -34,14 +34,10 @@ async def import_headers(registry_debt_file: UploadFile):
         result.append({
             "value": f"{count}",
             "text": item,
-            "desabled": "false"
+            "disabled": False
         })
 
-    return {
-        'status': 'success',
-        'data': result,
-        'details': None
-    }
+    return result
 
 
 

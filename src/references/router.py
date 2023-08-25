@@ -29,11 +29,7 @@ async def get_status_cd(session: AsyncSession = Depends(get_async_session)):
                 "value": {"status_cd_id": item_dic['id']},
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -96,11 +92,7 @@ async def get_claimer_ed(session: AsyncSession = Depends(get_async_session)):
                 "value": {"claimer_ed_id": item_dic['id']},
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -131,11 +123,7 @@ async def get_type_ed(session: AsyncSession = Depends(get_async_session)):
                 "value": {"type_ed_id": item_dic['id']},
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -166,11 +154,7 @@ async def get_status_ed(session: AsyncSession = Depends(get_async_session)):
                 "value": {"status_ed_id": item_dic['id']},
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -201,11 +185,7 @@ async def get_reason_cansel_ed(session: AsyncSession = Depends(get_async_session
                 "value": {"reason_cansel_ed_id": item_dic['id']},
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -248,11 +228,7 @@ async def get_tribunal(fragment: str, session: AsyncSession = Depends(get_async_
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -327,11 +303,7 @@ async def get_financial_manager(session: AsyncSession = Depends(get_async_sessio
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -364,11 +336,7 @@ async def get_type_department(session: AsyncSession = Depends(get_async_session)
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -433,11 +401,7 @@ async def get_region(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -509,11 +473,7 @@ async def get_rosp(fragment: str, session: AsyncSession = Depends(get_async_sess
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -593,11 +553,7 @@ async def get_bank(fragment: str, session: AsyncSession = Depends(get_async_sess
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -677,11 +633,7 @@ async def get_pfr(fragment: str, session: AsyncSession = Depends(get_async_sessi
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -752,11 +704,7 @@ async def get_reason_end_ep(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -789,11 +737,7 @@ async def get_type_statement(session: AsyncSession = Depends(get_async_session))
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -826,11 +770,7 @@ async def get_type_state_duty(session: AsyncSession = Depends(get_async_session)
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -863,11 +803,7 @@ async def get_section_card_debtor(session: AsyncSession = Depends(get_async_sess
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -900,11 +836,7 @@ async def get_legal_section(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -937,11 +869,7 @@ async def get_type_templates(session: AsyncSession = Depends(get_async_session))
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -976,11 +904,7 @@ async def get_legal_docs(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -1014,11 +938,7 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -1055,11 +975,7 @@ async def get_task(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",

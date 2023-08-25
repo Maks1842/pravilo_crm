@@ -100,11 +100,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     "phone_tribunal": phone_tribunal,
                     'comment': data['comment'],
                 })
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",

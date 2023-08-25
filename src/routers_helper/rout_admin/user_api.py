@@ -36,11 +36,7 @@ async def get_profile_user(email: str = None, user_id: int = None, session: Asyn
             "email": user_item['email'],
         }
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",
@@ -72,11 +68,7 @@ async def get_list_users(session: AsyncSession = Depends(get_async_session)):
                 },
             })
 
-        return {
-            'status': 'success',
-            'data': result,
-            'details': None
-        }
+        return result
     except Exception as ex:
         return {
             "status": "error",

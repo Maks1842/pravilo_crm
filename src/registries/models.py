@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey, JSON
+from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey, JSON
 
 
 metadata = MetaData()
@@ -11,8 +11,9 @@ registry_headers = Table(
     Column("model", String(50), nullable=False, doc='Наименование модели БД'),
     Column("name_field", String(50), nullable=False, doc='Наименование поля в Модели'),
     Column("headers", String(100), nullable=False, unique=True, doc='Заголовок столбца в таблице frontend'),
-    Column("headers_key", String(50), nullable=False, doc='Ключ заголовка столбца'),
+    Column("headers_key", String(50), nullable=False, doc='Ключ заголовка столбца (поля модели)'),
     Column("width_field", Integer, doc='Ширина столбца'),
+    Column("employ_registry", Boolean, default=True, nullable=False, doc='Признак использования поля в реестрах/таблицах'),
 )
 
 
@@ -33,5 +34,5 @@ registry_filters = Table(
     Column("id", Integer, primary_key=True),
     Column("name", String(100), nullable=False, unique=True, doc='Наименование фильтра'),
     Column("function_name", String(50), doc='Название функции'),
-    Column("registry_structure", Integer, ForeignKey(registry_structures.c.id), doc='Идентификатор структуры реестра'),
+    Column("registry_structure_id", Integer, ForeignKey(registry_structures.c.id), doc='Идентификатор структуры реестра'),
 )

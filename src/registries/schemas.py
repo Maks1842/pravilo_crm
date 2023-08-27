@@ -9,3 +9,4 @@ class RegistryHeadersCreate(BaseModel):
     headers: str
     headers_key: str
     width_field: int
+    employ_registry: Optional[bool] = True

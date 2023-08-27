@@ -95,7 +95,7 @@ ifns_bank_account = Table(
     "ifns_bank_account",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("ifns_inform", Integer, ForeignKey(ifns_information.c.id), doc='Сведения из ИФНС_id'),
+    Column("ifns_inform_id", Integer, ForeignKey(ifns_information.c.id), doc='Сведения из ИФНС_id'),
     Column("debtor", Integer, ForeignKey(debtor.c.id), doc='Должник_id'),
     Column("bank", String(150), doc='Банк'),
     Column("bik", String(9), doc='БИК'),

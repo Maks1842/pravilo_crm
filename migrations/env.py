@@ -13,6 +13,7 @@ from src.legal_work.models import metadata as legal_work
 from src.payments.models import metadata as payments
 from src.tasks.models import metadata as tasks
 from src.registries.models import metadata as registries
+from src.creating_docs.models import metadata as creating_docs
 
 from src.config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
@@ -42,7 +43,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = [metadata_auth, metadata_debts, metadata_references, directory_docs, collection_debt, legal_work,
-                   payments, tasks, registries]
+                   payments, tasks, registries, creating_docs]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

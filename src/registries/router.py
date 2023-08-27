@@ -53,6 +53,7 @@ async def add_registry_headers(new_registry_headers: RegistryHeadersCreate, sess
             "headers": req_data["headers"],
             "headers_key": req_data["headers_key"],
             "width_field": req_data["width_field"],
+            # "employ_registry": req_data["employ_registry"],
         }
 
         if req_data["id"]:

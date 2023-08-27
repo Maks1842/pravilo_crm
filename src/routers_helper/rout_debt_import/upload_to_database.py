@@ -5,11 +5,11 @@ import re
 from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.registries.models import registry_headers, registry_structures
+from src.debts.models import cession, debtor, credit
 
 '''
 НЕОБХОДИМО НАСТРАИВАТЬ ПОД КАЖДЫЙ НОВЫЙ РЕЕСТР
@@ -18,7 +18,7 @@ from src.registries.models import registry_headers, registry_structures
 Импорт данных из файлов Excel.
 Извлеченные данные попадают на фронтенд, где происходит сопоставление наименований извлеченных заголовков столбцов
 с имеющимися полями в DataBase.
-С фронта 'csv_field' приходят в виде индексов, которые на бэке изменяются на фактические названия полей Excel.
+С фронта 'excel_field' приходят в виде индексов, которые на бэке изменяются на фактические названия полей Excel.
 После сопоставления данные загружаются в DB.
 
 import_excel и format_data - это вспомогательные методы, для форматирования данных (дата, числа, суммы и т.д.)
@@ -51,163 +51,173 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 
     registry_excel = format_data()
 
-    # Сопоставление полей Модели с csv_field, и изменение индексов на фактическое наименование
-    # for csv in comparison_excel_to_db:
-    #     for f in csv['fields']:
-    #         for h in headersCSV:
-    #             if f['csv_field'] == h['value']:
-    #                 f['csv_field'] = h['text']
-#
-#         count_all = 0
-#         debtors_count = 0
-#         cessions_count = 0
-#         credits_count = 0
-#         tribunals_count = 0
-#         dapartment_present_count = 0
-#         ed_count = 0
-#         ep_count = 0
-#         collection_debt_count = 0
-#
-#         test_data = []
-#
-#         # Сопоставление полей "Поле БД": debt["заголовок из excel"]
-#         for debt in registry_csv:
-#             count_all += 1
-#
-#             for comparison in comparison_csv_json:
-#
-#                 id_dapartment = None
-#                 id_ed = None
-#
-#
-#                 #         test_data.append(comparison)
-#                 # return Response({'test_data': test_data, 'count': debtors_count})
-#                 if comparison['model']['name_mdl'] == 'Debtors':
-#                     # test_data.append(debt[f'{comparison["fields"][0]["csv_field"]}'])
-#                     try:
-#                         debtors_data = {}
-#                         last_name_1 = ''
-#                         first_name_1 = ''
-#                         second_name_1 = ''
-#                         last_name_2 = ''
-#                         first_name_2 = ''
-#                         second_name_2 = ''
-#                         passport_series = ''
-#                         passport_num = ''
-#                         passport_date = ''
-#                         passport_department = ''
-#                         index_1 = ''
-#                         address_1 = ''
-#                         index_2 = ''
-#                         address_2 = ''
-#                         comment = ''
-#                         inn = ''
-#                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'fio':
-#                                     fio = parsing_fio(debt[f'{f["csv_field"]}'])
-#                                     last_name_1 = fio['last_name_1']
-#                                     first_name_1 = fio['first_name_1']
-#                                     second_name_1 = fio['second_name_1']
-#                                     last_name_2 = fio['last_name_2']
-#                                     first_name_2 = fio['first_name_2']
-#                                     second_name_2 = fio['second_name_2']
-#
-#                                     debtors_data['last_name_1'] = last_name_1
-#                                     debtors_data['first_name_1'] = first_name_1
-#                                     debtors_data['second_name_1'] = second_name_1
-#                                     debtors_data['last_name_2'] = last_name_2
-#                                     debtors_data['first_name_2'] = first_name_2
-#                                     debtors_data['second_name_2'] = second_name_2
-#
-#                                 elif f["name"] == 'passport':
-#                                     passport = parsing_passport(debt[f'{f["csv_field"]}'])
-#                                     passport_series = passport['passport_series']
-#                                     passport_num = passport['passport_num']
-#                                     passport_date = passport['passport_date']
-#                                     passport_department = passport['passport_department']
-#
-#                                 elif f["name"] == 'address_1':
-#                                     addr = parsing_address(debt[f'{f["csv_field"]}'])
-#                                     index_1 = addr['index']
-#                                     address_1 = addr['address']
-#
-#                                 elif f["name"] == 'address_2':
-#                                     addr = parsing_address(debt[f'{f["csv_field"]}'])
-#                                     index_2 = addr['index']
-#                                     address_2 = addr['address']
-#
-#                                 elif f["name"] == 'comment':
-#                                     comment = short_str_200(debt[f'{f["csv_field"]}'])
-#                                     debtors_data['comment'] = comment
-#
-#                                 elif f["name"] == 'inn':
-#                                     inn = format_inn(debt[f'{f["csv_field"]}'])
-#                                     debtors_data['inn'] = inn
-#
-#                                 else:
-#                                     debtors_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
-#                             else:
-#                                 debtors_data[f'{f["name"]}'] = ''
-#
-#
-#                             debtors_data['passport_series'] = passport_series
-#                             debtors_data['passport_num'] = passport_num
-#                             # debtors_data['passport_date'] = passport_date
-#                             # debtors_data['passport_department'] = passport_department
-#                             debtors_data['index_add_1'] = index_1
-#                             debtors_data['address_1'] = address_1
-#                             debtors_data['index_add_2'] = index_2
-#                             debtors_data['address_2'] = address_2
-#
-#
-#                     except Exception as ex:
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Debtors, на строке {count_all}. {ex}'})
-#
-#
-#                     #             test_data.append(debtors_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#
-#                     if Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
-#                                               second_name_1=debtors_data['second_name_1'], birthday=debtors_data['birthday']).exists():
-#                         id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
-#                                                            second_name_1=debtors_data['second_name_1']).get(birthday=debtors_data['birthday']).id
-#                     elif Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'], birthday=debtors_data['birthday']).exists():
-#                         id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1']).get(birthday=debtors_data['birthday']).id
-#
-#                     else:
-#                         try:
-#                             debtor_serializers = DebtorsSerializer(data=debtors_data)
-#                             debtor_serializers.is_valid(raise_exception=True)
-#                             obj_debtor = debtor_serializers.save()
-#                             id_debtor = obj_debtor.pk
-#
-#                             #test
-#                             # id_debtor = count_all
-#
-#                             debtors_count += 1
-#                         except Exception as ex:
-#                             return Response({"error": f'Ошибка при сохранении в модель Debtors, на строке {count_all}. {ex}', "debtors_data": debtors_data})
-#
-#                 elif comparison['model']['name_mdl'] == 'Cession':
+    # Сопоставление полей Модели с excel_field, и изменение индексов на фактическое наименование
+    for exl in comparison_excel_to_db:
+        # for f in exl['fields']:
+        for h in headers_excel:
+            if exl['excel_field'] == h['value']:
+                exl['excel_field'] = h['text']
+
+    count_all = 0
+    debtors_count = 0
+    cessions_count = 0
+    credits_count = 0
+    tribunals_count = 0
+    dapartment_present_count = 0
+    ed_count = 0
+    ep_count = 0
+    collection_debt_count = 0
+
+    # Сопоставление полей "Поле БД": debt_exl["заголовок из excel"]
+    for debt_exl in registry_excel:
+        count_all += 1
+
+        debtors_data = {}
+        for item in comparison_excel_to_db:
+            id_dapartment = None
+            id_ed = None
+
+            if item['model'] == 'debtor':
+                try:
+                    last_name_1 = ''
+                    first_name_1 = ''
+                    second_name_1 = ''
+                    last_name_2 = ''
+                    first_name_2 = ''
+                    second_name_2 = ''
+                    passport_series = ''
+                    passport_num = ''
+                    passport_date = ''
+                    passport_department = ''
+                    index_1 = ''
+                    address_1 = ''
+                    index_2 = ''
+                    address_2 = ''
+                    comment = ''
+                    inn = ''
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["name_field"] == 'fio_debtor':
+                            fio = parsing_fio(debt_exl[f'{item["excel_field"]}'])
+                            last_name_1 = fio['last_name_1']
+                            first_name_1 = fio['first_name_1']
+                            second_name_1 = fio['second_name_1']
+                            last_name_2 = fio['last_name_2']
+                            first_name_2 = fio['first_name_2']
+                            second_name_2 = fio['second_name_2']
+
+                            debtors_data['last_name_1'] = last_name_1
+                            debtors_data['first_name_1'] = first_name_1
+                            debtors_data['second_name_1'] = second_name_1
+                            debtors_data['last_name_2'] = last_name_2
+                            debtors_data['first_name_2'] = first_name_2
+                            debtors_data['second_name_2'] = second_name_2
+
+                        elif item["name_field"] == 'passport':
+                            passport = parsing_passport(debt_exl[f'{item["excel_field"]}'])
+                            passport_series = passport['passport_series']
+                            passport_num = passport['passport_num']
+                            passport_date = passport['passport_date']
+                            passport_department = passport['passport_department']
+
+                        elif item["name_field"] == 'address_1':
+                            addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
+                            index_1 = addr['index']
+                            address_1 = addr['address']
+
+                        elif item["name_field"] == 'address_2':
+                            addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
+                            index_2 = addr['index']
+                            address_2 = addr['address']
+
+                        elif item["name_field"] == 'comment_debtor':
+                            comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
+                            debtors_data['comment'] = comment
+
+                        elif item["name_field"] == 'inn_debtor':
+                            inn = format_inn(debt_exl[f'{item["excel_field"]}'])
+                            debtors_data['inn'] = inn
+
+                        else:
+                            debtors_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
+                    else:
+                        debtors_data[f'{item["name_field"]}'] = ''
+
+
+                    debtors_data['passport_series'] = passport_series
+                    debtors_data['passport_num'] = passport_num
+                    # debtors_data['passport_date'] = passport_date
+                    # debtors_data['passport_department'] = passport_department
+                    debtors_data['index_add_1'] = index_1
+                    debtors_data['address_1'] = address_1
+                    debtors_data['index_add_2'] = index_2
+                    debtors_data['address_2'] = address_2
+
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель debtor, на строке {count_all}. {ex}'
+                    }
+
+        print(debtors_data)
+
+        xxx = select(debtor).where(and_(debtor.c.last_name_1 == 'Абдуллин',
+                                                              debtor.c.first_name_1 == 'Рамиль',
+                                                              debtor.c.second_name_1 == 'Марсович',
+                                                              debtor.c.birthday == '1995-03-28')).exists()
+
+        print(xxx)
+
+        return
+
+
+
+
+
+
+
+                # if Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
+                #                           second_name_1=debtors_data['second_name_1'], birthday=debtors_data['birthday']).exists():
+                #     id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
+                #                                        second_name_1=debtors_data['second_name_1']).get(birthday=debtors_data['birthday']).id
+                # elif Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'], birthday=debtors_data['birthday']).exists():
+                #     id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1']).get(birthday=debtors_data['birthday']).id
+                #
+                # else:
+                #     try:
+                #         post_data = insert(debtor).values(debtors_data)
+                #
+                #         await session.execute(post_data)
+                #         await session.commit()
+                #
+                #         id_debtor = obj_debtor.pk
+                #
+                #         debtors_count += 1
+                #     except Exception as ex:
+                #         {
+                #             "status": "error",
+                #             "data": debtors_data,
+                #             "details": f'Ошибка при сохранении в модель Debtors, на строке {count_all}. {ex}'
+                #         }
+
+#                 elif comparison['model']['name_mdl'] == 'cession':
 #                     try:
 #                         cessions_data = {}
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'summa':
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'summa':
 #                                     try:
-#                                         summa = debt[f'{f["csv_field"]}']
-#                                         cessions_data[f'{f["name"]}'] = float(summa)
+#                                         summa = debt_exl[f'{item["excel_field"]}']
+#                                         cessions_data[f'{item["name_field"]}'] = float(summa)
 #                                     except:
-#                                         cessions_data[f'{f["name"]}'] = 0
-#                                 elif f["name"] == 'date':
-#                                     date_ed = parsing_date_ed(debt[f'{f["csv_field"]}'])
-#                                     cessions_data[f'{f["name"]}'] = date_ed
+#                                         cessions_data[f'{item["name_field"]}'] = 0
+#                                 elif item["name_field"] == 'date':
+#                                     date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
+#                                     cessions_data[f'{item["name_field"]}'] = date_ed
 #                                 else:
-#                                     cessions_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                     cessions_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 cessions_data[f'{f["name"]}'] = ''
+#                                 cessions_data[f'{item["name_field"]}'] = ''
 #                     except Exception as ex:
 #                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Cession, на строке {count_all}. {ex}'})
 #
@@ -236,30 +246,30 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                         status_cd_id = 1
 #
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'status_cd':
-#                                     status_cd_id = parsing_status_cd(debt[f'{f["csv_field"]}'])
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'status_cd':
+#                                     status_cd_id = parsing_status_cd(debt_exl[f'{item["excel_field"]}'])
 #
-#                                 elif f["name"] == 'summa' or f["name"] == 'summa_by_cession' or f["name"] == 'interest_rate' or f["name"] == 'overdue_od' or \
-#                                         f["name"] == 'overdue_percent' or f["name"] == 'penalty' or f["name"] == 'percent_of_od' \
-#                                         or f["name"] == 'gov_toll' or f["name"] == 'balance_debt':
+#                                 elif item["name_field"] == 'summa' or item["name_field"] == 'summa_by_cession' or item["name_field"] == 'interest_rate' or item["name_field"] == 'overdue_od' or \
+#                                         item["name_field"] == 'overdue_percent' or item["name_field"] == 'penalty' or item["name_field"] == 'percent_of_od' \
+#                                         or item["name_field"] == 'gov_toll' or item["name_field"] == 'balance_debt':
 #                                     try:
-#                                         summa = debt[f'{f["csv_field"]}']
-#                                         credits_data[f'{f["name"]}'] = float(round(summa, 2))
+#                                         summa = debt_exl[f'{item["excel_field"]}']
+#                                         credits_data[f'{item["name_field"]}'] = float(round(summa, 2))
 #                                     except:
-#                                         credits_data[f'{f["name"]}'] = 0
-#                                 elif f["name"] == 'date_start':
-#                                     date_start = parsing_date_start(debt[f'{f["csv_field"]}'])
-#                                     credits_data[f'{f["name"]}'] = date_start
+#                                         credits_data[f'{item["name_field"]}'] = 0
+#                                 elif item["name_field"] == 'date_start':
+#                                     date_start = parsing_date_start(debt_exl[f'{item["excel_field"]}'])
+#                                     credits_data[f'{item["name_field"]}'] = date_start
 #                                 else:
-#                                     credits_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                     credits_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 if f["name"] == 'summa' or f["name"] == 'summa_by_cession' or f["name"] == 'interest_rate' or f["name"] == 'overdue_od' or \
-#                                         f["name"] == 'overdue_percent' or f["name"] == 'penalty' or f["name"] == 'percent_of_od' \
-#                                         or f["name"] == 'gov_toll' or f["name"] == 'balance_debt':
-#                                     credits_data[f'{f["name"]}'] = 0
+#                                 if item["name_field"] == 'summa' or item["name_field"] == 'summa_by_cession' or item["name_field"] == 'interest_rate' or item["name_field"] == 'overdue_od' or \
+#                                         item["name_field"] == 'overdue_percent' or item["name_field"] == 'penalty' or item["name_field"] == 'percent_of_od' \
+#                                         or item["name_field"] == 'gov_toll' or item["name_field"] == 'balance_debt':
+#                                     credits_data[f'{item["name_field"]}'] = 0
 #                                 else:
-#                                     credits_data[f'{f["name"]}'] = ''
+#                                     credits_data[f'{item["name_field"]}'] = ''
 #
 #                         credits_data['creditor'] = 'Кредитор'
 #                         credits_data['status_cd'] = status_cd_id
@@ -295,13 +305,13 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                         email = ''
 #                         tribunals_data = {}
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'email':
-#                                     email = short_str_100(debt[f'{f["csv_field"]}'])
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'email':
+#                                     email = short_str_100(debt_exl[f'{item["excel_field"]}'])
 #                                 else:
-#                                     tribunals_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                     tribunals_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 tribunals_data[f'{f["name"]}'] = ''
+#                                 tribunals_data[f'{item["name_field"]}'] = ''
 #                         tribunals_data['email'] = email
 #                     except Exception as ex:
 #                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Lib_Tribunals, на строке {count_all}. {ex}'})
@@ -336,36 +346,36 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #
 #                         ed_data = {}
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'type_ed':
-#                                     type_ed_id = parsing_type_ed(debt[f'{f["csv_field"]}'])
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'type_ed':
+#                                     type_ed_id = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
 #                                     type_id = type_ed_id
-#                                 elif f["name"] == 'claimer_ed':
-#                                     claimer_ed_id = parsing_claimer_ed(debt[f'{f["csv_field"]}'])
+#                                 elif item["name_field"] == 'claimer_ed':
+#                                     claimer_ed_id = parsing_claimer_ed(debt_exl[f'{item["excel_field"]}'])
 #                                     claimer_id = claimer_ed_id
-#                                 elif f["name"] == 'number':
-#                                     num_ed = short_str_50(debt[f'{f["csv_field"]}'])
-#                                 elif f["name"] == 'status_ed':
-#                                     status_ed_id = parsing_status_ed(debt[f'{f["csv_field"]}'])
+#                                 elif item["name_field"] == 'number':
+#                                     num_ed = short_str_50(debt_exl[f'{item["excel_field"]}'])
+#                                 elif item["name_field"] == 'status_ed':
+#                                     status_ed_id = parsing_status_ed(debt_exl[f'{item["excel_field"]}'])
 #                                 else:
-#                                     if f["name"] == 'summa_debt_decision' or f["name"] == 'state_duty':
+#                                     if item["name_field"] == 'summa_debt_decision' or item["name_field"] == 'state_duty':
 #                                         try:
-#                                             summa = debt[f'{f["csv_field"]}']
-#                                             ed_data[f'{f["name"]}'] = float(round(summa, 2))
+#                                             summa = debt_exl[f'{item["excel_field"]}']
+#                                             ed_data[f'{item["name_field"]}'] = float(round(summa, 2))
 #                                         except:
-#                                             ed_data[f'{f["name"]}'] = 0
-#                                     elif f["name"] == 'date' or f["name"] == 'date_of_receipt_ed' or f["name"] == 'date_decision' or f["name"] == 'succession':
-#                                         date_ed = parsing_date_ed(debt[f'{f["csv_field"]}'])
-#                                         ed_data[f'{f["name"]}'] = date_ed
-#                                     elif f["name"] == 'comment':
-#                                         comment = short_str_200(debt[f'{f["csv_field"]}'])
+#                                             ed_data[f'{item["name_field"]}'] = 0
+#                                     elif item["name_field"] == 'date' or item["name_field"] == 'date_of_receipt_ed' or item["name_field"] == 'date_decision' or item["name_field"] == 'succession':
+#                                         date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
+#                                         ed_data[f'{item["name_field"]}'] = date_ed
+#                                     elif item["name_field"] == 'comment':
+#                                         comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
 #                                     else:
-#                                         ed_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                         ed_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 if f["name"] == 'summa_debt_decision' or f["name"] == 'state_duty':
-#                                     ed_data[f'{f["name"]}'] = 0
+#                                 if item["name_field"] == 'summa_debt_decision' or item["name_field"] == 'state_duty':
+#                                     ed_data[f'{item["name_field"]}'] = 0
 #                                 else:
-#                                     ed_data[f'{f["name"]}'] = ''
+#                                     ed_data[f'{item["name_field"]}'] = ''
 #
 #                         ed_data['number'] = num_ed
 #                         ed_data['type_ed'] = type_id
@@ -407,19 +417,19 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                         type_dep = None
 #                         dapartment_present_data = {}
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'address_join':
-#                                     addr = parsing_address(debt[f'{f["csv_field"]}'])
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'address_join':
+#                                     addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
 #                                     index = addr['index']
 #                                     address = addr['address']
-#                                 # elif f["name"] == 'type_dep':
-#                                 #     type_dep = parsing_type_dep(debt[f'{f["csv_field"]}'])
-#                                 elif f["name"] == 'region_dep':
-#                                     region_id = parsing_region_dep(debt[f'{f["csv_field"]}'])
+#                                 # elif item["name_field"] == 'type_dep':
+#                                 #     type_dep = parsing_type_dep(debt_exl[f'{item["excel_field"]}'])
+#                                 elif item["name_field"] == 'region_dep':
+#                                     region_id = parsing_region_dep(debt_exl[f'{item["excel_field"]}'])
 #                                 else:
-#                                     dapartment_present_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                     dapartment_present_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 dapartment_present_data[f'{f["name"]}'] = ''
+#                                 dapartment_present_data[f'{item["name_field"]}'] = ''
 #                         dapartment_present_data['address_index'] = index
 #                         dapartment_present_data['address'] = address
 #                         dapartment_present_data['region'] = region_id
@@ -460,33 +470,33 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                         ep_data = {}
 #                         comment = ''
 #                         for f in comparison['fields']:
-#                             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                                 if f["name"] == 'executive_productions':
-#                                     execut_production = parsing_execut_production(debt[f'{f["csv_field"]}'])
+#                             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                                 if item["name_field"] == 'executive_productions':
+#                                     execut_production = parsing_execut_production(debt_exl[f'{item["excel_field"]}'])
 #                                     num_ep = execut_production['execut_production']
 #                                     date_ep = execut_production['date_ep']
 #                                     consolidat_ep = execut_production['consolidat_ep']
 #
-#                                 elif f["name"] == 'curent_debt' or f["name"] == 'summa_debt' or f["name"] == 'curent_debt' or f["name"] == 'gov_toll':
+#                                 elif item["name_field"] == 'curent_debt' or item["name_field"] == 'summa_debt' or item["name_field"] == 'curent_debt' or item["name_field"] == 'gov_toll':
 #                                     try:
-#                                         summa = debt[f'{f["csv_field"]}']
-#                                         ep_data[f'{f["name"]}'] = float(summa)
+#                                         summa = debt_exl[f'{item["excel_field"]}']
+#                                         ep_data[f'{item["name_field"]}'] = float(summa)
 #                                     except:
-#                                         ep_data[f'{f["name"]}'] = 0
-#                                 elif f["name"] == 'date_end' or f["name"] == 'date_request':
-#                                     date_ed = parsing_date_ed(debt[f'{f["csv_field"]}'])
-#                                     ep_data[f'{f["name"]}'] = date_ed
-#                                 elif f["name"] == 'pristav':
-#                                     pristav = short_str_50(debt[f'{f["csv_field"]}'])
-#                                 elif f["name"] == 'comment':
-#                                     comment = short_str_200(debt[f'{f["csv_field"]}'])
+#                                         ep_data[f'{item["name_field"]}'] = 0
+#                                 elif item["name_field"] == 'date_end' or item["name_field"] == 'date_request':
+#                                     date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
+#                                     ep_data[f'{item["name_field"]}'] = date_ed
+#                                 elif item["name_field"] == 'pristav':
+#                                     pristav = short_str_50(debt_exl[f'{item["excel_field"]}'])
+#                                 elif item["name_field"] == 'comment':
+#                                     comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
 #                                 else:
-#                                     ep_data[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                                     ep_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                             else:
-#                                 if f["name"] == 'curent_debt' or f["name"] == 'summa_debt' or f["name"] == 'curent_debt' or f["name"] == 'gov_toll':
-#                                     ep_data[f'{f["name"]}'] = 0
+#                                 if item["name_field"] == 'curent_debt' or item["name_field"] == 'summa_debt' or item["name_field"] == 'curent_debt' or item["name_field"] == 'gov_toll':
+#                                     ep_data[f'{item["name_field"]}'] = 0
 #                                 else:
-#                                     ep_data[f'{f["name"]}'] = ''
+#                                     ep_data[f'{item["name_field"]}'] = ''
 #
 #                         # ep_data['number'] = num_ep
 #                         # ep_data['date_on'] = date_ep
@@ -521,22 +531,22 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                 #     try:
 #                 #         collection_debt = {}
 #                 #         for f in comparison['fields']:
-#                 #             if f["csv_field"] != '' and f["csv_field"] is not None:
-#                 #                 if f["name"] == 'date_start':
-#                 #                     date = parsing_date_ed(debt[f'{f["csv_field"]}'])
-#                 #                     collection_debt[f'{f["name"]}'] = date
+#                 #             if item["excel_field"] != '' and item["excel_field"] is not None:
+#                 #                 if item["name_field"] == 'date_start':
+#                 #                     date = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
+#                 #                     collection_debt_exl[f'{item["name_field"]}'] = date
 #                 #                 else:
-#                 #                     collection_debt[f'{f["name"]}'] = debt[f'{f["csv_field"]}']
+#                 #                     collection_debt_exl[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
 #                 #             else:
-#                 #                 collection_debt[f'{f["name"]}'] = ''
+#                 #                 collection_debt_exl[f'{item["name_field"]}'] = ''
 #                 #
-#                 #         collection_debt['type_department'] = dapartment_present_data['type_department']
-#                 #         collection_debt['department_presentation'] = id_dapartment
-#                 #         collection_debt['executive_document'] = id_ed
-#                 #         collection_debt['credit'] = id_credit
-#                 #         collection_debt['reason_cansel'] = None
-#                 #         collection_debt['date_return'] = None
-#                 #         collection_debt['date_end'] = None
+#                 #         collection_debt_exl['type_department'] = dapartment_present_data['type_department']
+#                 #         collection_debt_exl['department_presentation'] = id_dapartment
+#                 #         collection_debt_exl['executive_document'] = id_ed
+#                 #         collection_debt_exl['credit'] = id_credit
+#                 #         collection_debt_exl['reason_cansel'] = None
+#                 #         collection_debt_exl['date_return'] = None
+#                 #         collection_debt_exl['date_end'] = None
 #                 #     except Exception as ex:
 #                 #         # logging.error(ex, exc_info=True)
 #                 #         return Response({"error": f'Ошибка при извлечении данных из excel в модель Collection_Debt, на строке {count_all}. {ex}'})
@@ -545,7 +555,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 #                 #     # return Response({'test_data': test_data, 'count': debtors_count})
 #                 #
 #                 #     try:
-#                 #         if collection_debt['date_start'] is not None and collection_debt['date_start'] != '':
+#                 #         if collection_debt_exl['date_start'] is not None and collection_debt_exl['date_start'] != '':
 #                 #             collection_debt_serializers = Collection_DebtSerializer(data=collection_debt)
 #                 #             collection_debt_serializers.is_valid(raise_exception=True)
 #                 #             collection_debt_serializers.save()

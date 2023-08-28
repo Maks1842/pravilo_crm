@@ -5,7 +5,7 @@ import re
 from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_, exists
+from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -59,8 +59,8 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 exl['excel_field'] = h['text']
 
     count_all = 0
-    debtors_count = 0
     cessions_count = 0
+    debtors_count = 0
     credits_count = 0
     tribunals_count = 0
     dapartment_present_count = 0
@@ -72,31 +72,50 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
     for debt_exl in registry_excel:
         count_all += 1
 
+        cessions_data = {}
         debtors_data = {}
+        last_name_1 = None
+        first_name_1 = None
+        second_name_1 = None
+        last_name_2 = None
+        first_name_2 = None
+        second_name_2 = None
+        passport_series = None
+        passport_num = None
+        passport_date = None
+        passport_department = None
+        index_1 = None
+        address_1 = None
+        index_2 = None
+        address_2 = None
+        comment = None
+        inn = None
         for item in comparison_excel_to_db:
             id_dapartment = None
             id_ed = None
 
-            if item['model'] == 'debtor':
+            if item['model'] == 'cession':
                 try:
-                    last_name_1 = ''
-                    first_name_1 = ''
-                    second_name_1 = ''
-                    last_name_2 = ''
-                    first_name_2 = ''
-                    second_name_2 = ''
-                    passport_series = ''
-                    passport_num = ''
-                    passport_date = ''
-                    passport_department = ''
-                    index_1 = ''
-                    address_1 = ''
-                    index_2 = ''
-                    address_2 = ''
-                    comment = ''
-                    inn = ''
                     if item["excel_field"] != '' and item["excel_field"] is not None:
-                        if item["name_field"] == 'fio_debtor':
+                        if item["name_field"] == 'summa':
+                            summa = debt_exl[f'{item["excel_field"]}']
+                            cessions_data[f'{item["name_field"]}'] = summa * 100
+                        else:
+                            cessions_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
+                    else:
+                        if item["name_field"] != 'None':
+                            cessions_data[f'{item["name_field"]}'] = None
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель cession, на строке {count_all}. {ex}'
+                    }
+
+            elif item['model'] == 'debtor':
+                try:
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["headers_key"] == 'fio_debtor':
                             fio = parsing_fio(debt_exl[f'{item["excel_field"]}'])
                             last_name_1 = fio['last_name_1']
                             first_name_1 = fio['first_name_1']
@@ -112,41 +131,47 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                             debtors_data['first_name_2'] = first_name_2
                             debtors_data['second_name_2'] = second_name_2
 
-                        elif item["name_field"] == 'passport':
+                        elif item["headers_key"] == 'passport':
                             passport = parsing_passport(debt_exl[f'{item["excel_field"]}'])
                             passport_series = passport['passport_series']
                             passport_num = passport['passport_num']
                             passport_date = passport['passport_date']
                             passport_department = passport['passport_department']
 
-                        elif item["name_field"] == 'address_1':
+                        elif item["headers_key"] == 'address_1':
                             addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
                             index_1 = addr['index']
                             address_1 = addr['address']
 
-                        elif item["name_field"] == 'address_2':
+                        elif item["headers_key"] == 'address_2':
                             addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
                             index_2 = addr['index']
                             address_2 = addr['address']
 
-                        elif item["name_field"] == 'comment_debtor':
+                        elif item["name_field"] == 'comment':
                             comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
                             debtors_data['comment'] = comment
 
-                        elif item["name_field"] == 'inn_debtor':
+                        elif item["name_field"] == 'inn':
                             inn = format_inn(debt_exl[f'{item["excel_field"]}'])
                             debtors_data['inn'] = inn
+
+                        elif item["name_field"] == 'None':
+                            pass
 
                         else:
                             debtors_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
                     else:
-                        debtors_data[f'{item["name_field"]}'] = ''
+                        if item["name_field"] != 'None':
+                            debtors_data[f'{item["name_field"]}'] = None
 
 
                     debtors_data['passport_series'] = passport_series
                     debtors_data['passport_num'] = passport_num
-                    # debtors_data['passport_date'] = passport_date
-                    # debtors_data['passport_department'] = passport_department
+                    if passport_date:
+                        debtors_data['passport_date'] = passport_date
+                    if passport_department:
+                        debtors_data['passport_department'] = passport_department
                     debtors_data['index_add_1'] = index_1
                     debtors_data['address_1'] = address_1
                     debtors_data['index_add_2'] = index_2
@@ -159,86 +184,69 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         "details": f'Ошибка при извлечении данных из excel в модель debtor, на строке {count_all}. {ex}'
                     }
 
-        print(debtors_data)
 
-        xxx = select(debtor).where(and_(debtor.c.last_name_1 == 'Абдуллин',
-                                                              debtor.c.first_name_1 == 'Рамиль',
-                                                              debtor.c.second_name_1 == 'Марсович',
-                                                              debtor.c.birthday == '1995-03-28')).exists()
+        cession_query = await session.execute(select(cession.c.id).where(and_(cession.c.name == cessions_data['name'],
+                                                                              cession.c.number == cessions_data['number'])))
+        cession_id = cession_query.scalar()
 
-        print(xxx)
+        if cession_id is None:
+            post_data = insert(cession).values(cessions_data)
 
-        return
+            try:
+                await session.execute(post_data)
+                await session.commit()
+
+                cession_query = await session.execute(select(cession).order_by(desc(cession.c.id)))
+                item = cession_query.first()
+
+                cession_dict = dict(item._mapping)
+                print(f'{cession_dict=}')
+
+                cession_id = cession_dict['id']
+                name_cession = cession_dict['name']
+
+                create_dir = create_dir_cession(name_cession)
+
+                cessions_count += 1
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": cessions_data,
+                    "details": f'Ошибка при сохранении в модель cession, на строке {count_all}. {ex}'
+                }
 
 
+        if debtors_data['second_name_1'] is not None and debtors_data['second_name_1'] != '':
+            debtor_query = await session.execute(select(debtor.c.id).where(and_(debtor.c.last_name_1 == debtors_data['last_name_1'],
+                                                                  debtor.c.first_name_1 == debtors_data['first_name_1'],
+                                                                  debtor.c.second_name_1 == debtors_data['second_name_1'],
+                                                                  debtor.c.birthday == debtors_data['birthday'])))
+        else:
+            debtor_query = await session.execute(select(debtor.c.id).where(and_(debtor.c.last_name_1 == debtors_data['last_name_1'],
+                                                                                debtor.c.first_name_1 == debtors_data['first_name_1'],
+                                                                                debtor.c.birthday == debtors_data['birthday'])))
 
+        debtor_id = debtor_query.scalar()
 
+        if debtor_id is None:
+            post_data = insert(debtor).values(debtors_data)
 
+            try:
+                await session.execute(post_data)
+                await session.commit()
 
+                debtor_query = await session.execute(select(debtor.c.id).order_by(desc(debtor.c.id)))
+                debtor_id = debtor_query.scalar()
 
-                # if Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
-                #                           second_name_1=debtors_data['second_name_1'], birthday=debtors_data['birthday']).exists():
-                #     id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'],
-                #                                        second_name_1=debtors_data['second_name_1']).get(birthday=debtors_data['birthday']).id
-                # elif Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1'], birthday=debtors_data['birthday']).exists():
-                #     id_debtor = Debtors.objects.filter(last_name_1=debtors_data['last_name_1'], first_name_1=debtors_data['first_name_1']).get(birthday=debtors_data['birthday']).id
-                #
-                # else:
-                #     try:
-                #         post_data = insert(debtor).values(debtors_data)
-                #
-                #         await session.execute(post_data)
-                #         await session.commit()
-                #
-                #         id_debtor = obj_debtor.pk
-                #
-                #         debtors_count += 1
-                #     except Exception as ex:
-                #         {
-                #             "status": "error",
-                #             "data": debtors_data,
-                #             "details": f'Ошибка при сохранении в модель Debtors, на строке {count_all}. {ex}'
-                #         }
+                debtors_count += 1
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": debtors_data,
+                    "details": f'Ошибка при сохранении в модель Debtors, на строке {count_all}. {ex}'
+                }
 
-#                 elif comparison['model']['name_mdl'] == 'cession':
-#                     try:
-#                         cessions_data = {}
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'summa':
-#                                     try:
-#                                         summa = debt_exl[f'{item["excel_field"]}']
-#                                         cessions_data[f'{item["name_field"]}'] = float(summa)
-#                                     except:
-#                                         cessions_data[f'{item["name_field"]}'] = 0
-#                                 elif item["name_field"] == 'date':
-#                                     date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
-#                                     cessions_data[f'{item["name_field"]}'] = date_ed
-#                                 else:
-#                                     cessions_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 cessions_data[f'{item["name_field"]}'] = ''
-#                     except Exception as ex:
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Cession, на строке {count_all}. {ex}'})
 #
-#                     #             test_data.append(cessions_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#                     if Cession.objects.filter(name=cessions_data['name'], number=cessions_data['number']).exists():
-#                         id_cession = Cession.objects.filter(name=cessions_data['name']).get(number=cessions_data['number']).id
-#                     else:
-#                         try:
-#                             cession_serializers = CessionSerializer(data=cessions_data)
-#                             cession_serializers.is_valid(raise_exception=True)
-#                             obj_cession = cession_serializers.save()
-#                             id_cession = obj_cession.pk
-#
-#                             #test
-#                             # id_cession = count_all
-#
-#                             cessions_count += 1
-#                         except Exception as ex:
-#                             return Response({"error": f'Ошибка при сохранении в модель Cession, на строке {count_all}. {ex}', "cessions_data": cessions_data})
 #
 #                 if comparison['model']['name_mdl'] == 'Credits':
 #                     try:
@@ -603,14 +611,15 @@ def format_data():
                 x = item
 
             # Дату формата дд.мм.гггг привожу к формату гггг-мм-дд
+            # datetime.strptime(debtors_data['birthday'], '%Y-%m-%d').date()
             try:
                 if re.findall(r'\d{2}\.\d{2}\.\d{4}', x):
-                    x = datetime.strptime(x, '%d.%m.%Y').strftime("%Y-%m-%d")
+                    x = datetime.strptime(x, '%d.%m.%Y').date()
             except:
                 pass
 
             try:
-                x = datetime.strptime(x, '%Y-%m-%dT%H:%M:%S.%f').strftime("%Y-%m-%d")
+                x = datetime.strptime(x, '%Y-%m-%dT%H:%M:%S.%f').date()
             except:
                 pass
 
@@ -632,7 +641,7 @@ def format_inn(inn):
     try:
         inn = re.search(r'\d{10,12}', str(inn)).group()
     except Exception:
-        pass
+        inn = None
     return inn
 
 
@@ -644,10 +653,10 @@ def parsing_fio(fio):
 
         last_name_1 = fio
         first_name_1 = 'ОШИБКА'
-        second_name_1 = ''
-        last_name_2 = ''
-        first_name_2 = ''
-        second_name_2 = ''
+        second_name_1 = None
+        last_name_2 = None
+        first_name_2 = None
+        second_name_2 = None
         if len(re.split("\s+", fio_1_sp)) > 1 and len(re.split("\s+", fio_2_sp)) > 1:
             fio_split_1 = split_fio(fio_1_sp)
             fio_split_2 = split_fio(fio_2_sp)
@@ -677,9 +686,9 @@ def parsing_fio(fio):
         last_name_1 = fio_split['last_name']
         first_name_1 = fio_split['first_name']
         second_name_1 = fio_split['second_name']
-        last_name_2 = ''
-        first_name_2 = ''
-        second_name_2 = ''
+        last_name_2 = None
+        first_name_2 = None
+        second_name_2 = None
 
     result = {'last_name_1': last_name_1,
               'first_name_1': first_name_1,
@@ -719,22 +728,22 @@ def parsing_passport(passport):
         passport_series_sp = re.search(RePattern.passport_series, passport).group().strip()
         passport_series = re.sub(r'\s*', '', passport_series_sp)
     except:
-        passport_series = ''
+        passport_series = None
 
     try:
         passport_num = re.search(RePattern.passport_num, passport).group().strip()
     except:
-        passport_num = ''
+        passport_num = None
 
     try:
         passport_dep = re.search(RePattern.passport_department, passport).group().strip()
         passport_department = re.sub(r' \d{2}\.\d{2}\.\d{4}| \d{2}\.\d{2}\.\d{2}', '', passport_dep)
     except:
-        passport_department = ''
+        passport_department = None
 
     try:
         passport_date_re = re.search(RePattern.passport_date, passport).group().strip()
-        passport_date = datetime.strptime(passport_date_re, '%d.%m.%Y').strftime("%Y-%m-%d")
+        passport_date = datetime.strptime(passport_date_re, '%d.%m.%Y').date()
     except:
         passport_date = None
 
@@ -750,14 +759,14 @@ def parsing_address(addr):
     try:
         index = re.search(RePattern.index_re, addr).group().strip()
     except:
-        index = ''
+        index = None
 
     try:
         address = re.search(RePattern.address_re, addr).group().strip()
         if len(address) > 200:
             address = address[-200:]
     except:
-        address = ''
+        address = None
 
     result = {'index': index,
               'address': address}
@@ -807,7 +816,8 @@ def parsing_address(addr):
 
 def parsing_date_ed(date):
     try:
-        date_ed = re.search(r'\d{4}-\d{2}-\d{2}', date).group()
+        date_ed_re = re.search(r'\d{4}-\d{2}-\d{2}', date).group()
+        date_ed = datetime.strptime(date_ed_re, '%d.%m.%Y').date()
     except:
         date_ed = None
 
@@ -883,7 +893,7 @@ def parsing_execut_production(ep):
     try:
         execut_production = re.search(RePattern.execut_production, ep).group().strip()
     except:
-        execut_production = ''
+        execut_production = None
 
     try:
         date = re.search(RePattern.date_ep, ep).group().strip()
@@ -894,10 +904,20 @@ def parsing_execut_production(ep):
     try:
         consolidat_ep = re.search(RePattern.consolidat_ep, ep).group().strip()
     except:
-        consolidat_ep = ''
+        consolidat_ep = None
 
     result = {'execut_production': execut_production,
               'date_ep': date_ep,
               'consolidat_ep': consolidat_ep}
 
     return result
+
+
+
+def create_dir_cession(name_cession):
+    pass
+
+    # path = os.path.join('media/result', 'Реестр для ИФНС')
+    #
+    # if not os.path.exists(path):
+    #     os.mkdir(path)

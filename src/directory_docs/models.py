@@ -10,7 +10,7 @@ dir_cession = Table(
     "dir_cession",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(150), nullable=False, doc='Наименование документа'),
+    Column("name", String(150), nullable=False, doc='Наименование цессии'),
     Column("cession_id", Integer, ForeignKey(cession.c.id), doc='Цессия_id'),
     Column("path", String(200), doc='Путь к папке с Цессией'),
 )
@@ -20,14 +20,14 @@ dir_credit = Table(
     "dir_credit",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(150), nullable=False, doc='Наименование досье'),
+    Column("name", String(150), nullable=False, doc='Наименование досье кредита'),
     Column("credit_id", Integer, ForeignKey(credit.c.id), doc='Кредит_id'),
     Column("path", String(200), doc='Путь к папке с Досье по кредиту'),
 )
 
 # Папки в досье
-folder_dir = Table(
-    "folder_dir",
+dir_folder = Table(
+    "dir_folder",
     metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(150), nullable=False, doc='Наименование папки в досье'),
@@ -39,7 +39,7 @@ docs_folder = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(150), nullable=False, doc='Документ в папке досье'),
-    Column("folder_id", Integer, ForeignKey(folder_dir.c.id), doc='Папка_id'),
+    Column("folder_id", Integer, ForeignKey(dir_folder.c.id), doc='Папка_id'),
 )
 
 # Досье

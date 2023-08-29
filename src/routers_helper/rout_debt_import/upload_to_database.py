@@ -2,14 +2,17 @@ import pandas as pd
 import json
 from datetime import datetime, date
 import re
-from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
+import os
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
+from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
+from src.config import main_dossier_path
 from src.debts.models import cession, debtor, credit
+from src.directory_docs.models import dir_cession, dir_folder
 
 '''
 НЕОБХОДИМО НАСТРАИВАТЬ ПОД КАЖДЫЙ НОВЫЙ РЕЕСТР
@@ -74,6 +77,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
 
         cessions_data = {}
         debtors_data = {}
+        credits_data = {}
         last_name_1 = None
         first_name_1 = None
         second_name_1 = None
@@ -138,15 +142,15 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                             passport_date = passport['passport_date']
                             passport_department = passport['passport_department']
 
-                        elif item["headers_key"] == 'address_1':
+                        elif item["headers_key"] == 'address_registry':
                             addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
                             index_1 = addr['index']
                             address_1 = addr['address']
 
-                        elif item["headers_key"] == 'address_2':
-                            addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
-                            index_2 = addr['index']
-                            address_2 = addr['address']
+                        elif item["headers_key"] == 'address_resident':
+                            addr_2 = parsing_address(debt_exl[f'{item["excel_field"]}'])
+                            index_2 = addr_2['index']
+                            address_2 = addr_2['address']
 
                         elif item["name_field"] == 'comment':
                             comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
@@ -184,10 +188,54 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         "details": f'Ошибка при извлечении данных из excel в модель debtor, на строке {count_all}. {ex}'
                     }
 
+            elif item['model'] == 'credit':
+                try:
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["name_field"] == 'summa' or item["name_field"] == 'summa_by_cession' or \
+                                item["name_field"] == 'overdue_od' or item["name_field"] == 'overdue_percent' or item["name_field"] == 'penalty' or \
+                                item["name_field"] == 'percent_of_od' or item["name_field"] == 'gov_toll' or item["name_field"] == 'balance_debt':
+                            summa = debt_exl[f'{item["excel_field"]}']
+                            credits_data[f'{item["name_field"]}'] = int(summa * 100)
+                        elif item["name_field"] == 'interest_rate':
+                            try:
+                                summa = debt_exl[f'{item["excel_field"]}']
+                                credits_data[f'{item["name_field"]}'] = summa
+                            except:
+                                credits_data[f'{item["name_field"]}'] = None
+                        elif item["name_field"] == 'number' or item["name_field"] == 'date_end':
+                            credits_data[f'{item["name_field"]}'] = str(debt_exl[f'{item["excel_field"]}'])
 
-        cession_query = await session.execute(select(cession.c.id).where(and_(cession.c.name == cessions_data['name'],
+                        else:
+                            credits_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
+                    else:
+                        if item["name_field"] != 'None':
+                            credits_data[f'{item["name_field"]}'] = None
+
+
+                    try:
+                        credits_data['creditor'] = cessions_data['cedent']
+                    except:
+                        credits_data['creditor'] = 'Кредитор'
+                    credits_data['status_cd_id'] = 2
+
+
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель credit, на строке {count_all}. {ex}'
+                    }
+
+        # Блок сохранения данных в модель cession
+        cession_query = await session.execute(select(cession.c.id, cession.c.name).where(and_(cession.c.name == cessions_data['name'],
                                                                               cession.c.number == cessions_data['number'])))
-        cession_id = cession_query.scalar()
+        cession_item = cession_query.one()
+        cession_set = dict(cession_item._mapping)
+        cession_id = cession_set['id']
+        name_cession = cession_set['name']
+
+        path = create_dir_cession(name_cession)
+        path_folder_cd = path['path_folder']
 
         if cession_id is None:
             post_data = insert(cession).values(cessions_data)
@@ -200,12 +248,37 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 item = cession_query.first()
 
                 cession_dict = dict(item._mapping)
-                print(f'{cession_dict=}')
 
                 cession_id = cession_dict['id']
                 name_cession = cession_dict['name']
 
-                create_dir = create_dir_cession(name_cession)
+                path = create_dir_cession(name_cession)
+                path_cession = path['path_cession']
+                path_folder_cd = path['path_folder']
+
+
+                dir_cession_data = {
+                    "cession_id": cession_id,
+                    "name": name_cession,
+                    "path": path_cession,
+                }
+                query = await session.execute(select(dir_cession.c.cession_id).where(dir_cession.c.cession_id == int(cession_id)))
+                dir_cession_id = query.scalar()
+
+                if dir_cession_id is None:
+
+                    post_data = insert(dir_cession).values(dir_cession_data)
+
+                    try:
+                        await session.execute(post_data)
+                        await session.commit()
+                        return
+                    except Exception as ex:
+                        return {
+                            "status": "error",
+                            "data": dir_cession_data,
+                            "details": f'Ошибка при сохранении в модель dir_cession. {ex}'
+                        }
 
                 cessions_count += 1
             except Exception as ex:
@@ -215,7 +288,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                     "details": f'Ошибка при сохранении в модель cession, на строке {count_all}. {ex}'
                 }
 
-
+        # Блок сохранения данных в модель debtor
         if debtors_data['second_name_1'] is not None and debtors_data['second_name_1'] != '':
             debtor_query = await session.execute(select(debtor.c.id).where(and_(debtor.c.last_name_1 == debtors_data['last_name_1'],
                                                                   debtor.c.first_name_1 == debtors_data['first_name_1'],
@@ -246,62 +319,93 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                     "details": f'Ошибка при сохранении в модель Debtors, на строке {count_all}. {ex}'
                 }
 
-#
-#
-#                 if comparison['model']['name_mdl'] == 'Credits':
-#                     try:
-#                         credits_data = {}
-#                         status_cd_id = 1
-#
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'status_cd':
-#                                     status_cd_id = parsing_status_cd(debt_exl[f'{item["excel_field"]}'])
-#
-#                                 elif item["name_field"] == 'summa' or item["name_field"] == 'summa_by_cession' or item["name_field"] == 'interest_rate' or item["name_field"] == 'overdue_od' or \
-#                                         item["name_field"] == 'overdue_percent' or item["name_field"] == 'penalty' or item["name_field"] == 'percent_of_od' \
-#                                         or item["name_field"] == 'gov_toll' or item["name_field"] == 'balance_debt':
-#                                     try:
-#                                         summa = debt_exl[f'{item["excel_field"]}']
-#                                         credits_data[f'{item["name_field"]}'] = float(round(summa, 2))
-#                                     except:
-#                                         credits_data[f'{item["name_field"]}'] = 0
-#                                 elif item["name_field"] == 'date_start':
-#                                     date_start = parsing_date_start(debt_exl[f'{item["excel_field"]}'])
-#                                     credits_data[f'{item["name_field"]}'] = date_start
-#                                 else:
-#                                     credits_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 if item["name_field"] == 'summa' or item["name_field"] == 'summa_by_cession' or item["name_field"] == 'interest_rate' or item["name_field"] == 'overdue_od' or \
-#                                         item["name_field"] == 'overdue_percent' or item["name_field"] == 'penalty' or item["name_field"] == 'percent_of_od' \
-#                                         or item["name_field"] == 'gov_toll' or item["name_field"] == 'balance_debt':
-#                                     credits_data[f'{item["name_field"]}'] = 0
-#                                 else:
-#                                     credits_data[f'{item["name_field"]}'] = ''
-#
-#                         credits_data['creditor'] = 'Кредитор'
-#                         credits_data['status_cd'] = status_cd_id
-#                         credits_data['debtor'] = id_debtor
-#                         credits_data['cession'] = id_cession
-#                     except Exception as ex:
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Credits, на строке {count_all}. {ex}'})
-#
-#                     #             test_data.append(credits_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#                     if Credits.objects.filter(creditor=credits_data['creditor'], number=credits_data['number']).exists():
-#                         id_credit = Credits.objects.filter(creditor=credits_data['creditor']).get(number=credits_data['number']).id
-#                     else:
-#                         try:
-#                             credits_serializers = CreditsSerializer(data=credits_data)
-#                             credits_serializers.is_valid(raise_exception=True)
-#                             obj_credits = credits_serializers.save()
-#                             id_credit = obj_credits.pk
-#
-#                             # id_credit = count_all
-#                             credits_count += 1
-#                         except Exception as ex:
-#                             return Response({"error": f'Ошибка при сохранении в модель Credits, на строке {count_all}. {ex}', "credits_data": credits_data})
+        # Блок сохранения данных в модель credit
+        credit_query = await session.execute(select(credit.c.id, credit.c.number).where(and_(credit.c.creditor == str(credits_data['creditor']),
+                                                                            credit.c.number == str(credits_data['number']))))
+        credits_data['debtor_id'] = debtor_id
+        credits_data['cession_id'] = cession_id
+        credit_item = credit_query.fetchone()
+        if credit_item is not None:
+            credit_set = dict(credit_item._mapping)
+            credit_id = credit_set['id']
+            credit_number = credit_set['number']
+
+            dossier_name = f"{debtors_data['last_name_1']} {debtors_data['first_name_1']}_{credit_number}"
+
+            path = create_dir_credit(dossier_name, path_folder_cd)
+            print(f'{path=}')
+            # path_credit = path['path_credit']
+            # print(f'{path_credit=}')
+        else:
+            post_data = insert(credit).values(credits_data)
+
+            try:
+                await session.execute(post_data)
+                await session.commit()
+
+                credit_query = await session.execute(select(credit).order_by(desc(credit.c.id)))
+                item = credit_query.first()
+
+                credit_dict = dict(item._mapping)
+
+                credit_id = credit_dict['id']
+                credit_number = credit_dict['number']
+
+                dossier_name = f"{debtors_data['last_name_1']} {debtors_data['first_name_1']}_{credit_number}"
+
+                print(f'{dossier_name=}')
+
+                path = create_dir_credit(dossier_name, path_folder_cd)
+                print(f'path2 {path}')
+                # path_credit = path['path_credit']
+                # print(f'{path_credit=}')
+
+
+                # dir_cession_data = {
+                #     "cession_id": cession_id,
+                #     "name": name_cession,
+                #     "path": path_cession,
+                # }
+                # query = await session.execute(select(dir_cession.c.cession_id).where(dir_cession.c.cession_id == int(cession_id)))
+                # dir_cession_id = query.scalar()
+                # print(f'dir {dir_cession_id}')
+                #
+                # if dir_cession_id is None:
+                #
+                #     post_data = insert(dir_cession).values(dir_cession_data)
+                #
+                #     try:
+                #         await session.execute(post_data)
+                #         await session.commit()
+                #         return
+                #     except Exception as ex:
+                #         return {
+                #             "status": "error",
+                #             "data": dir_cession_data,
+                #             "details": f'Ошибка при сохранении в модель dir_cession. {ex}'
+                #         }
+                #
+                # cessions_count += 1
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": cessions_data,
+                    "details": f'Ошибка при сохранении в модель cession, на строке {count_all}. {ex}'
+                }
+
+                    # if Credits.objects.filter(creditor=credits_data['creditor'], number=credits_data['number']).exists():
+                    #     id_credit = Credits.objects.filter(creditor=credits_data['creditor']).get(number=credits_data['number']).id
+                    # else:
+                    #     try:
+                    #         credits_serializers = CreditsSerializer(data=credits_data)
+                    #         credits_serializers.is_valid(raise_exception=True)
+                    #         obj_credits = credits_serializers.save()
+                    #         id_credit = obj_credits.pk
+                    #
+                    #         # id_credit = count_all
+                    #         credits_count += 1
+                    #     except Exception as ex:
+                    #         return Response({"error": f'Ошибка при сохранении в модель Credits, на строке {count_all}. {ex}', "credits_data": credits_data})
 #
 #
 #
@@ -913,11 +1017,45 @@ def parsing_execut_production(ep):
     return result
 
 
-
 def create_dir_cession(name_cession):
-    pass
 
-    # path = os.path.join('media/result', 'Реестр для ИФНС')
-    #
+    path = os.path.join(main_dossier_path, name_cession)
+    folders = ['Договор цессии', 'Кредитные досье']
+
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    path_folder = ''
+    for f in folders:
+        path_folder = os.path.join(path, f)
+        if not os.path.exists(path_folder):
+            os.mkdir(path_folder)
+
+    return {'path_cession': path, 'path_folder': path_folder}
+
+def create_dir_credit(dossier_name, path_folder_cd):
+    print('start')
+
+    path = os.path.join(path_folder_cd, dossier_name)
+
+    query = select(dir_folder)
+    print(f'{query=}')
+
+    folders = []
+    for item in query.all():
+        folders.append(item)
+
+    print(f'{folders=}')
+
     # if not os.path.exists(path):
     #     os.mkdir(path)
+    #
+    # path_folder = ''
+    # for f in folders:
+    #     path_folder = os.path.join(path, f)
+    #     if not os.path.exists(path_folder):
+    #         os.mkdir(path_folder)
+    #
+    return {'path_credit': path, 'path_folders': folders}
+
+

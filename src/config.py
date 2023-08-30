@@ -13,3 +13,4 @@ SECRET_KEY_auth = os.environ.get('SECRET_KEY_auth')
 SECRET_KEY_register = os.environ.get('SECRET_KEY_register')
 
 main_dossier_path = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/Цессии_досье'
+logging_path = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/logs'

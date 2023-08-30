@@ -5,14 +5,20 @@ import re
 import os
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, insert, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
-from src.config import main_dossier_path
+from src.config import main_dossier_path, logging_path
 from src.debts.models import cession, debtor, credit
-from src.directory_docs.models import dir_cession, dir_folder
+from src.directory_docs.models import dir_cession, dir_folder, dir_credit
+from src.references.models import ref_type_ed, ref_claimer_ed, ref_tribunal, ref_rosp
+from src.collection_debt.models import executive_document, executive_productions
+
+import logging
+log_path = os.path.join(logging_path, 'upload_to_db.log')
+logging.basicConfig(level=logging.DEBUG, filename=log_path, filemode="w", format='%(levelname)s; %(asctime)s; %(filename)s; %(message)s')
 
 '''
 НЕОБХОДИМО НАСТРАИВАТЬ ПОД КАЖДЫЙ НОВЫЙ РЕЕСТР
@@ -28,15 +34,11 @@ import_excel и format_data - это вспомогательные методы
 format_file.xlsx - это дефолтный файл, который создается при выборе csv файла (из выбранного файла, данные перезаписываются в дефолтный).
 И уже дефолтный обрабатывается, и из него данные грузятся в БД.
 
-При первичной миграции реестра должников из Excel в DB_CRM, в первую очередь необходимо импортировать Справочники (Суды, РОСПы, статусы и тд.)
+При импортировании реестра должников из Excel в DB_CRM, необходимо чтобы Справочники (Суды, РОСПы, Банки, Статусы, Взыскатель по ИД (Цессионарий) и тд.) были заполнены.
 Далее, при импортировании реестров должников (первичная миграция или цессии), производится сопоставление со справочниками,
 если сопоставление отсутствует, то в Лог делается запись, что такие-то данные из реестра не загружены из-за отсутствия в Справочнике БД.
 
 '''
-import logging
-debug_log = logging.getLogger('debug_log')
-# error_log = logging.getLogger('error_log')
-upload_log = logging.getLogger('upload_log')
 
 
 # Загрузить реестр должников в БД
@@ -65,11 +67,8 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
     cessions_count = 0
     debtors_count = 0
     credits_count = 0
-    tribunals_count = 0
-    dapartment_present_count = 0
     ed_count = 0
     ep_count = 0
-    collection_debt_count = 0
 
     # Сопоставление полей "Поле БД": debt_exl["заголовок из excel"]
     for debt_exl in registry_excel:
@@ -78,6 +77,9 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
         cessions_data = {}
         debtors_data = {}
         credits_data = {}
+        ed_data = {}
+        ep_data = {}
+
         last_name_1 = None
         first_name_1 = None
         second_name_1 = None
@@ -94,6 +96,12 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
         address_2 = None
         comment = None
         inn = None
+        type_ed_id = None
+        claimer_ed_id = None
+        tribunal_id = None
+        rosp_id = None
+        summary_case = None
+
         for item in comparison_excel_to_db:
             id_dapartment = None
             id_ed = None
@@ -226,18 +234,90 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         "details": f'Ошибка при извлечении данных из excel в модель credit, на строке {count_all}. {ex}'
                     }
 
+            elif item['model'] == 'executive_document':
+                try:
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["name_field"] == 'type_ed_id':
+                            type_ed = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
+
+                            type_ed_query = await session.execute(select(ref_type_ed.c.id).where(ref_type_ed.c.name == str(type_ed)))
+                            type_ed_id = type_ed_query.scalar()
+                        elif item["name_field"] == 'claimer_ed_id':
+                            claimer_ed = debt_exl[f'{item["excel_field"]}']
+                            claimer_ed_query = await session.execute(select(ref_claimer_ed.c.id).where(ref_claimer_ed.c.name == str(claimer_ed)))
+                            claimer_ed_id = claimer_ed_query.scalar()
+                            if claimer_ed_id is None:
+                                logging.debug(f"По КД {credits_data['number']}, Взыскатель ({claimer_ed}) не найден")
+
+                        elif item["headers_key"] == 'tribunal_name_ed':
+                            tribunal = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
+                            tribunal_query = await session.execute(select(ref_tribunal.c.id).where(and_(ref_tribunal.c.name == str(tribunal))))
+                            tribunal_id = tribunal_query.scalar()
+                            if tribunal_id is None:
+                                logging.debug(f"По КД {credits_data['number']}, Суд ({tribunal}) не найден")
+
+                        else:
+                            ed_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
+                    else:
+                        if item["name_field"] != 'None':
+                            ed_data[f'{item["name_field"]}'] = None
+
+                    ed_data['type_ed_id'] = type_ed_id
+                    ed_data['status_ed_id'] = 1
+                    ed_data['claimer_ed_id'] = claimer_ed_id
+                    ed_data['tribunal_id'] = tribunal_id
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель executive_document, на строке {count_all}. {ex}'
+                    }
+
+            elif item['model'] == 'executive_productions':
+                try:
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["name_field"] == 'rosp_id':
+                            rosp = debt_exl[f'{item["excel_field"]}']
+                            rosp_query = await session.execute(select(ref_rosp.c.id).where(ref_rosp.c.name == str(rosp)))
+                            rosp_id = rosp_query.scalar()
+                            if rosp_id is None:
+                                logging.debug(f"По КД {credits_data['number']}, РОСП ({rosp}) не найден")
+                        elif item["name_field"] == 'summary_case':
+                            summary_case = debt_exl[f'{item["excel_field"]}']
+                            if summary_case == 0 or summary_case == '':
+                                summary_case = None
+                        else:
+                            ep_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
+                    else:
+                        if item["name_field"] != 'None':
+                            ep_data[f'{item["name_field"]}'] = None
+
+                    ep_data['rosp_id'] = rosp_id
+                    ep_data['summary_case'] = summary_case
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель executive_productions, на строке {count_all}. {ex}'
+                    }
+
+        """
+        При импортировании реестра должников из Excel в DB_CRM, необходимо чтобы Справочники (Суды, РОСПы, Банки, Статусы, Взыскатель по ИД (Цессионарий) и тд.) были заполнены.
+        Далее, при импортировании реестров должников (первичная миграция или цессии), производится сопоставление со справочниками,
+        если сопоставление отсутствует, то в Лог делается запись, что такие-то данные из реестра не загружены из-за отсутствия в Справочнике БД.
+        """
+
         # Блок сохранения данных в модель cession
         cession_query = await session.execute(select(cession.c.id, cession.c.name).where(and_(cession.c.name == cessions_data['name'],
-                                                                              cession.c.number == cessions_data['number'])))
-        cession_item = cession_query.one()
-        cession_set = dict(cession_item._mapping)
-        cession_id = cession_set['id']
-        name_cession = cession_set['name']
+                                                                              cession.c.number == str(cessions_data['number']))))
+        cession_item = cession_query.mappings().fetchone()
+        if cession_item is not None:
+            cession_id = cession_item['id']
+            name_cession = cession_item['name']
 
-        path = create_dir_cession(name_cession)
-        path_folder_cd = path['path_folder']
-
-        if cession_id is None:
+            path = create_dir_cession(name_cession)
+            path_folder_cd = path['path_folder']
+        else:
             post_data = insert(cession).values(cessions_data)
 
             try:
@@ -245,9 +325,9 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 await session.commit()
 
                 cession_query = await session.execute(select(cession).order_by(desc(cession.c.id)))
-                item = cession_query.first()
+                cession_dict = cession_query.mappings().first()
 
-                cession_dict = dict(item._mapping)
+                # cession_dict = dict(item._mapping)
 
                 cession_id = cession_dict['id']
                 name_cession = cession_dict['name']
@@ -272,7 +352,6 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                     try:
                         await session.execute(post_data)
                         await session.commit()
-                        return
                     except Exception as ex:
                         return {
                             "status": "error",
@@ -320,22 +399,21 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 }
 
         # Блок сохранения данных в модель credit
-        credit_query = await session.execute(select(credit.c.id, credit.c.number).where(and_(credit.c.creditor == str(credits_data['creditor']),
+        credit_query = await session.execute(select(credit.c.id, credit.c.number).where(and_(credit.c.creditor == credits_data['creditor'],
                                                                             credit.c.number == str(credits_data['number']))))
         credits_data['debtor_id'] = debtor_id
         credits_data['cession_id'] = cession_id
-        credit_item = credit_query.fetchone()
+        credit_item = credit_query.mappings().fetchone()
         if credit_item is not None:
-            credit_set = dict(credit_item._mapping)
-            credit_id = credit_set['id']
-            credit_number = credit_set['number']
+            credit_id = credit_item['id']
+            credit_number = credit_item['number']
 
             dossier_name = f"{debtors_data['last_name_1']} {debtors_data['first_name_1']}_{credit_number}"
+            query_folder = await session.execute(select(dir_folder))
+            folders = query_folder.mappings().all()
 
-            path = create_dir_credit(dossier_name, path_folder_cd)
-            print(f'{path=}')
+            path = create_dir_credit(dossier_name, path_folder_cd, folders)
             # path_credit = path['path_credit']
-            # print(f'{path_credit=}')
         else:
             post_data = insert(credit).values(credits_data)
 
@@ -344,348 +422,106 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 await session.commit()
 
                 credit_query = await session.execute(select(credit).order_by(desc(credit.c.id)))
-                item = credit_query.first()
-
-                credit_dict = dict(item._mapping)
+                credit_dict = credit_query.mappings().first()
 
                 credit_id = credit_dict['id']
                 credit_number = credit_dict['number']
 
                 dossier_name = f"{debtors_data['last_name_1']} {debtors_data['first_name_1']}_{credit_number}"
+                query_folder = await session.execute(select(dir_folder))
+                folders = query_folder.mappings().all()
 
-                print(f'{dossier_name=}')
-
-                path = create_dir_credit(dossier_name, path_folder_cd)
-                print(f'path2 {path}')
-                # path_credit = path['path_credit']
-                # print(f'{path_credit=}')
+                path = create_dir_credit(dossier_name, path_folder_cd, folders)
+                path_credit = path['path_credit']
 
 
-                # dir_cession_data = {
-                #     "cession_id": cession_id,
-                #     "name": name_cession,
-                #     "path": path_cession,
-                # }
-                # query = await session.execute(select(dir_cession.c.cession_id).where(dir_cession.c.cession_id == int(cession_id)))
-                # dir_cession_id = query.scalar()
-                # print(f'dir {dir_cession_id}')
-                #
-                # if dir_cession_id is None:
-                #
-                #     post_data = insert(dir_cession).values(dir_cession_data)
-                #
-                #     try:
-                #         await session.execute(post_data)
-                #         await session.commit()
-                #         return
-                #     except Exception as ex:
-                #         return {
-                #             "status": "error",
-                #             "data": dir_cession_data,
-                #             "details": f'Ошибка при сохранении в модель dir_cession. {ex}'
-                #         }
-                #
-                # cessions_count += 1
+                dir_credit_data = {
+                    "credit_id": credit_id,
+                    "name": dossier_name,
+                    "path": path_credit,
+                }
+                query = await session.execute(select(dir_credit.c.credit_id).where(dir_credit.c.credit_id == int(credit_id)))
+                dir_credit_id = query.scalar()
+
+                if dir_credit_id is None:
+
+                    post_data = insert(dir_credit).values(dir_credit_data)
+
+                    try:
+                        await session.execute(post_data)
+                        await session.commit()
+                    except Exception as ex:
+                        return {
+                            "status": "error",
+                            "data": dir_credit_data,
+                            "details": f'Ошибка при сохранении в модель dir_credit. {ex}'
+                        }
+
+                credits_count += 1
             except Exception as ex:
                 return {
                     "status": "error",
-                    "data": cessions_data,
-                    "details": f'Ошибка при сохранении в модель cession, на строке {count_all}. {ex}'
+                    "data": credits_data,
+                    "details": f'Ошибка при сохранении в модель credit, на строке {count_all}. {ex}'
                 }
 
-                    # if Credits.objects.filter(creditor=credits_data['creditor'], number=credits_data['number']).exists():
-                    #     id_credit = Credits.objects.filter(creditor=credits_data['creditor']).get(number=credits_data['number']).id
-                    # else:
-                    #     try:
-                    #         credits_serializers = CreditsSerializer(data=credits_data)
-                    #         credits_serializers.is_valid(raise_exception=True)
-                    #         obj_credits = credits_serializers.save()
-                    #         id_credit = obj_credits.pk
-                    #
-                    #         # id_credit = count_all
-                    #         credits_count += 1
-                    #     except Exception as ex:
-                    #         return Response({"error": f'Ошибка при сохранении в модель Credits, на строке {count_all}. {ex}', "credits_data": credits_data})
-#
-#
-#
-#                 # При первичной миграции реестра должников из Excel в DB_CRM, в первую очередь необходимо импортировать Справочники (Суды, РОСПы, статусы и тд.)
-#                 # Далее, при импортировании реестров должников (первичная миграция или цессии), производится сопоставление со справочниками,
-#                 # если сопоставление отсутствует, то в Лог делается запись, что такие-то данные из реестра не загружены из-за отсутствия в Справочнике БД.
-#                 elif comparison['model']['name_mdl'] == 'Lib_Tribunals':
-#                     try:
-#                         email = ''
-#                         tribunals_data = {}
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'email':
-#                                     email = short_str_100(debt_exl[f'{item["excel_field"]}'])
-#                                 else:
-#                                     tribunals_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 tribunals_data[f'{item["name_field"]}'] = ''
-#                         tribunals_data['email'] = email
-#                     except Exception as ex:
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Lib_Tribunals, на строке {count_all}. {ex}'})
-#
-#                     #             test_data.append(tribunals_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#                     if Lib_Tribunals.objects.filter(name=tribunals_data['name']).exists():
-#                         id_tribunal = Lib_Tribunals.objects.get(name=tribunals_data['name']).id
-#                     else:
-#                         id_tribunal = None
-#                         upload_log.debug(f"По КД {credits_data['number']}, Суд ({tribunals_data['name']}) не найден")
-#                         # try:
-#                         #     if tribunals_data['name'] is not None and tribunals_data['name'] != '':
-#                         #         tribunals_serializers = Lib_TribunalsSerializer(data=tribunals_data)
-#                         #         tribunals_serializers.is_valid(raise_exception=True)
-#                         #         obj_tribunal = tribunals_serializers.save()
-#                         #         id_tribunal = obj_tribunal.pk
-#                         #
-#                         #         # id_tribunal = count_all
-#                         #         tribunals_count += 1
-#                         # except Exception as ex:
-#                         #     return Response({"error": f'Ошибка при сохранении в модель Lib_Tribunals, на строке {count_all}. {ex}', "tribunals_data": tribunals_data})
-#
-#                 elif comparison['model']['name_mdl'] == 'Executive_Documents':
-#                     try:
-#                         type_id = None
-#                         claimer_id = None
-#                         comment = ''
-#                         num_ed = None
-#                         status_ed_id = None
-#
-#                         ed_data = {}
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'type_ed':
-#                                     type_ed_id = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
-#                                     type_id = type_ed_id
-#                                 elif item["name_field"] == 'claimer_ed':
-#                                     claimer_ed_id = parsing_claimer_ed(debt_exl[f'{item["excel_field"]}'])
-#                                     claimer_id = claimer_ed_id
-#                                 elif item["name_field"] == 'number':
-#                                     num_ed = short_str_50(debt_exl[f'{item["excel_field"]}'])
-#                                 elif item["name_field"] == 'status_ed':
-#                                     status_ed_id = parsing_status_ed(debt_exl[f'{item["excel_field"]}'])
-#                                 else:
-#                                     if item["name_field"] == 'summa_debt_decision' or item["name_field"] == 'state_duty':
-#                                         try:
-#                                             summa = debt_exl[f'{item["excel_field"]}']
-#                                             ed_data[f'{item["name_field"]}'] = float(round(summa, 2))
-#                                         except:
-#                                             ed_data[f'{item["name_field"]}'] = 0
-#                                     elif item["name_field"] == 'date' or item["name_field"] == 'date_of_receipt_ed' or item["name_field"] == 'date_decision' or item["name_field"] == 'succession':
-#                                         date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
-#                                         ed_data[f'{item["name_field"]}'] = date_ed
-#                                     elif item["name_field"] == 'comment':
-#                                         comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
-#                                     else:
-#                                         ed_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 if item["name_field"] == 'summa_debt_decision' or item["name_field"] == 'state_duty':
-#                                     ed_data[f'{item["name_field"]}'] = 0
-#                                 else:
-#                                     ed_data[f'{item["name_field"]}'] = ''
-#
-#                         ed_data['number'] = num_ed
-#                         ed_data['type_ed'] = type_id
-#                         ed_data['claimer_ed'] = claimer_id
-#                         ed_data['comment'] = comment
-#                         ed_data['status_ed'] = status_ed_id
-#                         ed_data['credit'] = id_credit
-#                         ed_data['tribunal'] = id_tribunal
-#                         ed_data['date_entry_force'] = None
-#                         ed_data['date_of_receipt_ed'] = None
-#                         ed_data['succession'] = None
-#                     except Exception as ex:
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Executive_Documents, на строке {count_all}. {ex}'})
-#
-#                     # test_data.append(ed_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#                     if Executive_Documents.objects.filter(number=ed_data['number'], date=ed_data['date'], case_number=ed_data['case_number']).exists():
-#                         id_ed = Executive_Documents.objects.filter(number=ed_data['number'], date=ed_data['date']).get(case_number=ed_data['case_number']).id
-#                     else:
-#                         try:
-#                             ed_serializers = Executive_DocumentsSerializer(data=ed_data)
-#                             ed_serializers.is_valid(raise_exception=True)
-#                             ed_obj = ed_serializers.save()
-#                             id_ed = ed_obj.pk
-#
-#                             # id_ed = count_all
-#                             ed_count += 1
-#                         except Exception as ex:
-#                             return Response({"error": f'Ошибка при сохранении в модель Executive_Documents, на строке {count_all}. {ex}', "ed_data": ed_data})
-#
-#
-#                 elif comparison['model']['name_mdl'] == 'Lib_Department_Presentation':
-#                     try:
-#                         index = ''
-#                         address = ''
-#                         region_id = ''
-#                         type_department_id = ''
-#                         type_dep = None
-#                         dapartment_present_data = {}
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'address_join':
-#                                     addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
-#                                     index = addr['index']
-#                                     address = addr['address']
-#                                 # elif item["name_field"] == 'type_dep':
-#                                 #     type_dep = parsing_type_dep(debt_exl[f'{item["excel_field"]}'])
-#                                 elif item["name_field"] == 'region_dep':
-#                                     region_id = parsing_region_dep(debt_exl[f'{item["excel_field"]}'])
-#                                 else:
-#                                     dapartment_present_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 dapartment_present_data[f'{item["name_field"]}'] = ''
-#                         dapartment_present_data['address_index'] = index
-#                         dapartment_present_data['address'] = address
-#                         dapartment_present_data['region'] = region_id
-#                         dapartment_present_data['type_department'] = type_dep
-#                     except Exception as ex:
-#                         # logging.error(ex, exc_info=True)
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Lib_Department_Presentation, на строке {count_all}. {ex}'})
-#
-#                     #             test_data.append(dapartment_present_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#
-#                     if Lib_Department_Presentation.objects.filter(name=dapartment_present_data['name']).exists():
-#                         id_dapartment = Lib_Department_Presentation.objects.get(name=dapartment_present_data['name']).id
-#                     else:
-#                         id_dapartment = None
-#                         upload_log.debug(f"По КД {credits_data['number']}, РОСП ({dapartment_present_data['name']}) не найден")
-#
-#                 #         try:
-#                 #             if dapartment_present_data['name'] is not None and dapartment_present_data['name'] != '':
-#                 #                 dapartment_serializers = Lib_Department_PresentationlSerializer(data=dapartment_present_data)
-#                 #                 dapartment_serializers.is_valid(raise_exception=True)
-#                 #                 obj_dapartment = dapartment_serializers.save()
-#                 #                 id_dapartment = obj_dapartment.pk
-#                 #
-#                 #                 # id_dapartment = count_all
-#                 #                 dapartment_present_count += 1
-#                 #         except Exception as ex:
-#                 #             return Response({"error": f'Ошибка при сохранении в модель Lib_Department_Presentation, на строке {count_all}. {ex}', "dapartment_present_data": dapartment_present_data})
-#
-#
-#                 elif comparison['model']['name_mdl'] == 'Executive_Productions':
-#                     try:
-#                         num_ep = ''
-#                         date_ep = ''
-#                         consolidat_ep = ''
-#                         pristav = ''
-#                         ep_data = {}
-#                         comment = ''
-#                         for f in comparison['fields']:
-#                             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                                 if item["name_field"] == 'executive_productions':
-#                                     execut_production = parsing_execut_production(debt_exl[f'{item["excel_field"]}'])
-#                                     num_ep = execut_production['execut_production']
-#                                     date_ep = execut_production['date_ep']
-#                                     consolidat_ep = execut_production['consolidat_ep']
-#
-#                                 elif item["name_field"] == 'curent_debt' or item["name_field"] == 'summa_debt' or item["name_field"] == 'curent_debt' or item["name_field"] == 'gov_toll':
-#                                     try:
-#                                         summa = debt_exl[f'{item["excel_field"]}']
-#                                         ep_data[f'{item["name_field"]}'] = float(summa)
-#                                     except:
-#                                         ep_data[f'{item["name_field"]}'] = 0
-#                                 elif item["name_field"] == 'date_end' or item["name_field"] == 'date_request':
-#                                     date_ed = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
-#                                     ep_data[f'{item["name_field"]}'] = date_ed
-#                                 elif item["name_field"] == 'pristav':
-#                                     pristav = short_str_50(debt_exl[f'{item["excel_field"]}'])
-#                                 elif item["name_field"] == 'comment':
-#                                     comment = short_str_200(debt_exl[f'{item["excel_field"]}'])
-#                                 else:
-#                                     ep_data[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                             else:
-#                                 if item["name_field"] == 'curent_debt' or item["name_field"] == 'summa_debt' or item["name_field"] == 'curent_debt' or item["name_field"] == 'gov_toll':
-#                                     ep_data[f'{item["name_field"]}'] = 0
-#                                 else:
-#                                     ep_data[f'{item["name_field"]}'] = ''
-#
-#                         # ep_data['number'] = num_ep
-#                         # ep_data['date_on'] = date_ep
-#                         ep_data['summary_case'] = consolidat_ep
-#                         ep_data['pristav'] = pristav
-#                         ep_data['rosp'] = id_dapartment
-#                         ep_data['executive_document'] = id_ed
-#                         ep_data['credit'] = id_credit
-#                         ep_data['date_request'] = None
-#                         ep_data['comment'] = comment
-#                     except Exception as ex:
-#                         # logging.error(ex, exc_info=True)
-#                         return Response({"error": f'Ошибка при извлечении данных из excel в модель Executive_Productions, на строке {count_all}. {ex}'})
-#
-#                     #             test_data.append(ep_data)
-#                     # return Response({'test_data': test_data, 'count': debtors_count})
-#
-#                     if Executive_Productions.objects.filter(number=ep_data['number']).exists():
-#                         id_ep = Executive_Productions.objects.get(number=ep_data['number']).id
-#                     else:
-#                         try:
-#                             if ep_data['number'] is not None and ep_data['number'] != '':
-#                                 ep_serializers = Executive_ProductionsSerializer(data=ep_data)
-#                                 ep_serializers.is_valid(raise_exception=True)
-#                                 ep_obj = ep_serializers.save()
-#                                 id_ep = ep_obj.pk
-#                                 ep_count += 1
-#                         except Exception as ex:
-#                             return Response({"error": f'Ошибка при сохранении в модель Executive_Productions, на строке {count_all}. {ex}', "ep_data": ep_data})
-#
-#                 # elif comparison['model']['name_mdl'] == 'Collection_Debt':
-#                 #     try:
-#                 #         collection_debt = {}
-#                 #         for f in comparison['fields']:
-#                 #             if item["excel_field"] != '' and item["excel_field"] is not None:
-#                 #                 if item["name_field"] == 'date_start':
-#                 #                     date = parsing_date_ed(debt_exl[f'{item["excel_field"]}'])
-#                 #                     collection_debt_exl[f'{item["name_field"]}'] = date
-#                 #                 else:
-#                 #                     collection_debt_exl[f'{item["name_field"]}'] = debt_exl[f'{item["excel_field"]}']
-#                 #             else:
-#                 #                 collection_debt_exl[f'{item["name_field"]}'] = ''
-#                 #
-#                 #         collection_debt_exl['type_department'] = dapartment_present_data['type_department']
-#                 #         collection_debt_exl['department_presentation'] = id_dapartment
-#                 #         collection_debt_exl['executive_document'] = id_ed
-#                 #         collection_debt_exl['credit'] = id_credit
-#                 #         collection_debt_exl['reason_cansel'] = None
-#                 #         collection_debt_exl['date_return'] = None
-#                 #         collection_debt_exl['date_end'] = None
-#                 #     except Exception as ex:
-#                 #         # logging.error(ex, exc_info=True)
-#                 #         return Response({"error": f'Ошибка при извлечении данных из excel в модель Collection_Debt, на строке {count_all}. {ex}'})
-#                 #
-#                 #     #             test_data.append(collection_debt)
-#                 #     # return Response({'test_data': test_data, 'count': debtors_count})
-#                 #
-#                 #     try:
-#                 #         if collection_debt_exl['date_start'] is not None and collection_debt_exl['date_start'] != '':
-#                 #             collection_debt_serializers = Collection_DebtSerializer(data=collection_debt)
-#                 #             collection_debt_serializers.is_valid(raise_exception=True)
-#                 #             collection_debt_serializers.save()
-#                 #
-#                 #         collection_debt_count += 1
-#                 #     except Exception as ex:
-#                 #         return Response({"error": f'Ошибка при сохранении в модель Collection_Debt, на строке {count_all}. {ex}', "collection_debt": collection_debt})
-#
-#
-#         return Response({'message': f'Данные успешно сохранены.',
-#                          'cessions_count': f'Добавлено {cessions_count} строк Цессий',
-#                          'debtors_count': f'Добавлено {debtors_count} строк ФИО должников.',
-#                          'credits_count': f'Добавлено {credits_count} строк Кредитов',
-#                          'tribunals_count': f'Добавлено {tribunals_count} строк Судов',
-#                          'dapartment': f'Добавлено {dapartment_present_count} строк Департаментов предъявления',
-#                          'ed_count': f'Добавлено {ed_count} строк ИД',
-#                          'ep_count': f'Добавлено {ep_count} строк ИП',
-#                          'collection_debt_count': f'Добавлено {collection_debt_count} строк в модель Взыскание долга'})
+        # Блок сохранения данных в модель executive_document
+        ed_query = await session.execute(select(executive_document.c.id).where(and_(executive_document.c.number == str(ed_data['number']),
+                                                                                                     executive_document.c.date == ed_data['date'],
+                                                                                                     executive_document.c.case_number == str(ed_data['case_number']))))
+        ed_data['credit_id'] = credit_id
+        ed_id = ed_query.scalar()
+
+        if ed_id is None:
+            post_data = insert(executive_document).values(ed_data)
+
+            try:
+                await session.execute(post_data)
+                await session.commit()
+
+                ed_query = await session.execute(select(executive_document.c.id).order_by(desc(executive_document.c.id)))
+                ed_id = ed_query.scalar()
+
+                ed_count += 1
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": ed_data,
+                    "details": f'Ошибка при сохранении в модель executive_document, на строке {count_all}. {ex}'
+                }
+
+        # Блок сохранения данных в модель executive_productions
+        ep_query = await session.execute(select(executive_productions.c.id).where(executive_productions.c.number == str(ep_data['number'])))
+        ep_data['credit_id'] = credit_id
+        ep_data['executive_document_id'] = ed_id
+        ep_id = ep_query.scalar()
+
+        if ep_id is None:
+            post_data = insert(executive_productions).values(ep_data)
+
+            try:
+                await session.execute(post_data)
+                await session.commit()
+
+                ep_count += 1
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": ep_data,
+                    "details": f'Ошибка при сохранении в модель executive_productions, на строке {count_all}. {ex}'
+                }
+
+    result = f'Добавлено: {cessions_count} строк Цессий, ' \
+             f'{debtors_count} строк ФИО должников, ' \
+             f'{credits_count} строк Кредитов, ' \
+             f'{ed_count} строк ИД, ' \
+             f'{ep_count} строк ИП'
+
+    return {
+        'status': 'success',
+        'data': result,
+        'details': 'Данные успешно сохранены.'
+    }
 
 '''
 import_excel и format_data - это вспомогательные методы, для форматирования данных (дата, числа, суммы и т.д.)
@@ -714,8 +550,7 @@ def format_data():
             except:
                 x = item
 
-            # Дату формата дд.мм.гггг привожу к формату гггг-мм-дд
-            # datetime.strptime(debtors_data['birthday'], '%Y-%m-%d').date()
+            # Дату формата дд.мм.гггг привожу к формату для БД
             try:
                 if re.findall(r'\d{2}\.\d{2}\.\d{4}', x):
                     x = datetime.strptime(x, '%d.%m.%Y').date()
@@ -878,44 +713,16 @@ def parsing_address(addr):
     return result
 
 
-# def parsing_status_cd(status):
-#     try:
-#         status_id = Lib_Status_Credit.objects.get(name=status).id
-#     except:
-#         status_id = Lib_Status_Credit.objects.get(name='Не определен').id
-#
-#     return status_id
+def parsing_type_ed(type):
+    try:
+        if re.findall(r'(?i)исполнительный\s+лист', type):
+            type = 'Исполнительный лист (бланк)'
+        elif re.findall(r'(?i)судебный\s+приказ', type):
+            type = 'Судебный приказ'
+    except:
+        type = 'Не определен'
 
-
-# def parsing_status_ed(status):
-#     try:
-#         status_id = Lib_Status_ED.objects.get(name=status).id
-#     except:
-#         status_id = Lib_Status_ED.objects.get(name='Не определен').id
-#
-#     return status_id
-
-
-# def parsing_type_ed(type):
-#     try:
-#         if re.findall(r'(?i)исполнительный\s+лист', type):
-#             type = 'Исполнительный лист (бланк)'
-#         elif re.findall(r'(?i)судебный\s+приказ', type):
-#             type = 'Судебный приказ'
-#         type_id = Lib_Type_ED.objects.get(name=type).id
-#     except:
-#         type_id = Lib_Type_ED.objects.get(name='Не определен').id
-#
-#     return type_id
-
-
-# def parsing_claimer_ed(claimer):
-#     try:
-#         claimer_id = Lib_Claimer_ED.objects.get(name=claimer).id
-#     except:
-#         claimer_id = Lib_Claimer_ED.objects.get(name='ДИ').id
-#
-#     return claimer_id
+    return type
 
 
 def parsing_date_ed(date):
@@ -966,33 +773,6 @@ def short_str_100(data_str):
     return data_str
 
 
-def parsing_type_dep(type_dep):
-    try:
-        pass
-        # if re.findall(r'(?i)(Банк)', type_dep):
-        #     type_department_id = Lib_Type_Department.objects.get(name='Банк').id
-        # elif re.findall(r'(?i)(ПФР)', type_dep):
-        #     type_department_id = Lib_Type_Department.objects.get(name='ПФР').id
-        # elif re.findall(r'(?i)(ИФНС)', type_dep):
-        #     type_department_id = Lib_Type_Department.objects.get(name='ИФНС').id
-        # else:
-        #     type_department_id = Lib_Type_Department.objects.get(name='РОСП').id
-    except:
-        type_department_id = None
-
-    return type_department_id
-
-
-def parsing_region_dep(region):
-    try:
-        pass
-        # region_id = Lib_Regions.objects.get(name=region).id
-    except:
-        region_id = None
-
-    return region_id
-
-
 def parsing_execut_production(ep):
     try:
         execut_production = re.search(RePattern.execut_production, ep).group().strip()
@@ -1033,29 +813,18 @@ def create_dir_cession(name_cession):
 
     return {'path_cession': path, 'path_folder': path_folder}
 
-def create_dir_credit(dossier_name, path_folder_cd):
-    print('start')
+def create_dir_credit(dossier_name, path_folder_cd, folders):
 
     path = os.path.join(path_folder_cd, dossier_name)
 
-    query = select(dir_folder)
-    print(f'{query=}')
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-    folders = []
-    for item in query.all():
-        folders.append(item)
+    for f in folders:
+        path_folder = os.path.join(path, f['name'])
+        if not os.path.exists(path_folder):
+            os.mkdir(path_folder)
 
-    print(f'{folders=}')
-
-    # if not os.path.exists(path):
-    #     os.mkdir(path)
-    #
-    # path_folder = ''
-    # for f in folders:
-    #     path_folder = os.path.join(path, f)
-    #     if not os.path.exists(path_folder):
-    #         os.mkdir(path_folder)
-    #
-    return {'path_credit': path, 'path_folders': folders}
+    return {'path_credit': path}
 
 

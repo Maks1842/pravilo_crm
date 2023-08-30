@@ -24,8 +24,7 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
     try:
         if credit_id:
             cession_query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
-            cession_item = cession_query.one()
-            cession_id = dict(cession_item._mapping)
+            cession_id = cession_query.mappings().one()
 
             query = select(cession).where(cession.c.id == int(cession_id['cession_id']))
         else:
@@ -33,23 +32,22 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
 
         answer = await session.execute(query)
         result = []
-        for item in answer.all():
-            data = dict(item._mapping)
+        for item in answer.mappings().all():
 
-            if data['summa'] is not None and data['summa'] != '':
-                summa = data['summa'] / 100
+            if item['summa'] is not None and item['summa'] != '':
+                summa = item['summa'] / 100
             else:
                 summa = 0
 
             result.append({
-                "id": data['id'],
-                "name": data['name'],
-                "number": data['number'],
-                "date": data['date'],
+                "id": item['id'],
+                "name": item['name'],
+                "number": item['number'],
+                "date": item['date'],
                 "summa": summa,
-                "cedent": data['cedent'],
-                "cessionari": data['cessionari'],
-                "date_old_cession": data['date_old_cession']
+                "cedent": item['cedent'],
+                "cessionari": item['cessionari'],
+                "date_old_cession": item['date_old_cession']
             })
         return result
     except Exception as ex:
@@ -116,13 +114,12 @@ async def get_cession_name(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(cession))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "cession_name": item_dic['name'],
+                "cession_name": item['name'],
                 "value": {
-                    "cession_id": item_dic["id"],
+                    "cession_id": item["id"],
                 },
             })
 
@@ -153,11 +150,10 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
         answer = await session.execute(query)
 
         result = []
-        for item in answer.all():
-            data = dict(item._mapping)
+        for data in answer.mappings().all():
 
             status_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(data['status_cd_id'])))
-            status_set = dict(status_query.one()._mapping)
+            status_set = status_query.mappings().one()
             status = status_set['name']
 
             if data['summa'] is not None and data['summa'] != '':
@@ -304,17 +300,13 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
     try:
         if re.findall(r'\d+', fragment):
             credits_query = await session.execute(select(credit).where(credit.c.number.icontains(fragment)))
-            credits_set = credits_query.all()
+            credits_set = credits_query.mappings().all()
         else:
             debtors_query = await session.execute(select(debtor))
-            debtors_set = debtors_query.all()
-
-
+            debtors_set = debtors_query.mappings().all()
 
             debtors_id = ()
-            for item in debtors_set:
-
-                debtor_item = dict(item._mapping)
+            for debtor_item in debtors_set:
 
                 if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
                     fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
@@ -326,18 +318,15 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
                     debtors_id = debtors_id + (debtor_item['id'],)
 
             credits_query = await session.execute(select(credit).where(credit.c.debtor_id.in_(debtors_id)))
-            credits_set = credits_query.all()
+            credits_set = credits_query.mappings().all()
 
         result = []
-        for item_cd in credits_set:
-
-            credit_item = dict(item_cd._mapping)
+        for credit_item in credits_set:
 
             number = credit_item['number']
 
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
-            debtor_set = debtor_query.one()
-            debtor_item = dict(debtor_set._mapping)
+            debtor_item = debtor_query.mappings().one()
 
             value_id = {"credit_id": credit_item['id'],
                         "debtor_id": debtor_item['id']}
@@ -374,15 +363,13 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
     try:
         if re.findall(r'\d+', fragment):
             debtors_query = await session.execute(select(debtor).where(debtor.c.inn.icontains(fragment)))
-            debtors_set = debtors_query.all()
+            debtors_set = debtors_query.mappings().all()
         else:
             debtors_query = await session.execute(select(debtor))
-            debtors_set = debtors_query.all()
+            debtors_set = debtors_query.mappings().all()
 
             debtors_id = ()
-            for item in debtors_set:
-
-                debtor_item = dict(item._mapping)
+            for debtor_item in debtors_set:
 
                 if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
                     fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
@@ -394,12 +381,10 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
                     debtors_id = debtors_id + (debtor_item['id'],)
 
             debtors_query = await session.execute(select(debtor).where(debtor.c.id.in_(debtors_id)))
-            debtors_set = debtors_query.all()
+            debtors_set = debtors_query.mappings().all()
 
         result = []
-        for item_debt in debtors_set:
-
-            debtor_item = dict(item_debt._mapping)
+        for debtor_item in debtors_set:
 
             inn = debtor_item['inn']
 
@@ -434,7 +419,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
 
     try:
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
-        credit_item = dict(credit_query.one()._mapping)
+        credit_item = credit_query.mappings().one()
 
         if credit_item['balance_debt'] is not None and credit_item['balance_debt'] != '':
             balance_debt = credit_item['balance_debt'] / 100
@@ -442,13 +427,13 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             balance_debt = 0
 
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
-        debtor_item = dict(debtor_query.one()._mapping)
+        debtor_item = debtor_query.mappings().one()
 
         cession_query = await session.execute(select(cession).where(cession.c.id == int(credit_item['cession_id'])))
-        cession_item = dict(cession_query.one()._mapping)
+        cession_item = cession_query.mappings().one()
 
         status_cd_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(credit_item['status_cd_id'])))
-        status_cd_item = dict(status_cd_query.one()._mapping)
+        status_cd_item = status_cd_query.mappings().one()
         status_cd = status_cd_item['name']
 
         try:
@@ -456,7 +441,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             summa_all = summa_query.scalar() / 100
 
             pay_query = await session.execute(select(payment).where(payment.c.credit_id == credit_id).order_by(desc(payment.c.id)))
-            payment_set = dict(pay_query.first()._mapping)
+            payment_set = pay_query.mappings().first()
             pay_last = payment_set['summa'] / 100
             date_last = payment_set['date']
         except:
@@ -466,7 +451,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
 
         try:
             ed_query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
-            ed_set = dict(ed_query.first()._mapping)
+            ed_set = ed_query.mappings().first()
 
             ed_type_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == int(ed_set['type_ed_id'])))
             ed_type = ed_type_query.scalar()

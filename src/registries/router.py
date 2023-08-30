@@ -20,18 +20,16 @@ async def get_registry_headers(session: AsyncSession = Depends(get_async_session
         registry_query = await session.execute(select(registry_headers).order_by(registry_headers.c.model))
 
         result = []
-        for item in registry_query.all():
-
-            item_registry = dict(item._mapping)
-
-            result.append({
-                "id": item_registry['id'],
-                "model": item_registry['model'],
-                "name_field": item_registry['name_field'],
-                "headers": item_registry['headers'],
-                "headers_key": item_registry['headers_key'],
-                "excel_field": ""
-            })
+        for item in registry_query.mappings().all():
+            if item['employ_registry']:
+                result.append({
+                    "id": item['id'],
+                    "model": item['model'],
+                    "name_field": item['name_field'],
+                    "headers": item['headers'],
+                    "headers_key": item['headers_key'],
+                    "excel_field": ""
+                })
         return result
     except Exception as ex:
         return {
@@ -91,13 +89,12 @@ async def get_registry_structures(session: AsyncSession = Depends(get_async_sess
         query = await session.execute(select(registry_structures))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "text": item_dic['name'],
+                "text": item['name'],
                 "value": {
-                    "reg_struct_id": item_dic["id"],
+                    "reg_struct_id": item["id"],
                 },
             })
 

@@ -24,7 +24,7 @@ router_task = APIRouter(
 async def get_cession(credit_id: int = None, section_card_debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
-        credit_item = dict(credit_query.one()._mapping)
+        credit_item = credit_query.mappings().one()
 
         if section_card_debtor_id is not None and section_card_debtor_id != '':
             tasks_query = await session.execute(select(task).where(task.c.credit_id == credit_id).
@@ -36,7 +36,7 @@ async def get_cession(credit_id: int = None, section_card_debtor_id: int = None,
         tasks_set = tasks_query.all()
 
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
-        debtor_item = dict(debtor_query.one()._mapping)
+        debtor_item = debtor_query.mappings().one()
 
         if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
@@ -198,8 +198,7 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
         num_page_all = int(math.ceil(total_item / per_page))
 
         data_tasks = []
-        for item in tasks_query.all():
-            item_task = dict(item._mapping)
+        for item_task in tasks_query.mappings().all():
 
             section_task = ''
             section_task_id = None

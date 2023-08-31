@@ -3,7 +3,7 @@ from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.registries.models import registry_headers, registry_structures
+from src.registries.models import registry_headers, registry_structures, registry_filters
 from src.registries.schemas import RegistryHeadersCreate
 
 
@@ -76,7 +76,7 @@ async def add_registry_headers(new_registry_headers: RegistryHeadersCreate, sess
         }
 
 
-# Получить/добавить список структур Реестра
+# Получить/добавить список Структур реестра
 router_registry_structures = APIRouter(
     prefix="/v1/RegistryStructures",
     tags=["Registries"]
@@ -138,7 +138,7 @@ async def add_registry_structures(data_dict: dict, session: AsyncSession = Depen
         }
 
 
-# Получить json структуры Реестра
+# Получить json Структуры реестра
 router_registry_structur_json = APIRouter(
     prefix="/v1/RegistryStructurJSON",
     tags=["Registries"]
@@ -158,4 +158,69 @@ async def get_registry_structur_json(reg_struct_id: int = None, session: AsyncSe
             "status": "error",
             "data": None,
             "details": ex
+        }
+
+
+# Получить/добавить список Фильтров Реестра
+router_registry_filters = APIRouter(
+    prefix="/v1/RegistryFilters",
+    tags=["Registries"]
+)
+
+
+@router_registry_filters.get("/")
+async def get_registry_filters(session: AsyncSession = Depends(get_async_session)):
+    try:
+        query = await session.execute(select(registry_filters))
+
+        result = []
+        for item in query.mappings().all():
+
+            result.append({
+                "text": item['name'],
+                "value": {
+                    "reg_filter_id": item["id"],
+                    "reg_struct_id": item["registry_structure_id"],
+                    "function_name": item["function_name"],
+                },
+            })
+
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+@router_registry_filters.post("/")
+async def add_registry_filters(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        data = {
+            "name": data_json['name'],
+            "function_name": data_json['function_name'],
+            "registry_structure_id": data_json['reg_struct_id'],
+        }
+
+        if data_json['id']:
+            reg_filter_id = int(data_json['id'])
+            post_data = update(registry_filters).where(registry_filters.c.id == reg_filter_id).values(data)
+        else:
+            post_data = insert(registry_filters).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Данные успешно сохранены'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }

@@ -55,21 +55,13 @@ executive_productions = Table(
     Column("comment", String(200), doc='Комментарий'),
 )
 
-# Департамент предъявления ИД
-department_presentation = Table(
-    "department_presentation",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("department_presentation_id", Integer, nullable=False, doc='Учреждение предъявления_id'),
-    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента_id'),
-)
-
 # Движение исполнительного документа
 collection_debt = Table(
     "collection_debt",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("department_presentation_id", Integer, ForeignKey(department_presentation.c.id), nullable=False, doc='Учреждение предъявления_id'),
+    Column("department_presentation_id", Integer, nullable=False, doc='Учреждение предъявления_id'),
+    Column("type_department_id", Integer, ForeignKey(ref_type_department.c.id), nullable=False, doc='Тип департамента предъявления ИД_id'),
     Column("executive_document_id", Integer, ForeignKey(executive_document.c.id), doc='Исполнительный документ_id'),
     Column("credit_id", Integer, ForeignKey(credit.c.id), doc='Кредитный договор_id'),
     Column("date_start", DATE, doc='Дата предъявления ИД'),

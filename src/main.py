@@ -5,14 +5,22 @@ from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
 from src.debts.router import router_cession, router_credits, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name
-from src.references.router import router_ref_status_credit
+from src.references.router import router_ref_status_credit, router_ref_type_templates
 from src.collection_debt.router import router_ed_debtor
 from src.tasks.router import router_task, router_task_all
+
+from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json, \
+    router_registry_filters
+
+from src.creating_docs.router import router_docs_generator_template
+from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
+
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
 from src.routers_helper.rout_admin.user_api import router_profile_user, router_list_users
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
 from src.routers_helper.rout_debt_import.upload_to_database import router_post_database
-from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json
+from src.routers_helper.rout_registry.get_data_for_registry import router_data_registry, router_func_filters
+
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -50,6 +58,7 @@ app.include_router(router_debt_information)
 
 # Для references
 app.include_router(router_ref_status_credit)
+app.include_router(router_ref_type_templates)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)
@@ -62,6 +71,11 @@ app.include_router(router_task_all)
 app.include_router(router_registry_headers)
 app.include_router(router_registry_structures)
 app.include_router(router_registry_structur_json)
+app.include_router(router_registry_filters)
+
+# Для creating_docs
+app.include_router(router_docs_generator_template)
+app.include_router(router_generator_docs)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)
@@ -69,6 +83,8 @@ app.include_router(router_profile_user)
 app.include_router(router_list_users)
 app.include_router(router_import_headers_excel)
 app.include_router(router_post_database)
+app.include_router(router_data_registry)
+app.include_router(router_func_filters)
 
 
 origins = [

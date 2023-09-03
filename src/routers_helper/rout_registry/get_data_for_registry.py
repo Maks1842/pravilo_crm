@@ -14,9 +14,30 @@ from src.references.models import ref_status_credit
 from src.payments.models import payment
 
 import src.routers_helper.rout_registry.filters as control_filters
+from inspect import getmembers, isfunction
 
 
-# Получить/добавить Наименования столбцов реестров
+
+# Получить название функций Фильтров
+router_func_filters = APIRouter(
+    prefix="/v1/GetFunctionsFilters",
+    tags=["Registries"]
+)
+
+
+@router_func_filters.get("/")
+def get_functions_filters():
+
+    functions_set = getmembers(control_filters, isfunction)
+
+    functions_list = []
+    for f in functions_set:
+        functions_list.append({'function_name': f[0]})
+
+    return functions_list
+
+
+# Получить Данные о долгах для реестров
 router_data_registry = APIRouter(
     prefix="/v1/GetDataForRegistry",
     tags=["Registries"]

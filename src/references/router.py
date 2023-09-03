@@ -21,12 +21,11 @@ async def get_status_cd(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_status_credit))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "status_cd": item_dic['name'],
-                "value": {"status_cd_id": item_dic['id']},
+                "status_cd": item['name'],
+                "value": {"status_cd_id": item['id']},
             })
 
         return result
@@ -84,12 +83,11 @@ async def get_claimer_ed(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_claimer_ed))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "claimer_ed": item_dic['name'],
-                "value": {"claimer_ed_id": item_dic['id']},
+                "claimer_ed": item['name'],
+                "value": {"claimer_ed_id": item['id']},
             })
 
         return result
@@ -115,12 +113,11 @@ async def get_type_ed(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_type_ed))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "type_ed": item_dic['name'],
-                "value": {"type_ed_id": item_dic['id']},
+                "type_ed": item['name'],
+                "value": {"type_ed_id": item['id']},
             })
 
         return result
@@ -146,12 +143,11 @@ async def get_status_ed(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_status_ed))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "status_ed": item_dic['name'],
-                "value": {"status_ed_id": item_dic['id']},
+                "status_ed": item['name'],
+                "value": {"status_ed_id": item['id']},
             })
 
         return result
@@ -177,12 +173,11 @@ async def get_reason_cansel_ed(session: AsyncSession = Depends(get_async_session
         query = await session.execute(select(ref_reason_cansel_ed))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "reason_cansel_ed": item_dic['name'],
-                "value": {"reason_cansel_ed_id": item_dic['id']},
+                "reason_cansel_ed": item['name'],
+                "value": {"reason_cansel_ed_id": item['id']},
             })
 
         return result
@@ -208,23 +203,22 @@ async def get_tribunal(fragment: str, session: AsyncSession = Depends(get_async_
         query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.name.icontains(fragment)))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
-            if item_dic['gaspravosudie'] == True:
+            if item['gaspravosudie'] == True:
                 gaspravosudie = 'Возможна подача через ГАС'
             else:
                 gaspravosudie = 'НЕ возможна подача через ГАС'
 
             result.append({
-                "tribunal_name": item_dic['name'],
+                "tribunal_name": item['name'],
                 "value": {
-                    "tribunal_id": item_dic["id"],
-                    "address": item_dic["address"],
-                    "email": item_dic["email"],
-                    "phone": item_dic["phone"],
+                    "tribunal_id": item["id"],
+                    "address": item["address"],
+                    "email": item["email"],
+                    "phone": item["phone"],
                     "gaspravosudie": gaspravosudie,
-                    "gaspravosudie_value": item_dic['gaspravosudie']
+                    "gaspravosudie_value": item['gaspravosudie']
                 },
             })
 
@@ -288,18 +282,17 @@ async def get_financial_manager(session: AsyncSession = Depends(get_async_sessio
         query = await session.execute(select(ref_financial_manager))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "fin_man_name": item_dic['name'],
+                "fin_man_name": item['name'],
                 "value": {
-                    "fin_man_id": item_dic["id"],
-                    "organisation_fm": item_dic["organisation_fm"],
-                    "address_1": item_dic["address_1"],
-                    "address_2": item_dic["address_2"],
-                    "email": item_dic["email"],
-                    "phone": item_dic['phone'],
+                    "fin_man_id": item["id"],
+                    "organisation_fm": item["organisation_fm"],
+                    "address_1": item["address_1"],
+                    "address_2": item["address_2"],
+                    "email": item["email"],
+                    "phone": item['phone'],
                 },
             })
 
@@ -326,13 +319,12 @@ async def get_type_department(session: AsyncSession = Depends(get_async_session)
         query = await session.execute(select(ref_type_department))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "type_department_name": item_dic['name'],
+                "type_department_name": item['name'],
                 "value": {
-                    "type_department_id": item_dic["id"],
+                    "type_department_id": item["id"],
                 },
             })
 
@@ -390,14 +382,13 @@ async def get_region(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_region))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "region": item_dic['name'],
+                "region": item['name'],
                 "value": {
-                    "region_id": item_dic["id"],
-                    "index": item_dic["index"],
+                    "region_id": item["id"],
+                    "index": item["index"],
                 },
             })
 
@@ -456,20 +447,19 @@ async def get_rosp(fragment: str, session: AsyncSession = Depends(get_async_sess
         query = await session.execute(select(ref_rosp).where(ref_rosp.c.name.icontains(fragment)))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "rosp_name": item_dic['name'],
+                "rosp_name": item['name'],
                 "value": {
-                    "rosp_id": item_dic["id"],
-                    "type_department_id": item_dic["type_department_id"],
-                    "address": item_dic["address"],
-                    "address_index": item_dic["address_index"],
-                    "region_id": item_dic["region_id"],
-                    "phone": item_dic['phone'],
-                    "email": item_dic["email"],
-                    "class_code": item_dic["class_code"],
+                    "rosp_id": item["id"],
+                    "type_department_id": item["type_department_id"],
+                    "address": item["address"],
+                    "address_index": item["address_index"],
+                    "region_id": item["region_id"],
+                    "phone": item['phone'],
+                    "email": item["email"],
+                    "class_code": item["class_code"],
                 },
             })
 
@@ -534,22 +524,21 @@ async def get_bank(fragment: str, session: AsyncSession = Depends(get_async_sess
         query = await session.execute(select(ref_bank).where(ref_bank.c.name.icontains(fragment)))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "bank_name": item_dic['name'],
+                "bank_name": item['name'],
                 "value": {
-                    "bank_id": item_dic["id"],
-                    "type_department_id": item_dic["type_department_id"],
-                    "address": item_dic["address"],
-                    "address_index": item_dic["address_index"],
-                    "region_id": item_dic["region_id"],
-                    "phone": item_dic['phone'],
-                    "email": item_dic["email"],
-                    "bik": item_dic["bik"],
-                    "inn": item_dic["inn"],
-                    "corr_account": item_dic["corr_account"],
+                    "bank_id": item["id"],
+                    "type_department_id": item["type_department_id"],
+                    "address": item["address"],
+                    "address_index": item["address_index"],
+                    "region_id": item["region_id"],
+                    "phone": item['phone'],
+                    "email": item["email"],
+                    "bik": item["bik"],
+                    "inn": item["inn"],
+                    "corr_account": item["corr_account"],
                 },
             })
 
@@ -616,20 +605,19 @@ async def get_pfr(fragment: str, session: AsyncSession = Depends(get_async_sessi
         query = await session.execute(select(ref_pfr).where(ref_pfr.c.name.icontains(fragment)))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "pfr_name": item_dic['name'],
+                "pfr_name": item['name'],
                 "value": {
-                    "pfr_id": item_dic["id"],
-                    "type_department_id": item_dic["type_department_id"],
-                    "address": item_dic["address"],
-                    "address_index": item_dic["address_index"],
-                    "region_id": item_dic["region_id"],
-                    "phone": item_dic['phone'],
-                    "email": item_dic["email"],
-                    "class_code": item_dic["class_code"],
+                    "pfr_id": item["id"],
+                    "type_department_id": item["type_department_id"],
+                    "address": item["address"],
+                    "address_index": item["address_index"],
+                    "region_id": item["region_id"],
+                    "phone": item['phone'],
+                    "email": item["email"],
+                    "class_code": item["class_code"],
                 },
             })
 
@@ -694,13 +682,12 @@ async def get_reason_end_ep(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_reason_end_ep))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "reason_end_ep": item_dic['name'],
+                "reason_end_ep": item['name'],
                 "value": {
-                    "reason_end_ep_id": item_dic["id"],
+                    "reason_end_ep_id": item["id"],
                 },
             })
 
@@ -727,13 +714,12 @@ async def get_type_statement(session: AsyncSession = Depends(get_async_session))
         query = await session.execute(select(ref_type_statement))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "type_statement": item_dic['name'],
+                "type_statement": item['name'],
                 "value": {
-                    "type_statement_id": item_dic["id"],
+                    "type_statement_id": item["id"],
                 },
             })
 
@@ -760,13 +746,12 @@ async def get_type_state_duty(session: AsyncSession = Depends(get_async_session)
         query = await session.execute(select(ref_type_state_duty))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "type_state_duty": item_dic['name'],
+                "type_state_duty": item['name'],
                 "value": {
-                    "type_state_duty_id": item_dic["id"],
+                    "type_state_duty_id": item["id"],
                 },
             })
 
@@ -793,13 +778,12 @@ async def get_section_card_debtor(session: AsyncSession = Depends(get_async_sess
         query = await session.execute(select(ref_section_card_debtor))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "section_card_debtor": item_dic['name'],
+                "section_card_debtor": item['name'],
                 "value": {
-                    "section_card_debtor_id": item_dic["id"],
+                    "section_card_debtor_id": item["id"],
                 },
             })
 
@@ -826,13 +810,12 @@ async def get_legal_section(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_legal_section))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "legal_section": item_dic['name'],
+                "legal_section": item['name'],
                 "value": {
-                    "legal_section_id": item_dic["id"],
+                    "legal_section_id": item["id"],
                 },
             })
 
@@ -859,13 +842,12 @@ async def get_type_templates(session: AsyncSession = Depends(get_async_session))
         query = await session.execute(select(ref_type_templates))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "type_templates": item_dic['name'],
+                "type_templates": item['name'],
                 "value": {
-                    "type_templates_id": item_dic["id"],
+                    "type_templates_id": item["id"],
                 },
             })
 
@@ -892,15 +874,14 @@ async def get_legal_docs(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_legal_docs))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "legal_docs": item_dic['name'],
+                "legal_docs": item['name'],
                 "value": {
-                    "legal_docs_id": item_dic["id"],
-                    "section_card_id": item_dic["section_card_id"],
-                    "legal_section_id": item_dic["legal_section_id"],
+                    "legal_docs_id": item["id"],
+                    "section_card_id": item["section_card_id"],
+                    "legal_section_id": item["legal_section_id"],
                 },
             })
 
@@ -927,14 +908,13 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
         query = await session.execute(select(ref_result_statement))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "result_statement": item_dic['name'],
+                "result_statement": item['name'],
                 "value": {
-                    "result_statement_id": item_dic["id"],
-                    "type_statement_id": item_dic["type_statement_id"],
+                    "result_statement_id": item["id"],
+                    "type_statement_id": item["type_statement_id"],
                 },
             })
 
@@ -961,17 +941,16 @@ async def get_task(session: AsyncSession = Depends(get_async_session)):
         query = await session.execute(select(ref_task))
 
         result = []
-        for item in query.all():
-            item_dic = dict(item._mapping)
+        for item in query.mappings().all():
 
             result.append({
-                "task_name": item_dic['name'],
+                "task_name": item['name'],
                 "value": {
-                    "task_name_id": item_dic["id"],
-                    "section_card_id": item_dic["section_card_id"],
-                    "type_statement_id": item_dic["type_statement_id"],
-                    "legal_doc_id": item_dic["legal_doc_id"],
-                    "result_statement_id": item_dic["result_statement_id"],
+                    "task_name_id": item["id"],
+                    "section_card_id": item["section_card_id"],
+                    "type_statement_id": item["type_statement_id"],
+                    "legal_doc_id": item["legal_doc_id"],
+                    "result_statement_id": item["result_statement_id"],
                 },
             })
 

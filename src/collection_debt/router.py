@@ -21,11 +21,10 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
         query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id))
 
         result = []
-        for item in query.all():
-            data = dict(item._mapping)
+        for item in query.mappings().all():
 
-            if len(data) > 0:
-                type_ed = ''
+            if len(item) > 0:
+                type_ed_name = ''
                 type_ed_id = None
                 claimer_ed_name = ''
                 claimer_ed_id = None
@@ -39,58 +38,58 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 summa_debt_decision = 0
                 state_duty = 0
 
-                if data['summa_debt_decision'] is not None and data['summa_debt_decision'] != '':
-                    summa_debt_decision = data['summa_debt_decision'] / 100
+                if item['summa_debt_decision'] is not None and item['summa_debt_decision'] != '':
+                    summa_debt_decision = item['summa_debt_decision'] / 100
 
-                if data['state_duty'] is not None and data['state_duty'] != '':
-                    state_duty = data['state_duty'] / 100
+                if item['state_duty'] is not None and item['state_duty'] != '':
+                    state_duty = item['state_duty'] / 100
 
-                if data['type_ed_id'] is not None and data['type_ed_id'] != '':
-                    type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(data['type_ed_id'])))
-                    type_ed = dict(type_ed_query.one()._mapping)
+                if item['type_ed_id'] is not None and item['type_ed_id'] != '':
+                    type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(item['type_ed_id'])))
+                    type_ed = type_ed_query.mappings().one()
 
-                    type_ed = type_ed['name']
+                    type_ed_name = type_ed['name']
                     type_ed_id = type_ed['id']
 
-                if data['claimer_ed_id'] is not None and data['claimer_ed_id'] != '':
-                    claimer_ed_query = await session.execute(select(ref_claimer_ed).where(ref_claimer_ed.c.id == int(data['claimer_ed_id'])))
-                    claimer_ed = dict(claimer_ed_query.one()._mapping)
+                if item['claimer_ed_id'] is not None and item['claimer_ed_id'] != '':
+                    claimer_ed_query = await session.execute(select(ref_claimer_ed).where(ref_claimer_ed.c.id == int(item['claimer_ed_id'])))
+                    claimer_ed = claimer_ed_query.mappings().one()
 
                     claimer_ed_name = claimer_ed['name']
                     claimer_ed_id = claimer_ed['id']
 
-                if data['tribunal_id'] is not None and data['tribunal_id'] != '':
-                    tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(data['tribunal_id'])))
-                    tribunal_set = dict(tribunal_query.one()._mapping)
+                if item['tribunal_id'] is not None and item['tribunal_id'] != '':
+                    tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item['tribunal_id'])))
+                    tribunal_set = tribunal_query.mappings().one()
 
-                    tribunal_id = data['tribunal_id']
+                    tribunal_id = item['tribunal_id']
                     tribunal = tribunal_set['name']
                     address_tribunal = tribunal_set['address']
                     email_tribunal = tribunal_set['email']
                     phone_tribunal = tribunal_set['phone']
 
-                if data['status_ed_id'] is not None and data['status_ed_id'] != '':
-                    status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(data['status_ed_id'])))
-                    status_ed = dict(status_ed_query.one()._mapping)
+                if item['status_ed_id'] is not None and item['status_ed_id'] != '':
+                    status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(item['status_ed_id'])))
+                    status_ed = status_ed_query.mappings().one()
 
                     status_name = status_ed['name']
                     status_id = status_ed['id']
 
                 result.append({
-                    'id': data['id'],
-                    'type_ed': type_ed,
+                    'id': item['id'],
+                    'type_ed': type_ed_name,
                     'type_ed_id': type_ed_id,
-                    'number': data['number'],
-                    'date': data['date'],
-                    'case_number': data['case_number'],
-                    'date_of_receipt_ed': data['date_of_receipt_ed'],
-                    'date_decision': data['date_decision'],
+                    'number': item['number'],
+                    'date': item['date'],
+                    'case_number': item['case_number'],
+                    'date_of_receipt_ed': item['date_of_receipt_ed'],
+                    'date_decision': item['date_decision'],
                     'summa_debt_decision': summa_debt_decision,
                     'state_duty': state_duty,
                     'status_ed': status_name,
                     'status_ed_id': status_id,
-                    'succession': data['succession'],
-                    'date_entry_force': data['date_entry_force'],
+                    'succession': item['succession'],
+                    'date_entry_force': item['date_entry_force'],
                     'claimer_ed': claimer_ed_name,
                     'claimer_ed_id': claimer_ed_id,
                     "tribunal": tribunal,
@@ -98,7 +97,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     "address_tribunal": address_tribunal,
                     "email_tribunal": email_tribunal,
                     "phone_tribunal": phone_tribunal,
-                    'comment': data['comment'],
+                    'comment': item['comment'],
                 })
         return result
     except Exception as ex:

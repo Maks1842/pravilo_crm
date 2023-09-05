@@ -62,7 +62,7 @@ async def get_list_users(session: AsyncSession = Depends(get_async_session)):
             item_dic = dict(item._mapping)
 
             result.append({
-                "name_full": f'{item_dic["first_name"]} {item_dic["last_name"] or ""}',
+                "user_name_full": f'{item_dic["first_name"]} {item_dic["last_name"] or ""}',
                 "value": {
                     "user_id": item_dic["id"],
                 },

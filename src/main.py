@@ -5,7 +5,7 @@ from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
 from src.debts.router import router_cession, router_credits, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name
-from src.references.router import router_ref_status_credit, router_ref_type_templates
+from src.references.router import router_ref_status_credit, router_ref_type_templates, router_ref_task
 from src.collection_debt.router import router_ed_debtor
 from src.tasks.router import router_task, router_task_all
 
@@ -13,8 +13,10 @@ from src.registries.router import router_registry_headers, router_registry_struc
     router_registry_filters
 
 from src.creating_docs.router import router_docs_generator_template
-from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 
+from src.directory_docs.router import router_dir_cession
+
+from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
 from src.routers_helper.rout_admin.user_api import router_profile_user, router_list_users
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
@@ -59,6 +61,7 @@ app.include_router(router_debt_information)
 # Для references
 app.include_router(router_ref_status_credit)
 app.include_router(router_ref_type_templates)
+app.include_router(router_ref_task)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)
@@ -76,6 +79,9 @@ app.include_router(router_registry_filters)
 # Для creating_docs
 app.include_router(router_docs_generator_template)
 app.include_router(router_generator_docs)
+
+# Для directory_docs
+app.include_router(router_dir_cession)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

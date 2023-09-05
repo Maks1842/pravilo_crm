@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update
+from sqlalchemy import select, insert, func, distinct, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -935,10 +935,14 @@ router_ref_task = APIRouter(
 
 
 @router_ref_task.get("/")
-async def get_task(session: AsyncSession = Depends(get_async_session)):
+async def get_task(section_card_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
     try:
-        query = await session.execute(select(ref_task))
+        if section_card_id:
+            query = await session.execute(select(ref_task).where(or_(ref_task.c.section_card_id.in_([section_card_id, 1]),
+                                                                     ref_task.c.section_card_id == None)))
+        else:
+            query = await session.execute(select(ref_task))
 
         result = []
         for item in query.mappings().all():

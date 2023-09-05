@@ -1,5 +1,4 @@
 import math
-import re
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
@@ -21,7 +20,7 @@ router_task = APIRouter(
 
 
 @router_task.get("/")
-async def get_cession(credit_id: int = None, section_card_debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+async def get_task(credit_id: int = None, section_card_debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
         credit_item = credit_query.mappings().one()
@@ -88,7 +87,7 @@ async def get_cession(credit_id: int = None, section_card_debtor_id: int = None,
                 "debtorName": fio,
                 "cession_name": cession_name,
                 "name_task": name_task,
-                "nameTask_id": item_task['name_id'],
+                "task_name_id": item_task['name_id'],
                 "type_statement": type_statement,
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
@@ -114,7 +113,7 @@ async def get_cession(credit_id: int = None, section_card_debtor_id: int = None,
 
 
 @router_task.post("/")
-async def add_cession(new_task: TaskCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_task(new_task: TaskCreate, session: AsyncSession = Depends(get_async_session)):
 
     req_data = new_task.model_dump()
 
@@ -127,7 +126,7 @@ async def add_cession(new_task: TaskCreate, session: AsyncSession = Depends(get_
 
     try:
         data = {
-            "name_id": req_data["name_id"],
+            "name_id": req_data["task_name_id"],
             "section_card_debtor_id": req_data["section_card_debtor_id"],
             "type_statement_id": req_data["type_statement_id"],
             "date_task": req_data["date_task"],

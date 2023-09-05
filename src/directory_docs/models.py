@@ -5,7 +5,7 @@ from src.debts.models import cession, credit
 
 metadata = MetaData()
 
-# Директория и Документы по Цессиям
+# Директории по Цессиям
 dir_cession = Table(
     "dir_cession",
     metadata,
@@ -13,6 +13,16 @@ dir_cession = Table(
     Column("name", String(150), nullable=False, doc='Наименование цессии'),
     Column("cession_id", Integer, ForeignKey(cession.c.id), doc='Цессия_id'),
     Column("path", String(200), doc='Путь к папке с Цессией'),
+)
+
+# Документы по Цессиям
+docs_cession = Table(
+    "docs_cession",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, doc='Наименование документа'),
+    Column("dir_cession_id", Integer, ForeignKey(dir_cession.c.id), doc='Директория цессии'),
+    Column("path", String(200), doc='Путь к документу'),
 )
 
 # Директория и Документы по Кредитам

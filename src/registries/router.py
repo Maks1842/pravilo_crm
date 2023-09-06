@@ -55,7 +55,7 @@ async def add_registry_headers(new_registry_headers: RegistryHeadersCreate, sess
         }
 
         if req_data["id"]:
-            reg_head_id = int(req_data["id"])
+            reg_head_id: int = req_data["id"]
             post_data = update(registry_headers).where(registry_headers.c.id == reg_head_id).values(data)
         else:
             post_data = insert(registry_headers).values(data)
@@ -117,7 +117,7 @@ async def add_registry_structures(data_dict: dict, session: AsyncSession = Depen
         }
 
         if data_dict['name']['value']['reg_struct_id']:
-            reg_struct_id = int(data_dict['name']['value']['reg_struct_id'])
+            reg_struct_id: int = data_dict['name']['value']['reg_struct_id']
             post_data = update(registry_structures).where(registry_structures.c.id == reg_struct_id).values(data)
         else:
             post_data = insert(registry_structures).values(data)
@@ -205,7 +205,7 @@ async def add_registry_filters(data_json: dict, session: AsyncSession = Depends(
         }
 
         if data_json['id']:
-            reg_filter_id = int(data_json['id'])
+            reg_filter_id: int = data_json['id']
             post_data = update(registry_filters).where(registry_filters.c.id == reg_filter_id).values(data)
         else:
             post_data = insert(registry_filters).values(data)

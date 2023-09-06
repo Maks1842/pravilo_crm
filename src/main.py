@@ -14,7 +14,7 @@ from src.registries.router import router_registry_headers, router_registry_struc
 
 from src.creating_docs.router import router_docs_generator_template
 
-from src.directory_docs.router import router_dir_cession
+from src.directory_docs.router import router_dir_cession, router_docs_cession
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
@@ -82,6 +82,7 @@ app.include_router(router_generator_docs)
 
 # Для directory_docs
 app.include_router(router_dir_cession)
+app.include_router(router_docs_cession)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

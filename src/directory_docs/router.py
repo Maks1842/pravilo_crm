@@ -47,10 +47,17 @@ router_docs_cession = APIRouter(
 
 
 @router_docs_cession.get("/")
-async def get_file_cession(cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
+async def get_file_cession(cession_id: int = None, credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
-        dir_cession_query = await session.execute(select(dir_cession.c.id).where(dir_cession.c.cession_id == cession_id))
-        dir_cession_id: int = dir_cession_query.scalar()
+        if credit_id:
+            cession_id_query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
+            cession_id: int = cession_id_query.scalar()
+
+            dir_cession_query = await session.execute(select(dir_cession.c.id).where(dir_cession.c.cession_id == cession_id))
+            dir_cession_id: int = dir_cession_query.scalar()
+        else:
+            dir_cession_query = await session.execute(select(dir_cession.c.id).where(dir_cession.c.cession_id == cession_id))
+            dir_cession_id: int = dir_cession_query.scalar()
 
         docs_cession_query = await session.execute(select(docs_cession).where(docs_cession.c.dir_cession_id == dir_cession_id))
 
@@ -58,7 +65,7 @@ async def get_file_cession(cession_id: int = None, session: AsyncSession = Depen
         for item in docs_cession_query.mappings().all():
 
             result.append({
-                "docs_cession_id": item["id"],
+                "id": item["id"],
                 "docs_cession_name": item["name"],
                 "path": item["path"]
             })
@@ -87,15 +94,20 @@ async def save_file_cession(cession_file: UploadFile, file_name: str, cession_id
             f.write(chunk)
 
     try:
-        data = {
-            "name": file_name,
-            "dir_cession_id": dir_cession_id,
-            "path": path,
-        }
-        post_data = insert(docs_cession).values(data)
+        docs_cession_qwery = await session.execute(select(docs_cession).where(docs_cession.c.name == file_name))
+        docs_cession_set = docs_cession_qwery.mappings().fetchone()
 
-        await session.execute(post_data)
-        await session.commit()
+        if docs_cession_set is None:
+
+            data = {
+                "name": file_name,
+                "dir_cession_id": dir_cession_id,
+                "path": path,
+            }
+            post_data = insert(docs_cession).values(data)
+
+            await session.execute(post_data)
+            await session.commit()
 
         return {
             'status': 'success',
@@ -107,4 +119,35 @@ async def save_file_cession(cession_file: UploadFile, file_name: str, cession_id
             "status": "error",
             "data": None,
             "details": f"Ошибка при сохранении файла. {ex}"
+        }
+
+
+# Скачать файл по цессии
+router_download_file_cession = APIRouter(
+    prefix="/v1/DownloadFileCession",
+    tags=["DirectoryDocs"]
+)
+
+
+@router_download_file_cession.get("/")
+async def download_file_cession(file_id: int = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        docs_cession_query = await session.execute(select(docs_cession).where(docs_cession.c.id == file_id))
+        file_set = docs_cession_query.mappings().fetchone()
+
+        path_file = file_set['path']
+        file_name = file_set['name']
+
+        # # отдаем сохраненный pdf в качестве ответа
+        # file_pointer = open(path_file, "rb")
+        # response = HttpResponse(file_pointer, content_type='application/pdf;')
+        # response['Content-Disposition'] = f'attachment; filename={file_name}'
+
+
+        return
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
         }

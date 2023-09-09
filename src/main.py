@@ -8,6 +8,7 @@ from src.debts.router import router_cession, router_credits, router_credit_debto
 from src.references.router import router_ref_status_credit, router_ref_type_templates, router_ref_task, \
     router_ref_legal_docs, router_ref_legal_section, router_ref_result_statement
 from src.collection_debt.router import router_ed_debtor
+from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.tasks.router import router_task, router_task_all
 
 from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json, \
@@ -17,7 +18,8 @@ from src.creating_docs.router import router_docs_generator_template
 
 from src.directory_docs.router import router_dir_cession, router_docs_cession, router_download_file_cession
 
-from src.mail.router import router_incoming_mail
+from src.mail.routers.incoming_mail import router_incoming_mail
+from src.mail.routers.outgoing_mail import router_outgoing_mail
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
@@ -72,6 +74,9 @@ app.include_router(router_ref_result_statement)
 # Для collection_debt
 app.include_router(router_ed_debtor)
 
+# Для legal_work
+app.include_router(router_tribunal_write)
+
 # Для routers_task
 app.include_router(router_task)
 app.include_router(router_task_all)
@@ -93,6 +98,7 @@ app.include_router(router_download_file_cession)
 
 # Для mail
 app.include_router(router_incoming_mail)
+app.include_router(router_outgoing_mail)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

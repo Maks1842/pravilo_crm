@@ -2,15 +2,13 @@ import math
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, insert, func, distinct, update, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.debts.models import cession, credit, debtor
-from src.tasks.models import task
-from src.mail.models import mail_in, mail_out
+from src.debts.models import credit, debtor
+from src.mail.models import mail_in
 from src.references.models import ref_legal_docs, ref_result_statement
-from src.auth.models import user
 
 '''
 IncomingMail - извлекаю и добавляю входящую корреспонденцию.
@@ -43,17 +41,14 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
         dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
 
     credits_id_query = await session.execute(select(credit.c.id).where(credit.c.debtor_id == debtor_id))
-    credits_id_list = credits_id_query.mappings().all()
-    print(f'{credits_id_list=}')
+    credits_id_list = credits_id_query.scalars().all()
 
     try:
         if debtor_id == None and dates1:
             mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.date >= dates1, mail_in.c.date <= dates2)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            print(f'debtor {mail_query}')
             total_item_query = await session.execute(func.count(distinct(mail_in.c.date == dates1)))
-            print(f'{total_item_query=}')
         elif debtor_id and dates1 == None:
             mail_query = await session.execute(select(mail_in).where(mail_in.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
@@ -65,16 +60,12 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
                                                 limit(per_page).offset((page - 1) * per_page)))
             total_item_query = await session.execute(func.count(distinct(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= dates1, mail_in.c.date <= dates2))))
         else:
-            print(f'else')
             mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            print(f'else {mail_query}')
             total_item_query = await session.execute(func.count(distinct(mail_in.c.id)))
-            print(f'{total_item_query=}')
 
         total_item = total_item_query.scalar()
         num_page_all = int(math.ceil(total_item / per_page))
-        print(f'{total_item=}')
 
         data_mail = []
         for item in mail_query.mappings().all():

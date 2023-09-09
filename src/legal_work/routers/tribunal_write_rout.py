@@ -75,7 +75,6 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
         for item in legal_query.mappings().all():
 
             credit_id: int = item['credit_id']
-            cession_id: int = item['cession_id']
 
             name_task = ''
             name_task_id = ''
@@ -90,6 +89,7 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
 
             credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
             credit_set = credit_query.mappings().one()
+            cession_id: int = credit_set['cession_id']
 
             cession_query = await session.execute(select(cession).where(cession.c.id == cession_id))
             cession_set = cession_query.mappings().one()
@@ -178,37 +178,75 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
 
     data = data_json['data_json']
 
+
     if data['credit_id'] == None:
         return {
             "status": "error",
             "data": None,
             "details": f"Не выбран Должник и № Кредитного договора"
         }
+    date_result_1 = None
+    date_entry_force = None
+    date_incoming_ed = None
+    date_cancel_result = None
+    date_session_2 = None
+    date_result_2 = None
+    summa_ed = None
+    summa_state_duty_result = None
+    summa_result_2 = None
+
+    if data['dateResult_1'] is not None:
+        date_result_1 = datetime.strptime(data['dateResult_1'], '%Y-%m-%d').date()
+
+    if data['dateEntryIntoForce'] is not None:
+        date_entry_force = datetime.strptime(data['dateEntryIntoForce'], '%Y-%m-%d').date()
+
+    if data['dateIncomingED'] is not None:
+        date_incoming_ed = datetime.strptime(data['dateIncomingED'], '%Y-%m-%d').date()
+
+    if data['dateCancelResult'] is not None:
+        date_cancel_result = datetime.strptime(data['dateCancelResult'], '%Y-%m-%d').date()
+
+    if data['dateSession_2'] is not None:
+        date_session_2 = datetime.strptime(data['dateSession_2'], '%Y-%m-%d').date()
+
+    if data['dateResult_2'] is not None:
+        date_result_2 = datetime.strptime(data['dateResult_2'], '%Y-%m-%d').date()
+
+    if data['summaED'] is not None:
+        summa_ed = int(float(data['summaED'])) * 100
+
+    if data['summaStateDutyResult'] is not None:
+        summa_state_duty_result = int(float(data['summaStateDutyResult'])) * 100
+
+    if data['summaResult_2'] is not None:
+        summa_result_2 = int(float(data['summaResult_2'])) * 100
+
 
     case_id = data['id']
 
-    legal_num = number_case_legal(data, session)
+    legal_num = await number_case_legal(data, session)
 
     legal_data = {"legal_number": legal_num,
                      "legal_section_id": data['legalSection_id'],
                      "number_case_1": data['numberCase_1'],
                      "name_task_id": data['nameTask_id'],
-                     # "date_session_1": data['dateSession_1'],
-                     "date_result_1": data['dateResult_1'],
+                     # "date_session_1": datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date(),
+                     "date_result_1": date_result_1,
                      "result_1_id": data['result_1_id'],
-                     "date_entry_force": data['dateEntryIntoForce'],
+                     "date_entry_force": date_entry_force,
                      "tribunal_1_id": data['tribun_1_id'],
-                     "summa_ed": data['summaED'],
-                     "summa_state_duty_result": data['summaStateDutyResult'],
-                     "date_incoming_ed": data['dateIncomingED'],
-                     "date_cancel_result": data['dateCancelResult'],
-                     "date_session_2": data['dateSession_2'],
-                     "date_result_2": data['dateResult_2'],
-                     "summa_result_2": data['summaResult_2'],
+                     "summa_ed": summa_ed,
+                     "summa_state_duty_result": summa_state_duty_result,
+                     "date_incoming_ed": date_incoming_ed,
+                     "date_cancel_result": date_cancel_result,
+                     "date_session_2": date_session_2,
+                     "date_result_2": date_result_2,
+                     "summa_result_2": summa_result_2,
                      "comment": data['comment'],
                      "credit_id": data['credit_id'],
                      }
 
-    save_case = save_case_legal(case_id, legal_data, session)
+    save_case = await save_case_legal(case_id, legal_data, session)
 
     return save_case

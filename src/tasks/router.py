@@ -1,4 +1,5 @@
 import math
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
@@ -7,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
 from src.tasks.models import task
-from src.tasks.schemas import TaskCreate
 from src.references.models import ref_task, ref_section_card_debtor, ref_type_statement, ref_result_statement
 from src.auth.models import user
 
@@ -32,7 +32,7 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
         else:
             tasks_query = await session.execute(select(task).where(task.c.credit_id == credit_id).order_by(desc(task.c.date_task)))
 
-        tasks_set = tasks_query.all()
+        tasks_set = tasks_query.mappings().all()
 
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
         debtor_item = debtor_query.mappings().one()
@@ -49,8 +49,6 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
         result = []
         for item in tasks_set:
 
-            item_task = dict(item._mapping)
-
             section_task = ''
             section_task_id = None
             type_statement = ''
@@ -58,50 +56,50 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
             result_statement = ''
             result_statement_id = None
 
-            name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item_task['name_id'])))
+            name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item['name_id'])))
             name_task = name_task_query.scalar()
 
-            if item_task['section_card_debtor_id'] is not None and item_task['section_card_debtor_id'] != '':
-                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item_task['section_card_debtor_id'])))
+            if item['section_card_debtor_id'] is not None:
+                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item['section_card_debtor_id'])))
                 section_task = section_task_query.scalar()
-                section_task_id = item_task['section_card_debtor_id']
+                section_task_id = item['section_card_debtor_id']
 
-            if item_task['type_statement_id'] is not None and item_task['type_statement_id'] != '':
-                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item_task['type_statement_id'])))
+            if item['type_statement_id'] is not None:
+                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item['type_statement_id'])))
                 type_statement = type_stat_query.scalar()
-                type_statement_id = item_task['type_statement_id']
+                type_statement_id = item['type_statement_id']
 
-            if item_task['result_id'] is not None and item_task['result_id'] != '':
-                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item_task['result_id'])))
+            if item['result_id'] is not None:
+                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item['result_id'])))
                 result_statement = result_stat_query.scalar()
-                result_statement_id = item_task['result_id']
+                result_statement_id = item['result_id']
 
-            user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item_task['user_id'])))
-            user_set = [dict(item._mapping) for item in user_query.all()]
+            user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item['user_id'])))
+            user_set = [item for item in user_query.mappings().all()]
             user_name = f'{user_set[0]["first_name"]} {user_set[0]["last_name"] or ""}'
 
             result.append({
-                "id": item_task['id'],
-                "credit_id": item_task['credit_id'],
+                "id": item['id'],
+                "credit_id": item['credit_id'],
                 "number": credit_item['number'],
                 "debtorName": fio,
                 "cession_name": cession_name,
                 "name_task": name_task,
-                "task_name_id": item_task['name_id'],
+                "task_name_id": item['name_id'],
                 "type_statement": type_statement,
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
                 "section_card_debtor_id": section_task_id,
-                "date_task": item_task['date_task'],
-                "timeframe": item_task['timeframe'],
+                "date_task": item['date_task'],
+                "timeframe": item['timeframe'],
                 "user_name": user_name,
-                "user_id": item_task['user_id'],
-                "date_statement": item_task['date_statement'],
-                "track_num": item_task['track_num'],
-                "date_answer": item_task['date_answer'],
+                "user_id": item['user_id'],
+                "date_statement": item['date_statement'],
+                "track_num": item['track_num'],
+                "date_answer": item['date_answer'],
                 "result": result_statement,
                 "result_id": result_statement_id,
-                "comment": item_task['comment'],
+                "comment": item['comment'],
             })
         return result
     except Exception as ex:
@@ -113,38 +111,49 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
 
 
 @router_task.post("/")
-async def add_task(new_task: TaskCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_task(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_task.model_dump()
+    data = data_json['data_json']
 
-    if req_data['credit_id'] == None:
+    if data['credit_id'] == None:
         return {
             "status": "error",
             "data": None,
             "details": f"Не выбран Должник и № Кредитного договора"
         }
 
+    date_task = None
+    date_statement = None
+    date_answer = None
+
+    if data['date_task'] is not None:
+        date_task = datetime.strptime(data['date_task'], '%Y-%m-%d').date()
+    if data['date_statement'] is not None:
+        date_statement = datetime.strptime(data['date_statement'], '%Y-%m-%d').date()
+    if data['date_answer'] is not None:
+        date_answer = datetime.strptime(data['date_answer'], '%Y-%m-%d').date()
+
     try:
-        data = {
-            "name_id": req_data["task_name_id"],
-            "section_card_debtor_id": req_data["section_card_debtor_id"],
-            "type_statement_id": req_data["type_statement_id"],
-            "date_task": req_data["date_task"],
-            "timeframe": req_data["timeframe"],
-            "user_id": req_data["user_id"],
-            "date_statement": req_data["date_statement"],
-            "track_num": req_data["track_num"],
-            "date_answer": req_data["date_answer"],
-            "result_id": req_data["result_id"],
-            "credit_id": req_data["credit_id"],
-            "comment": req_data['comment']
+        task_data = {
+            "name_id": data["task_name_id"],
+            "section_card_debtor_id": data["section_card_debtor_id"],
+            "type_statement_id": data["type_statement_id"],
+            "date_task": date_task,
+            "timeframe": data["timeframe"],
+            "user_id": data["user_id"],
+            "date_statement": date_statement,
+            "track_num": data["track_num"],
+            "date_answer": date_answer,
+            "result_id": data["result_id"],
+            "credit_id": data["credit_id"],
+            "comment": data['comment']
         }
 
-        if req_data["id"]:
-            task_id = int(req_data["id"])
-            post_data = update(task).where(task.c.id == task_id).values(data)
+        if data["id"]:
+            task_id: int = data["id"]
+            post_data = update(task).where(task.c.id == task_id).values(task_data)
         else:
-            post_data = insert(task).values(data)
+            post_data = insert(task).values(task_data)
 
         await session.execute(post_data)
         await session.commit()
@@ -208,11 +217,11 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
 
             credit_id = int(item_task['credit_id'])
             credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
-            credit_item = dict(credit_query.one()._mapping)
+            credit_item = credit_query.mappings().one()
 
             debtor_id = int(credit_item['debtor_id'])
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
-            debtor_item = dict(debtor_query.one()._mapping)
+            debtor_item = debtor_query.mappings().one()
 
             if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
                 fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
@@ -243,7 +252,7 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
 
             user_id = int(item_task['user_id'])
             user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == user_id))
-            user_set = [dict(item._mapping) for item in user_query.all()]
+            user_set = [item for item in user_query.mappings().all()]
             user_name = f'{user_set[0]["first_name"]} {user_set[0]["last_name"] or ""}'
 
             data_tasks.append({

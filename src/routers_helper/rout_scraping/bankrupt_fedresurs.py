@@ -1,4 +1,5 @@
 import requests
+from urllib.parse import quote
 import json
 import fake_useragent
 import openpyxl
@@ -15,9 +16,11 @@ header = {
 
 def parse():
 
-    path_file = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/data/test_bankrupt.xlsx'
+    # test_bankrupt.xlsx
+    # Reestr_na_proverku.xlsx
+    path_file = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/data/Reestr_na_proverku.xlsx'
 
-    list_inn = extract_inn_xlsx(path_file)
+    data_xlsx = extract_data_xlsx(path_file)
 
     url_main = f'https://bankrot.fedresurs.ru/bankrupts'
 
@@ -25,41 +28,64 @@ def parse():
     cookies = html_main.cookies
 
     result = []
-    for inn in list_inn:
-        url = f'https://bankrot.fedresurs.ru/backend/prsnbankrupts?searchString={inn}&limit=15&offset=0'
-        my_referer = f'https://bankrot.fedresurs.ru/bankrupts?searchString={inn}'
+    for item in data_xlsx:
+
+        url = f'https://bankrot.fedresurs.ru/backend/prsnbankrupts?searchString={quote(item)}&limit=15&offset=0'
+        my_referer = f'https://bankrot.fedresurs.ru/bankrupts?searchString={quote(item)}'
 
         r = requests.get(url, cookies=cookies, headers={'referer': my_referer})
         dict_data = json.loads(r.text)
 
         if len(dict_data['pageData']) > 0:
-            data = dict_data['pageData'][0]
+            for data in dict_data['pageData']:
+                # print(f'{data=}')
 
-            guid = f'https://fedresurs.ru/backend/persons/{data["guid"]}'
-            guid_referer = f'https://fedresurs.ru/person/{data["guid"]}'
-            gdx = requests.get(guid, headers={'referer': guid_referer})
-            guid_data = json.loads(gdx.text)
+                guid = f'https://fedresurs.ru/backend/persons/{data["guid"]}'
+                guid_referer = f'https://fedresurs.ru/person/{data["guid"]}'
+                gdx = requests.get(guid, headers={'referer': guid_referer})
+                guid_data = json.loads(gdx.text)
 
-            try:
-                name_histories = guid_data['info']['nameHistories'][0]
-            except:
-                name_histories = ''
 
-            try:
-                snils = guid_data['info']['snils']
-            except:
-                snils = ''
+                try:
+                    name_histories = guid_data['info']['nameHistories'][0]
+                except:
+                    name_histories = ''
 
-            result.append({
-                'full_name': guid_data['info']['fullName'],
-                'name_histories': name_histories,
-                'birthdate_bankrupt': guid_data['info']['birthdateBankruptcy'],
-                'birth_place_bankrupt': guid_data['info']['birthplaceBankruptcy'],
-                'address': guid_data['info']['address'],
-                'inn': inn,
-                'snils': snils,
-                'number_legal_cases': guid_data['legalCases'][0]['number'],
-                'tribunal': guid_data['legalCases'][0]['courtName']})
+                try:
+                    inn = guid_data['info']['inn']
+                except:
+                    inn = ''
+
+                try:
+                    snils = guid_data['info']['snils']
+                except:
+                    snils = ''
+
+                try:
+                    address = guid_data['info']['address']
+                except:
+                    address = ''
+
+                try:
+                    number_legal_cases = guid_data['legalCases'][0]['number']
+                except:
+                    number_legal_cases = ''
+
+                try:
+                    tribunal = guid_data['legalCases'][0]['courtName']
+                except:
+                    tribunal = ''
+
+                result.append({
+                    'full_name': guid_data['info']['fullName'],
+                    'name_histories': name_histories,
+                    'birthdate_bankrupt': guid_data['info']['birthdateBankruptcy'],
+                    'birth_place_bankrupt': guid_data['info']['birthplaceBankruptcy'],
+                    'address': address,
+                    'inn': inn,
+                    'snils': snils,
+                    'number_legal_cases': number_legal_cases,
+                    'tribunal': tribunal})
 
     bankrupt_to_excel(result)
 
@@ -72,23 +98,23 @@ def get_html(url, params=None):
     return d
 
 
-def extract_inn_xlsx(path_file):
+def extract_data_xlsx(path_file):
     result = []
 
     book = openpyxl.load_workbook(path_file)
     sheet = book.active
 
-    inn_cel = 0
+    num_cel = 0
     for row in range(1, (sheet.max_row + 1)):
         for cell in range(1, sheet.max_column):
-            if re.findall(r'inn', str(sheet[row][cell].value)):
-                inn_cel = cell
-        inn = sheet[row][inn_cel].value
+            if re.findall(r'inn' or r'fio', str(sheet[row][cell].value)):
+                num_cel = cell
+        data_cel = sheet[row][num_cel].value
         try:
-            inn = re.sub(r'^[\s-]+|\s+$|\n+|^\s+', '', inn)
+            data_cel = re.sub(r'^[\s-]+|\s+$|\n+|^\s+', '', data_cel)
         except:
-            inn = inn
-        result.append(str(inn))
+            data_cel = data_cel
+        result.append(str(data_cel))
 
     return result
 

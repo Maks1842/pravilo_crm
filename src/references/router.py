@@ -6,6 +6,7 @@ from src.database import get_async_session
 from src.references.models import *
 from src.references.schemas import *
 
+from src.routers_helper.rout_scraping.gaspravosudie_tribunals import parse_gas_ms
 
 # Получить/добавить статус КД
 router_ref_status_credit = APIRouter(
@@ -234,38 +235,43 @@ async def get_tribunal(fragment: str, session: AsyncSession = Depends(get_async_
 @router_ref_tribunal.post("/")
 async def add_tribunal(new_tribunal: RefTribunalCreate, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_tribunal.model_dump()
+    # Первичная загрузка списка Судов, с помощью helper. В боевом режиме отключить
+    await parse_gas_ms(session)
 
-    try:
-        data = {
-            "name": req_data['tribunal_name'],
-            "class_code": req_data['class_code'],
-            "oktmo": req_data['oktmo'],
-            "address": req_data['address'],
-            "email": req_data['email'],
-            "phone": req_data['phone'],
-            "gaspravosudie": req_data['gaspravosudie'],
-        }
-        if req_data["id"]:
-            tribunal_id = int(req_data["id"])
-            post_data = update(ref_tribunal).where(ref_tribunal.c.id == tribunal_id).values(data)
-        else:
-            post_data = insert(ref_tribunal).values(data)
+    return
 
-        await session.execute(post_data)
-        await session.commit()
-
-        return {
-            'status': 'success',
-            'data': None,
-            'details': 'Суд успешно сохранен'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
+    # req_data = new_tribunal.model_dump()
+    #
+    # try:
+    #     data = {
+    #         "name": req_data['tribunal_name'],
+    #         "class_code": req_data['class_code'],
+    #         "oktmo": req_data['oktmo'],
+    #         "address": req_data['address'],
+    #         "email": req_data['email'],
+    #         "phone": req_data['phone'],
+    #         "gaspravosudie": req_data['gaspravosudie'],
+    #     }
+    #     if req_data["id"]:
+    #         tribunal_id = int(req_data["id"])
+    #         post_data = update(ref_tribunal).where(ref_tribunal.c.id == tribunal_id).values(data)
+    #     else:
+    #         post_data = insert(ref_tribunal).values(data)
+    #
+    #     await session.execute(post_data)
+    #     await session.commit()
+    #
+    #     return {
+    #         'status': 'success',
+    #         'data': None,
+    #         'details': 'Суд успешно сохранен'
+    #     }
+    # except Exception as ex:
+    #     return {
+    #         "status": "error",
+    #         "data": None,
+    #         "details": f"Ошибка при добавлении/изменении данных. {ex}"
+    #     }
 
 
 # Получить/добавить Финансовый управляющий
@@ -845,9 +851,9 @@ async def get_type_templates(session: AsyncSession = Depends(get_async_session))
         for item in query.mappings().all():
 
             result.append({
-                "type_templates": item['name'],
+                "type_template": item['name'],
                 "value": {
-                    "type_templates_id": item["id"],
+                    "type_template_id": item["id"],
                 },
             })
 

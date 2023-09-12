@@ -5,8 +5,12 @@ from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
 from src.debts.router import router_cession, router_credits, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name
-from src.references.router import router_ref_status_credit, router_ref_type_templates, router_ref_task, \
-    router_ref_legal_docs, router_ref_legal_section, router_ref_result_statement
+from src.references.router import router_ref_status_credit, router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
+    router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
+    router_ref_region, router_ref_rosp, router_ref_bank, router_ref_pfr, router_ref_reason_end_ep, router_ref_type_statement, \
+    router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, router_ref_legal_docs, \
+    router_ref_result_statement, router_ref_task
+
 from src.collection_debt.router import router_ed_debtor
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.tasks.router import router_task, router_task_all
@@ -65,11 +69,26 @@ app.include_router(router_debt_information)
 
 # Для references
 app.include_router(router_ref_status_credit)
+app.include_router(router_ref_claimer_ed)
+app.include_router(router_ref_type_ed)
 app.include_router(router_ref_type_templates)
-app.include_router(router_ref_task)
+app.include_router(router_ref_status_ed)
+app.include_router(router_ref_reason_cansel_ed)
+app.include_router(router_ref_tribunal)
+app.include_router(router_ref_financial_manager)
+app.include_router(router_ref_type_department)
+app.include_router(router_ref_region)
+app.include_router(router_ref_rosp)
+app.include_router(router_ref_bank)
+app.include_router(router_ref_pfr)
+app.include_router(router_ref_reason_end_ep)
+app.include_router(router_ref_type_statement)
+app.include_router(router_ref_type_state_duty)
+app.include_router(router_ref_section_card_debtor)
 app.include_router(router_ref_legal_docs)
 app.include_router(router_ref_legal_section)
 app.include_router(router_ref_result_statement)
+app.include_router(router_ref_task)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)

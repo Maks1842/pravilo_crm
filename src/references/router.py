@@ -6,7 +6,7 @@ from src.database import get_async_session
 from src.references.models import *
 from src.references.schemas import *
 
-from src.routers_helper.rout_scraping.gaspravosudie_tribunals import parse_gas_ms
+from src.routers_helper.rout_scraping.gaspravosudie_tribunals import parse_sudrf_index, parse_ej_sudrf
 
 # Получить/добавить статус КД
 router_ref_status_credit = APIRouter(
@@ -236,7 +236,10 @@ async def get_tribunal(fragment: str, session: AsyncSession = Depends(get_async_
 async def add_tribunal(new_tribunal: RefTribunalCreate, session: AsyncSession = Depends(get_async_session)):
 
     # Первичная загрузка списка Судов, с помощью helper. В боевом режиме отключить
-    await parse_gas_ms(session)
+    # await parse_sudrf_index(session)
+
+    # Загрузка списка Судов, в которые возможна подача через ГАС, с помощью helper. В боевом режиме отключить
+    await parse_ej_sudrf(session)
 
     return
 

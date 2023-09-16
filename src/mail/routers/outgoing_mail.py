@@ -9,6 +9,7 @@ from src.database import get_async_session
 from src.debts.models import credit, debtor
 from src.mail.models import mail_out
 from src.auth.models import user
+from src.routers_helper.data_to_excel.mail_to_excel import mail_out_to_excel
 
 '''
 OutgoingMail - извлекаю и добавляю исходящую корреспонденцию.
@@ -231,3 +232,18 @@ async def save_outgoing_mail(reg_data, session):
         'data': None,
         'details': 'Исходящая почта успешно сохранена'
     }
+
+
+# Создает почтовый реестр Excel
+router_mail_to_excel = APIRouter(
+    prefix="/v1/MailToExcel",
+    tags=["Mail"]
+)
+
+
+@router_mail_to_excel.post("/")
+def mail_to_excel(data_json: dict):
+
+    result = mail_out_to_excel(data_json)
+
+    return result

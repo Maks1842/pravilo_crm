@@ -1,4 +1,5 @@
 import re
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc
@@ -285,6 +286,93 @@ async def add_credits(new_credit: CreditCreate, session: AsyncSession = Depends(
             "data": None,
             "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
+
+
+# Получить/добавить должника
+router_debtor = APIRouter(
+    prefix="/v1/Debtor",
+    tags=["Debts"]
+)
+
+
+@router_debtor.get("/")
+async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
+
+        result = query.mappings().fetchone()
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+@router_debtor.post("/")
+async def add_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    debtor_data = data_json['data_json']
+
+    try:
+        data = {
+            "last_name_1": debtor_data["last_name_1"],
+            "first_name_1": debtor_data["first_name_1"],
+            "second_name_1": debtor_data["second_name_1"],
+            "last_name_2": debtor_data["last_name_2"],
+            "first_name_2": debtor_data["first_name_2"],
+            "second_name_2": debtor_data["second_name_2"],
+            "pol": debtor_data["pol"],
+            "birthday": datetime.strptime(debtor_data["birthday"], '%Y-%m-%d').date(),
+            "pensioner": debtor_data["pensioner"],
+            "place_of_birth": debtor_data["place_of_birth"],
+            "passport_series": debtor_data["passport_series"],
+            "passport_num": debtor_data["passport_num"],
+            "passport_date": datetime.strptime(debtor_data["passport_date"], '%Y-%m-%d').date(),
+            "passport_department": debtor_data["passport_department"],
+            "inn": debtor_data["inn"],
+            "snils": debtor_data["snils"],
+            "address_1": debtor_data["address_1"],
+            "address_2": debtor_data["address_2"],
+            "index_add_1": debtor_data["index_add_1"],
+            "index_add_2": debtor_data["index_add_2"],
+            "phone": debtor_data["phone"],
+            "email": debtor_data["email"],
+            "tribunal_id": debtor_data["tribunal_id"],
+            "comment": debtor_data["comment"],
+        }
+
+        if debtor_data["id"]:
+            debtor_id = int(debtor_data["id"])
+
+            # Не срабатывает исключение, если нет указанного id в БД
+            post_data = update(debtor).where(debtor.c.id == debtor_id).values(data)
+        else:
+            post_data = insert(debtor).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': data,
+            'details': 'Должник успешно сохранен'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
+        }
+
+
+
+
+
+
+
+
 
 
 # Получить ФИО + КД

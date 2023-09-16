@@ -51,7 +51,7 @@ ref_tribunal = Table(
     Column("name", String(200), nullable=False, unique=True, doc='Наименование суда'),
     Column("class_code", String(9), nullable=False, unique=True, doc='Класс код суда'),
     Column("oktmo", String(50), doc='ОКТМО'),
-    Column("address", String(50), doc='Адрес суда'),
+    Column("address", String(200), doc='Адрес суда'),
     Column("email", String(100), doc='Email'),
     Column("phone", String(100), doc='Телефоны'),
     Column("gaspravosudie", Boolean, default=False, doc='Признак возможности подачи через Гасправосудие'),

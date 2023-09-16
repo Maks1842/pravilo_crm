@@ -1,6 +1,6 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey, DATE, Numeric
 
-from src.references.models import ref_status_credit
+from src.references.models import ref_status_credit, ref_tribunal
 
 
 metadata = MetaData()
@@ -46,6 +46,7 @@ debtor = Table(
     Column("index_add_2", String(6), doc='Индекс проживания'),
     Column("phone", String(100), doc='Телефоны'),
     Column("email", String(100), doc='Эл. почта'),
+    Column("tribunal_id", Integer, ForeignKey(ref_tribunal.c.id), doc='Подсудность'),
     Column("comment", String(200), doc='Комментарий'),
 )
 

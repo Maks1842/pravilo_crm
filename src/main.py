@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.auth.base_config import auth_backend, fastapi_users
 from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
-from src.debts.router import router_cession, router_credits, router_credit_debtor, router_debtor_inn, \
+from src.debts.router import router_cession, router_credits, router_debtor, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name
 from src.references.router import router_ref_status_credit, router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
     router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
@@ -23,7 +23,7 @@ from src.creating_docs.router import router_docs_generator_template
 from src.directory_docs.router import router_dir_cession, router_docs_cession, router_download_file_cession
 
 from src.mail.routers.incoming_mail import router_incoming_mail
-from src.mail.routers.outgoing_mail import router_outgoing_mail
+from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
@@ -63,6 +63,7 @@ app.include_router(
 app.include_router(router_cession)
 app.include_router(router_get_cession_name)
 app.include_router(router_credits)
+app.include_router(router_debtor)
 app.include_router(router_credit_debtor)
 app.include_router(router_debtor_inn)
 app.include_router(router_debt_information)
@@ -118,6 +119,7 @@ app.include_router(router_download_file_cession)
 # Для mail
 app.include_router(router_incoming_mail)
 app.include_router(router_outgoing_mail)
+app.include_router(router_mail_to_excel)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

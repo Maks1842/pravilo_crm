@@ -239,42 +239,42 @@ async def add_tribunal(data_json: dict, session: AsyncSession = Depends(get_asyn
     # await parse_sudrf_index(session)
 
     # Загрузка списка Судов, в которые возможна подача через ГАС, с помощью helper. В боевом режиме отключить
-    # await parse_ej_sudrf(session)
+    await parse_ej_sudrf(session)
     #
-    # return
+    return
 
-    req_data = data_json['data_json']
-
-    try:
-        data = {
-            "name": req_data['name'],
-            "class_code": req_data['class_code'],
-            "oktmo": req_data['oktmo'],
-            "address": req_data['address'],
-            "email": req_data['email'],
-            "phone": req_data['phone'],
-            "gaspravosudie": req_data['gaspravosudie'],
-        }
-        if req_data["id"]:
-            tribunal_id = int(req_data["id"])
-            post_data = update(ref_tribunal).where(ref_tribunal.c.id == tribunal_id).values(data)
-        else:
-            post_data = insert(ref_tribunal).values(data)
-
-        await session.execute(post_data)
-        await session.commit()
-
-        return {
-            'status': 'success',
-            'data': None,
-            'details': 'Суд успешно сохранен'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
+    # req_data = data_json['data_json']
+    #
+    # try:
+    #     data = {
+    #         "name": req_data['name'],
+    #         "class_code": req_data['class_code'],
+    #         "oktmo": req_data['oktmo'],
+    #         "address": req_data['address'],
+    #         "email": req_data['email'],
+    #         "phone": req_data['phone'],
+    #         "gaspravosudie": req_data['gaspravosudie'],
+    #     }
+    #     if req_data["id"]:
+    #         tribunal_id = int(req_data["id"])
+    #         post_data = update(ref_tribunal).where(ref_tribunal.c.id == tribunal_id).values(data)
+    #     else:
+    #         post_data = insert(ref_tribunal).values(data)
+    #
+    #     await session.execute(post_data)
+    #     await session.commit()
+    #
+    #     return {
+    #         'status': 'success',
+    #         'data': None,
+    #         'details': 'Суд успешно сохранен'
+    #     }
+    # except Exception as ex:
+    #     return {
+    #         "status": "error",
+    #         "data": None,
+    #         "details": f"Ошибка при добавлении/изменении данных. {ex}"
+    #     }
 
 
 # Получить/добавить Финансовый управляющий

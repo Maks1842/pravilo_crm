@@ -48,7 +48,7 @@ ref_tribunal = Table(
     "ref_tribunal",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(200), nullable=False, unique=True, doc='Наименование суда'),
+    Column("name", String(200), nullable=False, doc='Наименование суда'),
     Column("class_code", String(9), nullable=False, unique=True, doc='Класс код суда'),
     Column("oktmo", String(50), doc='ОКТМО'),
     Column("address", String(200), doc='Адрес суда'),

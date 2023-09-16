@@ -24,6 +24,7 @@ async def parse_sudrf_index(session):
 
     for item in class_code_list:
         class_code: str = item
+        print(f'{item=}')
 
         try:
             data = {
@@ -62,8 +63,10 @@ async def parse_ej_sudrf(session):
     with open(path_file) as json_file:
         data = json.load(json_file)
 
+    count = 0
     for item in data['tribunal']:
         class_code: str = item['class_code']
+        print(f'{class_code=}')
 
         try:
             data = {
@@ -71,6 +74,8 @@ async def parse_ej_sudrf(session):
                 'name': item['name'],
                 'address': item['address'],
                 'gaspravosudie': True}
+
+            count += 1
 
             tribunal_qwery = await session.execute(select(ref_tribunal.c.id).where(ref_tribunal.c.class_code == class_code))
             tribunal_id: int = tribunal_qwery.scalar()
@@ -86,6 +91,8 @@ async def parse_ej_sudrf(session):
         except Exception as ex:
             print(f'{item} {ex}')
             return
+
+    print(count)
 
     return
 

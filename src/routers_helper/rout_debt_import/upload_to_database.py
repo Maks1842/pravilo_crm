@@ -96,7 +96,9 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
         address_2 = None
         comment = None
         inn = None
+        phone = None
         type_ed_id = None
+        ed_id = None
         claimer_ed_id = None
         tribunal_id = None
         rosp_id = None
@@ -167,6 +169,10 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         elif item["name_field"] == 'inn':
                             inn = format_inn(debt_exl[f'{item["excel_field"]}'])
                             debtors_data['inn'] = inn
+
+                        elif item["name_field"] == 'phone':
+                            phone = str(debt_exl[f'{item["excel_field"]}'])
+                            debtors_data['phone'] = phone
 
                         elif item["name_field"] == 'None':
                             pass
@@ -299,6 +305,22 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         "status": "error",
                         "data": None,
                         "details": f'Ошибка при извлечении данных из excel в модель executive_productions, на строке {count_all}. {ex}'
+                    }
+
+            elif item['model'] == 'ref_tribunal':
+                try:
+                    if item["excel_field"] != '' and item["excel_field"] is not None:
+                        if item["name_field"] == 'class_code':
+                            class_code: str = debt_exl[f'{item["excel_field"]}']
+                            tribunal_id_query = await session.execute(select(ref_tribunal.c.id).where(ref_tribunal.c.class_code == class_code))
+                            tribunal_id = tribunal_id_query.scalar()
+
+                    debtors_data['tribunal_id'] = tribunal_id
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": None,
+                        "details": f'Ошибка при извлечении данных из excel в модель executive_document, на строке {count_all}. {ex}'
                     }
 
         """
@@ -466,50 +488,52 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                 }
 
         # Блок сохранения данных в модель executive_document
-        ed_query = await session.execute(select(executive_document.c.id).where(and_(executive_document.c.number == str(ed_data['number']),
-                                                                                                     executive_document.c.date == ed_data['date'],
-                                                                                                     executive_document.c.case_number == str(ed_data['case_number']))))
-        ed_data['credit_id'] = credit_id
-        ed_id = ed_query.scalar()
+        if ed_data['number'] is not None:
+            ed_query = await session.execute(select(executive_document.c.id).where(and_(executive_document.c.number == str(ed_data['number']),
+                                                                                                         executive_document.c.date == ed_data['date'],
+                                                                                                         executive_document.c.case_number == str(ed_data['case_number']))))
+            ed_data['credit_id'] = credit_id
+            ed_id = ed_query.scalar()
 
-        if ed_id is None:
-            post_data = insert(executive_document).values(ed_data)
+            if ed_id is None:
+                post_data = insert(executive_document).values(ed_data)
 
-            try:
-                await session.execute(post_data)
-                await session.commit()
+                try:
+                    await session.execute(post_data)
+                    await session.commit()
 
-                ed_query = await session.execute(select(executive_document.c.id).order_by(desc(executive_document.c.id)))
-                ed_id = ed_query.scalar()
+                    ed_query = await session.execute(select(executive_document.c.id).order_by(desc(executive_document.c.id)))
+                    ed_id = ed_query.scalar()
 
-                ed_count += 1
-            except Exception as ex:
-                return {
-                    "status": "error",
-                    "data": ed_data,
-                    "details": f'Ошибка при сохранении в модель executive_document, на строке {count_all}. {ex}'
-                }
+                    ed_count += 1
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": ed_data,
+                        "details": f'Ошибка при сохранении в модель executive_document, на строке {count_all}. {ex}'
+                    }
 
         # Блок сохранения данных в модель executive_productions
-        ep_query = await session.execute(select(executive_productions.c.id).where(executive_productions.c.number == str(ep_data['number'])))
-        ep_data['credit_id'] = credit_id
-        ep_data['executive_document_id'] = ed_id
-        ep_id = ep_query.scalar()
+        if ep_data['number'] is not None:
+            ep_query = await session.execute(select(executive_productions.c.id).where(executive_productions.c.number == str(ep_data['number'])))
+            ep_data['credit_id'] = credit_id
+            ep_data['executive_document_id'] = ed_id
+            ep_id = ep_query.scalar()
 
-        if ep_id is None:
-            post_data = insert(executive_productions).values(ep_data)
+            if ep_id is None:
+                post_data = insert(executive_productions).values(ep_data)
 
-            try:
-                await session.execute(post_data)
-                await session.commit()
+                try:
+                    await session.execute(post_data)
+                    await session.commit()
 
-                ep_count += 1
-            except Exception as ex:
-                return {
-                    "status": "error",
-                    "data": ep_data,
-                    "details": f'Ошибка при сохранении в модель executive_productions, на строке {count_all}. {ex}'
-                }
+                    ep_count += 1
+                except Exception as ex:
+                    return {
+                        "status": "error",
+                        "data": ep_data,
+                        "details": f'Ошибка при сохранении в модель executive_productions, на строке {count_all}. {ex}'
+                    }
 
     result = f'Добавлено: {cessions_count} строк Цессий, ' \
              f'{debtors_count} строк ФИО должников, ' \

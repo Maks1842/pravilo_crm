@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import pathlib
 
 load_dotenv()
 
@@ -12,6 +13,8 @@ DB_PORT = os.environ.get('DB_PORT')
 SECRET_KEY_auth = os.environ.get('SECRET_KEY_auth')
 SECRET_KEY_register = os.environ.get('SECRET_KEY_register')
 
-main_dossier_path = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/Цессии_досье'
-logging_path = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/logs'
-generator_docs_path = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/generator_docs/'
+path_main = pathlib.Path().resolve()
+
+main_dossier_path = f'{path_main}/Цессии_досье'
+logging_path = f'{path_main}/src/media/logs'
+generator_docs_path = f'{path_main}/src/media/generator_docs'

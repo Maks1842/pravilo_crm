@@ -2,12 +2,13 @@ from openpyxl import load_workbook
 from datetime import datetime
 
 from src.routers_helper.data_to_excel.style_excel import style_excel
+from src.config import path_main
 
 def bankrupt_to_excel(data_list):
 
     style = style_excel()
 
-    book_template = load_workbook(filename='/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/bankrupt/template_bankrupt.xlsx')
+    book_template = load_workbook(filename=f'{path_main}/src/media/bankrupt/template_bankrupt.xlsx')
 
     # Первый (активный) Лист книги
     sheet = book_template.active
@@ -95,7 +96,7 @@ def bankrupt_to_excel(data_list):
         number_row += 1
 
     current_date = datetime.now()
-    file = f'/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/bankrupt/result/Реестр банкротов_{current_date.strftime("%d.%m.%Y")}.xlsx'
+    file = f'{path_main}/src/media/bankrupt/result/Реестр банкротов_{current_date.strftime("%d.%m.%Y")}.xlsx'
     book_template.save(file)
 
     return {

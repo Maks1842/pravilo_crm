@@ -32,8 +32,10 @@ async def parse_sudrf_index(session):
                 'name': tribunal_list[count],
                 'address': address_tribun_list[count]}
             count += 1
+            print(f'{data=}')
 
             tribunal_qwery = await session.execute(select(ref_tribunal.c.id).where(ref_tribunal.c.class_code == class_code))
+            print(f'{tribunal_qwery=}')
             tribunal_id: int = tribunal_qwery.scalar()
 
             if tribunal_id:
@@ -44,12 +46,10 @@ async def parse_sudrf_index(session):
             await session.execute(post_data)
             await session.commit()
         except Exception as ex:
-            print(f'{item} {ex}')
-            return
+            return f'{item} {ex}'
     print(count)
 
-
-    return
+    return count
 
 
 '''
@@ -66,7 +66,6 @@ async def parse_ej_sudrf(session):
     count = 0
     for item in data['tribunal']:
         class_code: str = item['class_code']
-        print(f'{class_code=}')
 
         try:
             data = {
@@ -89,12 +88,9 @@ async def parse_ej_sudrf(session):
             await session.execute(post_data)
             await session.commit()
         except Exception as ex:
-            print(f'{item} {ex}')
-            return
+            return f'{item} {ex}'
 
-    print(count)
-
-    return
+    return count
 
 
 

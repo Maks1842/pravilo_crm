@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
+from src.config import path_main
 
 
 # Импортировать заголовки столбцов реестра в Excel
@@ -15,14 +16,15 @@ router_import_headers_excel = APIRouter(
 )
 
 
+
 @router_import_headers_excel.post("/")
 async def import_headers(registry_debt_file: UploadFile):
 
-    with open(f'src/media/data/format_file.xlsx', 'wb+') as f:
+    with open(f'{path_main}/src/media/data/format_file.xlsx', 'wb+') as f:
         for chunk in registry_debt_file.file:
             f.write(chunk)
 
-    path_file = f'src/media/data/format_file.xlsx'
+    path_file = f'{path_main}/src/media/data/format_file.xlsx'
 
     excel_data = pd.read_excel(path_file)
     heading = list(excel_data.columns.values)
@@ -74,7 +76,7 @@ def export_ep():
     #     for chunk in file_object['payments_file'].chunks():
     #         f.write(chunk)
 
-    path_file = f'src/media/data/Реестр ДИ по ЧС 4 рабочий для crm_1.xlsx'
+    path_file = f'{path_main}/src/media/data/Реестр ДИ по ЧС 4 рабочий для crm_1.xlsx'
 
     book = openpyxl.load_workbook(path_file)
     sheet = book.active

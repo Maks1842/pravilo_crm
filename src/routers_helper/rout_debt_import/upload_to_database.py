@@ -3,6 +3,7 @@ import json
 from datetime import datetime, date
 import re
 import os
+from src.config import path_main
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, desc, and_
@@ -553,7 +554,7 @@ format_file.xlsx - это дефолтный файл, который созда
 И уже дефолтный обрабатывается, и из него данные грузятся в БД.
 '''
 def import_excel():
-    excel_data = pd.read_excel('src/media/data/format_file.xlsx')
+    excel_data = pd.read_excel(f'{path_main}/src/media/data/format_file.xlsx')
     json_str = excel_data.to_json(orient='records', date_format='iso')
     parsed = json.loads(json_str)
     return parsed

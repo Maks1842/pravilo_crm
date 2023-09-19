@@ -52,7 +52,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
     try:
         filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
         filter_set = filter_query.mappings().fetchone()
-        reg_struct_id = int(filter_set['registry_structure_id'])
+        reg_struct_id: int = filter_set['registry_structure_id']
 
         reg_struct_query = await session.execute(select(registry_structures.c.items_json).where(registry_structures.c.id == reg_struct_id))
         registry_structur = reg_struct_query.scalar()
@@ -72,7 +72,6 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
         values_for_filters = None
         if model:
             query = await session.execute(select(eval(model)).where(getattr(eval(model).c, field) == values_filter))
-
             queryset = query.mappings().all()
 
             values_for_filters = []
@@ -99,8 +98,11 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                 summ_credits_query = await session.execute(func.sum(distinct(credit.c.balance_debt)))
                 balance_summa = summ_credits_query.scalar()
 
+                if balance_summa is not None:
+                    balance_summa = balance_summa / 100
+
                 statistics = {'total_credits': total_credits,
-                          'balance_summa': balance_summa / 100}
+                          'balance_summa': balance_summa}
             else:
                 # Извлекаю КД по фильтрам
                 credits_query = await session.execute(select(credit).where(credit.c.id.in_(values_for_filters)).order_by(credit.c.id).
@@ -114,8 +116,11 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                 summ_credits_query = await session.execute(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(values_for_filters)))
                 balance_summa = summ_credits_query.scalar()
 
+                if balance_summa is not None:
+                    balance_summa = balance_summa / 100
+
                 statistics = {'total_credits': total_credits,
-                          'balance_summa': balance_summa / 100}
+                          'balance_summa': balance_summa}
         else:
             functions_control = getattr(control_filters, f'{filter_set["function_name"]}')
             credit_id_list = functions_control()
@@ -131,8 +136,11 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
             summ_credits_query = await session.execute(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(credit_id_list)))
             balance_summa = summ_credits_query.scalar()
 
+            if balance_summa is not None:
+                balance_summa = balance_summa / 100
+
             statistics = {'total_credits': total_credits,
-                          'balance_summa': balance_summa / 100}
+                          'balance_summa': balance_summa}
 
         credits_list = credits_query.mappings().all()
         values_for_registry = await calculation_of_filters(registry_structur, credits_list, session)
@@ -157,12 +165,19 @@ async def calculation_of_filters(list_headers, credits_list, session):
     data_debtors = []
     summa_tribun_all = 0
     for credit_item in credits_list:
+        summa_cessii = 0
+        date_cessii = ''
+        summa_by_cession = 0
         credit_summa = 0
+        overdue_od = 0
+        percent_of_od = 0
         balance_debt = 0
+        credit_date_start = ''
         summa_tribun = 0
         summa_pay = 0
 
         passport = ''
+        birthday = ''
         address_registry = ''
         address_resident = ''
 
@@ -221,16 +236,40 @@ async def calculation_of_filters(list_headers, credits_list, session):
         status_cd_query = await session.execute(select(ref_status_credit.c.name).where(ref_status_credit.c.id == int(credit_item['status_cd_id'])))
         status_cd = status_cd_query.scalar()
 
+        if cession_item['summa'] is not None and cession_item['summa'] != '':
+            summa_cessii = cession_item['summa'] / 100
+        if cession_item['date'] is not None and cession_item['date'] != '':
+            try:
+                date_cessii = datetime.strptime(str(cession_item['date']), '%Y-%m-%d').strftime("%d.%m.%Y")
+            except:
+                pass
+
+        if credit_item['summa_by_cession'] is not None and credit_item['summa_by_cession'] != '':
+            summa_by_cession = credit_item['summa_by_cession'] / 100
         if credit_item['summa'] is not None and credit_item['summa'] != '':
             credit_summa = credit_item['summa'] / 100
+        if credit_item['overdue_od'] is not None and credit_item['overdue_od'] != '':
+            overdue_od = credit_item['overdue_od'] / 100
+        if credit_item['percent_of_od'] is not None and credit_item['percent_of_od'] != '':
+            percent_of_od = credit_item['percent_of_od'] / 100
         if credit_item['balance_debt'] is not None and credit_item['balance_debt'] != '':
             balance_debt = credit_item['balance_debt'] / 100
+        if credit_item['date_start'] is not None and credit_item['date_start'] != '':
+            try:
+                credit_date_start = datetime.strptime(str(credit_item['date_start']), '%Y-%m-%d').strftime("%d.%m.%Y")
+            except:
+                pass
 
         if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
                   f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
         else:
             fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+        if debtor_item['birthday'] is not None and debtor_item['birthday'] != '':
+            try:
+                birthday = datetime.strptime(str(debtor_item['birthday']), '%Y-%m-%d').strftime("%d.%m.%Y")
+            except:
+                pass
 
         if debtor_item['passport_num'] is not None and debtor_item['passport_num'] != '':
             try:
@@ -242,6 +281,11 @@ async def calculation_of_filters(list_headers, credits_list, session):
             address_registry = f"{debtor_item['index_add_1']  or ''}, {debtor_item['address_1']  or ''}"
         if debtor_item['address_2'] is not None and debtor_item['address_2'] != '':
             address_resident = f"{debtor_item['index_add_2']  or ''}, {debtor_item['address_2']  or ''}"
+        if debtor_item['tribunal_id'] is not None and debtor_item['tribunal_id'] != '':
+            tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(debtor_item['tribunal_id'])))
+            tribunal_item = tribunal_query.mappings().fetchone()
+            if tribunal_item['gaspravosudie']:
+                gaspravosudie = 'Возможно'
 
         try:
             ed_query = await session.execute(select(executive_document).where(executive_document.c.credit_id == int(credit_item['id'])).
@@ -265,8 +309,8 @@ async def calculation_of_filters(list_headers, credits_list, session):
                 tribunal_item = tribunal_query.mappings().fetchone()
                 tribunal_name = tribunal_item['name']
                 tribunal_address = tribunal_item['address']
-                if tribunal_item['gaspravosudie'] == True:
-                    gaspravosudie = 'Возможно'
+                # if tribunal_item['gaspravosudie'] == True:
+                #     gaspravosudie = 'Возможно'
             if ed_item['summa_debt_decision'] is not None and ed_item['summa_debt_decision'] != '':
                 summa_tribun = ed_item['summa_debt_decision'] / 100
                 summa_tribun_all += summa_tribun
@@ -303,16 +347,26 @@ async def calculation_of_filters(list_headers, credits_list, session):
             if item['model'] == 'credit':
                 if item['headers_key'] == 'status_cd':
                     data_items[item['headers_key']] = status_cd
+                elif item['headers_key'] == 'summa_by_cession':
+                    data_items[item['headers_key']] = summa_by_cession
                 elif item['headers_key'] == 'summa_cd':
                     data_items[item['headers_key']] = credit_summa
+                elif item['headers_key'] == 'overdue_od':
+                    data_items[item['headers_key']] = overdue_od
+                elif item['headers_key'] == 'percent_of_od':
+                    data_items[item['headers_key']] = percent_of_od
                 elif item['headers_key'] == 'balance_debt':
                     data_items[item['headers_key']] = balance_debt
+                elif item['headers_key'] == 'date_start_cd':
+                    data_items[item['headers_key']] = credit_date_start
                 else:
                     data_items[item['headers_key']] = credit_item[f"{item['name_field']}"]
 
             elif item['model'] == 'debtor':
                 if item['headers_key'] == 'fio_debtor':
                     data_items[item['headers_key']] = fio
+                elif item['headers_key'] == 'birthday':
+                    data_items[item['headers_key']] = birthday
                 elif item['headers_key'] == 'passport':
                     data_items[item['headers_key']] = passport
                 elif item['headers_key'] == 'address_registry':
@@ -323,7 +377,12 @@ async def calculation_of_filters(list_headers, credits_list, session):
                     data_items[item['headers_key']] = debtor_item[f"{item['name_field']}"]
 
             elif item['model'] == 'cession':
-                data_items[item['headers_key']] = cession_item[f"{item['name_field']}"]
+                if item['headers_key'] == 'summa_cessii':
+                    data_items[item['headers_key']] = summa_cessii
+                elif item['headers_key'] == 'date_cessii':
+                    data_items[item['headers_key']] = date_cessii
+                else:
+                    data_items[item['headers_key']] = cession_item[f"{item['name_field']}"]
 
             elif item['model'] == 'executive_document':
                 if item['headers_key'] == 'type_ed':

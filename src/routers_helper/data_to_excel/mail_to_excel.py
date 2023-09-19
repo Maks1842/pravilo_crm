@@ -2,12 +2,13 @@ from openpyxl import load_workbook
 from datetime import datetime
 
 from src.routers_helper.data_to_excel.style_excel import style_excel
+from src.config import path_main
 
 def mail_out_to_excel(data_json):
 
     style = style_excel()
 
-    book_template = load_workbook(filename='/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/mail/templates_mail_all.xlsx')
+    book_template = load_workbook(filename=f'{path_main}/src/media/mail/templates_mail_all.xlsx')
 
     # Первый (активный) Лист книги
     sheet = book_template.active
@@ -112,7 +113,7 @@ def mail_out_to_excel(data_json):
         number_row += 1
 
     current_date = datetime.now()
-    file = f'/media/maks/Новый том/Python/work/fast_api/pravilo_crm/src/media/mail/result/Исходящая почта_{current_date.strftime("%d.%m.%Y_%H.%M.%S")}.xlsx'
+    file = f'{path_main}/src/media/mail/result/Исходящая почта_{current_date.strftime("%d.%m.%Y_%H.%M.%S")}.xlsx'
     book_template.save(file)
 
     return {

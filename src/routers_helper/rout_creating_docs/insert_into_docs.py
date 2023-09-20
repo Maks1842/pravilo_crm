@@ -41,7 +41,9 @@ async def select_from_variables(credits_data, template_json, session):
     variables_query = await session.execute(select(docs_generator_variable))
     variables_list = variables_query.mappings().all()
 
-    count = 1455
+    current_date = datetime.now()
+
+    count = 0
     for data in credits_data['data_debtors']:
         num_random = random.randint(10, 6500)
         num_random_2 = random.randint(1100, 2600)
@@ -74,6 +76,8 @@ async def select_from_variables(credits_data, template_json, session):
                                 f'Случайный_номер': f'{num_random}',
                                 f'Случайный_номер_2': f'{num_random_2}',
                                 f'Случайный_номер_3': f'{num_random_3}',
+                                f'Номер_пп_дефолт': f'{count}',
+                                f'Дата_текущая': f'{current_date.strftime("%d.%m.%Y")}',
                                 }
                     context_dict.update(context)
 
@@ -94,6 +98,8 @@ async def select_from_variables(credits_data, template_json, session):
                                 f'Случайный_номер': f'{num_random}',
                                 f'Случайный_номер_2': f'{num_random_2}',
                                 f'Случайный_номер_3': f'{num_random_3}',
+                                f'Номер_пп_дефолт': f'{count}',
+                                f'Дата_текущая': f'{current_date.strftime("%d.%m.%Y")}',
                                 }
                     context_dict.update(context)
 
@@ -127,7 +133,7 @@ def doc_pattern(context_dict, count, template_json):
         name = context_dict['Должник']
         num_credit = context_dict['Номер_КД']
         num = re.sub(r'/', '_', num_credit)
-        result_path = os.path.join(generator_docs_path, f'result/{template_json["template_name"]}')
+        result_path = os.path.join(generator_docs_path, f'{generator_docs_path}/result/{template_json["template_name"]}')
 
         if not os.path.exists(result_path):
             os.mkdir(result_path)

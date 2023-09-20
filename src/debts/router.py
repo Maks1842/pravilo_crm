@@ -367,14 +367,6 @@ async def add_debtor(data_json: dict, session: AsyncSession = Depends(get_async_
         }
 
 
-
-
-
-
-
-
-
-
 # Получить ФИО + КД
 router_credit_debtor = APIRouter(
     prefix="/v1/GetCreditDebtor",
@@ -505,6 +497,8 @@ router_debt_information = APIRouter(
 @router_debt_information.get("/")
 async def get_debt_information(credit_id: int, session: AsyncSession = Depends(get_async_session)):
 
+    birthday = ''
+
     try:
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
         credit_item = credit_query.mappings().one()
@@ -513,6 +507,11 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             balance_debt = credit_item['balance_debt'] / 100
         else:
             balance_debt = 0
+
+        if credit_item['summa_by_cession'] is not None and credit_item['summa_by_cession'] != '':
+            summa_by_cession = credit_item['summa_by_cession'] / 100
+        else:
+            summa_by_cession = 0
 
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
         debtor_item = debtor_query.mappings().one()
@@ -577,18 +576,24 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         else:
             pensioner = ''
 
+        if debtor_item['birthday'] is not None and debtor_item['birthday'] != '':
+            try:
+                birthday = datetime.strptime(str(debtor_item['birthday']), '%Y-%m-%d').strftime("%d.%m.%Y")
+            except:
+                pass
+
         result = {
             "creditNum": credit_item['number'],
             "creditStatus": status_cd,
             "debtorName": fio,
-            "debtorBirthday": debtor_item['birthday'],
+            "debtorBirthday": birthday,
             "debtorPassport": passport,
             "debtorGrand": pensioner,
             "debtorGender": debtor_item['pol'],
             "cessionName": cession_item['name'],
             "claimerEP": claimer_ep,
             "cessionDate": cession_item['date'],
-            "cessionSumma": credit_item['summa_by_cession'],
+            "cessionSumma": summa_by_cession,
             "ed_id": ed_id,
             "edType": edType,
             "edNum": edNum,

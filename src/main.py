@@ -31,6 +31,7 @@ from src.routers_helper.rout_admin.user_api import router_profile_user, router_l
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
 from src.routers_helper.rout_debt_import.upload_to_database import router_post_database
 from src.routers_helper.rout_registry.get_data_for_registry import router_data_registry, router_func_filters
+from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_outgoing_mail
 
 
 app = FastAPI(
@@ -129,6 +130,7 @@ app.include_router(router_import_headers_excel)
 app.include_router(router_post_database)
 app.include_router(router_data_registry)
 app.include_router(router_func_filters)
+app.include_router(router_reg_outgoing_mail)
 
 
 origins = [

@@ -108,7 +108,7 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
             data_mail.append({
                 "id": item['id'],
                 "sequenceNum": item['sequence_num'],
-                "mailDate": item['date'],
+                "mailDate": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
                 "barcodeNum": item['barcode'],
                 "user": user_name,
                 "user_id": item['user_id'],
@@ -145,9 +145,13 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
 @router_outgoing_mail.post("/")
 async def add_outgoing_mail(new_mail: dict, session: AsyncSession = Depends(get_async_session)):
 
-    result = await save_outgoing_mail(new_mail, session)
+    await save_outgoing_mail(new_mail, session)
 
-    return result
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Исходящая почта успешно сохранена'
+    }
 
 
 async def save_outgoing_mail(reg_data, session):
@@ -181,8 +185,8 @@ async def save_outgoing_mail(reg_data, session):
             mail_set = mail_query.mappings().fetchone()
             sequence_num = mail_set['sequence_num'] + 1
 
-            if len(mail_set['barcodeNum']) > 0:
-                barcode_split = mail_set['barcodeNum'][2:]
+            if len(mail_set['barcode']) > 0:
+                barcode_split = mail_set['barcode'][2:]
                 barcode_body = str(int(barcode_split) + 1).zfill(8)
                 barcode = f'02{barcode_body}'
         except:
@@ -227,11 +231,7 @@ async def save_outgoing_mail(reg_data, session):
             "details": f"Ошибка при добавлении/изменении Исходящей почты. {ex}"
         }
 
-    return {
-        'status': 'success',
-        'data': None,
-        'details': 'Исходящая почта успешно сохранена'
-    }
+    return
 
 
 # Создает почтовый реестр Excel

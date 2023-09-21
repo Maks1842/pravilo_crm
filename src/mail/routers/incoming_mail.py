@@ -109,7 +109,7 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
             data_mail.append({
                 "id": item['id'],
                 "sequence_num": item['sequence_num'],
-                "date": item['date'],
+                "date": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
                 "addresser": item['addresser'],
                 "debtor_fio": debtor_fio,
                 "credit_number": credit_number,

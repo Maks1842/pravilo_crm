@@ -139,7 +139,7 @@ def doc_pattern(context_dict, count, template_json):
             os.mkdir(result_path)
 
         doc.render(context_dict)
-        doc.save(f'{result_path}/{num}_{name}.docx')
+        doc.save(f'{result_path}/{name}_{num}_{template_json["template_name"]}.docx')
     except Exception as ex:
         return {
             "status": "error",

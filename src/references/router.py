@@ -879,10 +879,17 @@ router_ref_legal_docs = APIRouter(
 
 
 @router_ref_legal_docs.get("/")
-async def get_legal_docs(session: AsyncSession = Depends(get_async_session)):
+async def get_legal_docs(section_card_id: int = None, legal_section_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
     try:
-        query = await session.execute(select(ref_legal_docs))
+        if section_card_id:
+            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.legal_section_id.in_([legal_section_id, 1]),
+                                                                           ref_legal_docs.c.legal_section_id == None)))
+        elif legal_section_id:
+            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.section_card_id.in_([section_card_id, 1]),
+                                                                           ref_legal_docs.c.section_card_id == None)))
+        else:
+            query = await session.execute(select(ref_legal_docs))
 
         result = []
         for item in query.mappings().all():

@@ -182,16 +182,6 @@ ref_type_templates = Table(
     Column("name", String(100), nullable=False, unique=True, doc='Тип шаблона документов'),
 )
 
-# Наименование юридических документов
-ref_legal_docs = Table(
-    "ref_legal_docs",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(100), nullable=False, unique=True, doc='Наименование юридических документов'),
-    Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
-    Column("legal_section_id", Integer, ForeignKey(ref_legal_section.c.id), doc='Раздел юридической работы_id'),
-)
-
 # Варианты результатов/резолюций по обращениям
 ref_result_statement = Table(
     "ref_result_statement",
@@ -201,7 +191,20 @@ ref_result_statement = Table(
     Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения_id'),
 )
 
-# Виды задач
+# Наименование юридических документов
+ref_legal_docs = Table(
+    "ref_legal_docs",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(100), nullable=False, unique=True, doc='Наименование юридических документов'),
+    Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
+    Column("legal_section_id", Integer, ForeignKey(ref_legal_section.c.id), doc='Раздел юридической работы_id'),
+    Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения_id'),
+    Column("result_statement_id", Integer, ForeignKey(ref_result_statement.c.id), doc='Результат_id'),
+)
+
+
+# УДАЛИТЬ МОДЕЛЬ
 ref_task = Table(
     "ref_task",
     metadata,

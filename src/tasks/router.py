@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
 from src.tasks.models import task
-from src.references.models import ref_task, ref_section_card_debtor, ref_type_statement, ref_result_statement
+from src.references.models import ref_legal_docs, ref_section_card_debtor, ref_type_statement, ref_result_statement
 from src.auth.models import user
 
 
@@ -37,13 +37,13 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
         debtor_item = debtor_query.mappings().one()
 
-        if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                  f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+        if debtor_item.last_name_2 is not None:
+            debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                         f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
         else:
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+            debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-        cession_query = await session.execute(select(cession.c.name).where(cession.c.id == int(credit_item['debtor_id'])))
+        cession_query = await session.execute(select(cession.c.name).where(cession.c.id == int(credit_item.debtor_id)))
         cession_name = cession_query.scalar()
 
         result = []
@@ -56,50 +56,50 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
             result_statement = ''
             result_statement_id = None
 
-            name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item['name_id'])))
+            name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.name_id)))
             name_task = name_task_query.scalar()
 
-            if item['section_card_debtor_id'] is not None:
-                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item['section_card_debtor_id'])))
+            if item.section_card_debtor_id is not None:
+                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item.section_card_debtor_id)))
                 section_task = section_task_query.scalar()
                 section_task_id = item['section_card_debtor_id']
 
             if item['type_statement_id'] is not None:
-                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item['type_statement_id'])))
+                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item.type_statement_id)))
                 type_statement = type_stat_query.scalar()
                 type_statement_id = item['type_statement_id']
 
             if item['result_id'] is not None:
-                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item['result_id'])))
+                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item.result_id)))
                 result_statement = result_stat_query.scalar()
                 result_statement_id = item['result_id']
 
-            user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item['user_id'])))
+            user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item.user_id)))
             user_set = [item for item in user_query.mappings().all()]
             user_name = f'{user_set[0]["first_name"]} {user_set[0]["last_name"] or ""}'
 
             result.append({
-                "id": item['id'],
-                "credit_id": item['credit_id'],
-                "number": credit_item['number'],
-                "debtorName": fio,
+                "id": item.id,
+                "credit_id": item.credit_id,
+                "number": credit_item.number,
+                "debtorName": debtor_fio,
                 "cession_name": cession_name,
                 "name_task": name_task,
-                "task_name_id": item['name_id'],
+                "task_name_id": item.name_id,
                 "type_statement": type_statement,
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
                 "section_card_debtor_id": section_task_id,
-                "date_task": item['date_task'],
-                "timeframe": item['timeframe'],
+                "date_task": item.date_task,
+                "timeframe": item.timeframe,
                 "user_name": user_name,
-                "user_id": item['user_id'],
-                "date_statement": item['date_statement'],
-                "track_num": item['track_num'],
-                "date_answer": item['date_answer'],
+                "user_id": item.user_id,
+                "date_statement": item.date_statement,
+                "track_num": item.track_num,
+                "date_answer": item.date_answer,
                 "result": result_statement,
                 "result_id": result_statement_id,
-                "comment": item['comment'],
+                "comment": item.comment,
             })
         return result
     except Exception as ex:
@@ -223,60 +223,60 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
 
-            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                      f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            if debtor_item.last_name_2 is not None:
+                debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                             f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            cession_query = await session.execute(select(cession.c.name).where(cession.c.id == int(credit_item['cession_id'])))
+            cession_query = await session.execute(select(cession.c.name).where(cession.c.id == int(credit_item.cession_id)))
             cession_name = cession_query.scalar()
 
-            name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item_task['name_id'])))
+            name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item_task.name_id)))
             name_task = name_task_query.scalar()
 
-            if item_task['section_card_debtor_id'] is not None and item_task['section_card_debtor_id'] != '':
-                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item_task['section_card_debtor_id'])))
+            if item_task.section_card_debtor_id is not None:
+                section_task_query = await session.execute(select(ref_section_card_debtor.c.name).where(ref_section_card_debtor.c.id == int(item_task.section_card_debtor_id)))
                 section_task = section_task_query.scalar()
-                section_task_id = item_task['section_card_debtor_id']
+                section_task_id = item_task.section_card_debtor_id
 
-            if item_task['type_statement_id'] is not None and item_task['type_statement_id'] != '':
-                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item_task['type_statement_id'])))
+            if item_task.type_statement_id is not None:
+                type_stat_query = await session.execute(select(ref_type_statement.c.name).where(ref_type_statement.c.id == int(item_task.type_statement_id)))
                 type_statement = type_stat_query.scalar()
-                type_statement_id = item_task['type_statement_id']
+                type_statement_id = item_task.type_statement_id
 
-            if item_task['result_id'] is not None and item_task['result_id'] != '':
-                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item_task['result_id'])))
+            if item_task.result_id is not None:
+                result_stat_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item_task.result_id)))
                 result_statement = result_stat_query.scalar()
-                result_statement_id = item_task['result_id']
+                result_statement_id = item_task.result_id
 
-            user_id = int(item_task['user_id'])
+            user_id = int(item_task.user_id)
             user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == user_id))
             user_set = [item for item in user_query.mappings().all()]
             user_name = f'{user_set[0]["first_name"]} {user_set[0]["last_name"] or ""}'
 
             data_tasks.append({
-                "id": item_task['id'],
-                "credit_id": item_task['credit_id'],
-                "credit_number": credit_item['number'],
-                "debtor_name": fio,
+                "id": item_task.id,
+                "credit_id": item_task.credit_id,
+                "credit_number": credit_item.number,
+                "debtor_name": debtor_fio,
                 "cession_name": cession_name,
                 "name_task": name_task,
-                "name_task_id": item_task['name_id'],
+                "name_task_id": item_task.name_id,
                 "type_statement": type_statement,
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
                 "section_card_debtor_id": section_task_id,
-                "date_task": item_task['date_task'],
-                "timeframe": item_task['timeframe'],
+                "date_task": item_task.date_task,
+                "timeframe": item_task.timeframe,
                 "user_name": user_name,
-                "user_id": item_task['user_id'],
-                "date_statement": item_task['date_statement'],
-                "track_num": item_task['track_num'],
-                "date_answer": item_task['date_answer'],
+                "user_id": item_task.user_id,
+                "date_statement": item_task.date_statement,
+                "track_num": item_task.track_num,
+                "date_answer": item_task.date_answer,
                 "result": result_statement,
                 "result_id": result_statement_id,
-                "comment": item_task['comment'],
+                "comment": item_task.comment,
             })
 
         result = {'data_tasks': data_tasks, 'num_page_all': num_page_all}

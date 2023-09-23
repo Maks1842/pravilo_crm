@@ -78,49 +78,49 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
             name_doc = ''
             resolution = ''
 
-            if item['credit_id'] is not None and item['credit_id'] != '':
-                credit_id: int = item['credit_id']
+            if item.credit_id is not None:
+                credit_id: int = item.credit_id
                 credits_query = await session.execute(select(credit).where(credit.c.id == credit_id))
                 credit_set = credits_query.mappings().one()
-                credit_number = credit_set['number']
-                debtor_id: int = credit_set['debtor_id']
+                credit_number = credit_set.number
+                debtor_id: int = credit_set.debtor_id
 
                 debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
                 debtor_item = debtor_query.mappings().one()
 
-                if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                    debtor_fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                          f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+                if debtor_item.last_name_2 is not None:
+                    debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                          f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
                 else:
-                    debtor_fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                    debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            if item['name_doc_id'] is not None and item['name_doc_id'] != '':
-                name_doc_id: int = item['name_doc_id']
+            if item.name_doc_id is not None:
+                name_doc_id: int = item.name_doc_id
                 name_doc_query = await session.execute(select(ref_legal_docs).where(ref_legal_docs.c.id == name_doc_id))
                 name_doc_set = name_doc_query.mappings().one()
-                name_doc = name_doc_set['name']
+                name_doc = name_doc_set.name
 
-            if item['resolution_id'] is not None and item['resolution_id'] != '':
-                resolution_id: int = item['resolution_id']
+            if item.resolution_id is not None:
+                resolution_id: int = item.resolution_id
                 resolution_query = await session.execute(select(ref_result_statement).where(ref_result_statement.c.id == resolution_id))
                 resolution_set = resolution_query.mappings().one()
-                resolution = resolution_set['name']
+                resolution = resolution_set.name
 
             data_mail.append({
-                "id": item['id'],
-                "sequence_num": item['sequence_num'],
-                "date": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
-                "addresser": item['addresser'],
+                "id": item.id,
+                "sequence_num": item.sequence_num,
+                "date": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "addresser": item.addresser,
                 "debtor_fio": debtor_fio,
                 "credit_number": credit_number,
-                "credit_id": item['credit_id'],
-                "case_number": item['case_number'],
+                "credit_id": item.credit_id,
+                "case_number": item.case_number,
                 "legal_doc_name": name_doc,
                 "legal_docs_id": name_doc_id,
                 "resolution": resolution,
                 "resolution_id": resolution_id,
-                "barcode": item['barcode'],
-                "comment": item['comment'],
+                "barcode": item.barcode,
+                "comment": item.comment,
                 "docDate": '',
                 "dateEntryForce": '',
                 "dateStop": '',
@@ -176,7 +176,7 @@ async def save_incoming_mail(reg_data, session):
         try:
             mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.sequence_num)))
             mail_set = mail_query.mappings().fetchone()
-            sequence_num = mail_set['sequence_num'] + 1
+            sequence_num = mail_set.sequence_num + 1
 
             if len(mail_set['barcode']) > 0:
                 barcode_split = mail_set['barcode'][2:]

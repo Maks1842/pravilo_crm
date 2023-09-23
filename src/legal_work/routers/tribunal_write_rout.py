@@ -10,7 +10,7 @@ from src.debts.models import cession, credit, debtor
 from src.tasks.models import task
 from src.legal_work.models import legal_work
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
-from src.references.models import ref_task, ref_result_statement, ref_tribunal
+from src.references.models import ref_legal_docs, ref_result_statement, ref_tribunal
 
 '''
 Метод для судебной работы
@@ -74,14 +74,14 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
         data_legal = []
         for item in legal_query.mappings().all():
 
-            credit_id: int = item['credit_id']
+            credit_id: int = item.credit_id
 
-            name_task = ''
-            name_task_id = ''
+            legal_docs = ''
+            legal_docs_id = None
             result_1 = ''
-            result_1_id = ''
+            result_1_id = None
             tribunal_1 = ''
-            tribunal_1_id = ''
+            tribunal_1_id = None
             address_tribunal_1 = ''
             email_tribunal_1 = ''
             phone_tribunal_1 = ''
@@ -89,73 +89,74 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
 
             credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
             credit_set = credit_query.mappings().one()
-            cession_id: int = credit_set['cession_id']
+            cession_id: int = credit_set.cession_id
 
             cession_query = await session.execute(select(cession).where(cession.c.id == cession_id))
             cession_set = cession_query.mappings().one()
 
-            debtor_id: int = credit_set['debtor_id']
+            debtor_id: int = credit_set.debtor_id
 
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
 
-            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                debtor_fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                             f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            if debtor_item.last_name_2 is not None:
+                debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                             f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                debtor_fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            if item['name_task_id'] is not None and item['name_task_id'] != '':
-                name_task_query = await session.execute(select(ref_task.c.name).where(ref_task.c.id == int(item['name_task_id'])))
-                name_task = name_task_query.scalar()
-                name_task_id = item['name_task_id']
+            if item.legal_docs_id is not None:
+                name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.legal_docs_id)))
+                legal_docs = name_task_query.scalar()
+                legal_docs_id = item.legal_docs_id
 
-            if item['result_1_id'] is not None and item['result_1_id'] != '':
-                result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(item['result_1_id'])))
+            if item.result_1_id is not None:
+                result_1_id: int = item.result_1_id
+                result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
                 result_1 = result_1_query.scalar()
-                result_1_id = item['result_1_id']
 
-            if item['tribunal_1_id'] is not None and item['tribunal_1_id'] != '':
-                tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item['tribunal_1_id'])))
+            if item.tribunal_1_id is not None:
+                tribunal_1_id: int = item.tribunal_1_id
+                tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_1_id))
                 tribunal_1_set = tribunal_1_query.mappings().one()
-                tribunal_1_id = item['tribunal_1_id']
-                tribunal_1 = tribunal_1_set['name']
-                address_tribunal_1 = tribunal_1_set['address']
-                email_tribunal_1 = tribunal_1_set['email']
-                phone_tribunal_1 = tribunal_1_set['phone']
-                if tribunal_1_set['gaspravosudie'] == True:
+
+                tribunal_1 = tribunal_1_set.name
+                address_tribunal_1 = tribunal_1_set.address
+                email_tribunal_1 = tribunal_1_set.email
+                phone_tribunal_1 = tribunal_1_set.phone
+                if tribunal_1_set.gaspravosudie == True:
                     gaspravosudie = 'Возможно'
 
             data_legal.append({
-                "id": item['id'],
-                "legalNumber": item['legal_number'],
-                "legalSection_id": item['legal_section_id'],
-                "credit_id": item['credit_id'],
-                "credit": credit_set['number'],
-                "cession_id": cession_set['id'],
-                "cessionName": cession_set['name'],
+                "id": item.id,
+                "legalNumber": item.legal_number,
+                "legalSection_id": item.legal_section_id,
+                "credit_id": item.credit_id,
+                "credit": credit_set.number,
+                "cession_id": cession_set.id,
+                "cessionName": cession_set.name,
                 "debtorName": debtor_fio,
-                "numberCase_1": item['number_case_1'],
-                "nameTask": name_task,
-                "nameTask_id": name_task_id,
-                "dateSession_1": item['date_session_1'],
-                "dateResult_1": item['date_result_1'],
+                "numberCase_1": item.number_case_1,
+                "legalDocs": legal_docs,
+                "legalDocs_id": legal_docs_id,
+                "dateSession_1": item.date_session_1,
+                "dateResult_1": item.date_result_1,
                 "result_1": result_1,
                 "result_1_id": result_1_id,
-                "summaED": item['summa_ed'],
-                "summaStateDutyResult": item['summa_state_duty_result'],
-                "dateIncomingED": item['date_incoming_ed'],
-                "dateEntryIntoForce": item['date_entry_force'],
+                "summaED": item.summa_ed,
+                "summaStateDutyResult": item.summa_state_duty_result,
+                "dateIncomingED": item.date_incoming_ed,
+                "dateEntryIntoForce": item.date_entry_force,
                 "tribun_1": tribunal_1,
                 "tribun_1_id": tribunal_1_id,
                 "addressTribun_1": address_tribunal_1,
                 "emailTribun_1": email_tribunal_1,
                 "phoneTribun_1": phone_tribunal_1,
-                "dateCancelResult": item['date_cancel_result'],
-                "dateSession_2": item['date_session_2'],
-                "dateResult_2": item['date_result_2'],
-                "summaResult_2": item['summa_result_2'],
-                "comment": item['comment'],
+                "dateCancelResult": item.date_cancel_result,
+                "dateSession_2": item.date_session_2,
+                "dateResult_2": item.date_result_2,
+                "summaResult_2": item.summa_result_2,
+                "comment": item.comment,
                 "tribun_2_id": None,
                 "gaspravosudie": gaspravosudie,
             })
@@ -230,7 +231,7 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
     legal_data = {"legal_number": legal_num,
                      "legal_section_id": data['legalSection_id'],
                      "number_case_1": data['numberCase_1'],
-                     "name_task_id": data['nameTask_id'],
+                     "legal_docs_id": data['legalDocs_id'],
                      # "date_session_1": datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date(),
                      "date_result_1": date_result_1,
                      "result_1_id": data['result_1_id'],

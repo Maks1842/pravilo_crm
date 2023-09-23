@@ -1,6 +1,6 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey, DATE, Numeric
 
-from src.references.models import ref_task, ref_section_card_debtor, ref_result_statement, ref_type_statement
+from src.references.models import ref_legal_docs, ref_section_card_debtor, ref_result_statement, ref_type_statement
 from src.debts.models import credit
 from src.auth.models import user
 
@@ -12,7 +12,7 @@ task = Table(
     "task",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name_id", Integer, ForeignKey(ref_task.c.id), nullable=False, doc='Задача'),
+    Column("name_id", Integer, ForeignKey(ref_legal_docs.c.id), nullable=False, doc='Задача'),
     Column("section_card_debtor_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздел карточки должника'),
     Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения'),
     Column("date_task", DATE, doc='Дата начала'),

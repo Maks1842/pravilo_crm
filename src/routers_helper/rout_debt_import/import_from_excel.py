@@ -20,6 +20,8 @@ router_import_headers_excel = APIRouter(
 @router_import_headers_excel.post("/")
 async def import_headers(registry_debt_file: UploadFile):
 
+    print(registry_debt_file.filename)
+
     with open(f'{path_main}/src/media/data/format_file.xlsx', 'wb+') as f:
         for chunk in registry_debt_file.file:
             f.write(chunk)

@@ -1,6 +1,6 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey, DATE, Numeric
 
-from src.references.models import ref_legal_section, ref_task, ref_result_statement, ref_tribunal, ref_financial_manager
+from src.references.models import ref_legal_section, ref_legal_docs, ref_result_statement, ref_tribunal, ref_financial_manager
 from src.debts.models import credit
 
 
@@ -15,7 +15,7 @@ legal_work = Table(
     Column("legal_section_id",  Integer, ForeignKey(ref_legal_section.c.id), doc='Раздел юридической работы'),
     Column("duplicate_case", String(10), doc='Признак дубликат (описка)'),
     Column("number_case_1", String(50), doc='Номер дела (Первая инстанция)'),
-    Column("name_task_id",  Integer, ForeignKey(ref_task.c.id), doc='Иск'),
+    Column("legal_docs_id",  Integer, ForeignKey(ref_legal_docs.c.id), doc='Иск'),
     Column("date_session_1", DATE, doc='Дата заседания (Первая инстанция)'),
     Column("date_result_1", DATE, doc='Дата решения (Первая инстанция)'),
     Column("result_1_id",  Integer, ForeignKey(ref_result_statement.c.id), doc='Результат рассмотрения (Первая инстанция)'),

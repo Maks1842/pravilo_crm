@@ -35,7 +35,7 @@ dir_credit = Table(
     Column("path", String(200), doc='Путь к папке с Досье по кредиту'),
 )
 
-# Папки в досье
+# Папки в досье КД
 dir_folder = Table(
     "dir_folder",
     metadata,
@@ -43,21 +43,21 @@ dir_folder = Table(
     Column("name", String(150), nullable=False, doc='Наименование папки в досье'),
 )
 
-# Документы в папках досье
+# Дефолтные наименования документов в папках досье
+defolt_docs = Table(
+    "defolt_docs",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(150), nullable=False, doc='Дефолтное наименование документа'),
+    Column("folder_id", Integer, ForeignKey(dir_folder.c.id), doc='Папка_id'),
+)
+
+# Документы по КД
 docs_folder = Table(
     "docs_folder",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(150), nullable=False, doc='Документ в папке досье'),
-    Column("folder_id", Integer, ForeignKey(dir_folder.c.id), doc='Папка_id'),
-)
-
-# Досье
-dir_form = Table(
-    "dir_form",
-    metadata,
-    Column("id", Integer, primary_key=True),
+    Column("name", String(150), nullable=False, doc='Наименование документа'),
     Column("credit_dir_id", Integer, ForeignKey(dir_credit.c.id), doc='Директория досье_id'),
-    Column("docs_folder_id", Integer, ForeignKey(docs_folder.c.id), doc='Документ_id'),
     Column("path", String(200), doc='Путь к документу'),
 )

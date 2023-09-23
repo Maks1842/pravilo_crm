@@ -9,7 +9,7 @@ from src.references.router import router_ref_status_credit, router_ref_claimer_e
     router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
     router_ref_region, router_ref_rosp, router_ref_bank, router_ref_pfr, router_ref_reason_end_ep, router_ref_type_statement, \
     router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, router_ref_legal_docs, \
-    router_ref_result_statement, router_ref_task
+    router_ref_result_statement
 
 from src.collection_debt.router import router_ed_debtor
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
@@ -20,7 +20,8 @@ from src.registries.router import router_registry_headers, router_registry_struc
 
 from src.creating_docs.router import router_docs_generator_template
 
-from src.directory_docs.router import router_dir_cession, router_docs_cession, router_download_file_cession
+from src.directory_docs.router import router_dir_cession, router_docs_cession, router_download_file_cession, \
+    router_dir_credit, router_docs_credit
 
 from src.mail.routers.incoming_mail import router_incoming_mail
 from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
@@ -90,7 +91,6 @@ app.include_router(router_ref_section_card_debtor)
 app.include_router(router_ref_legal_docs)
 app.include_router(router_ref_legal_section)
 app.include_router(router_ref_result_statement)
-app.include_router(router_ref_task)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)
@@ -116,6 +116,8 @@ app.include_router(router_generator_docs)
 app.include_router(router_dir_cession)
 app.include_router(router_docs_cession)
 app.include_router(router_download_file_cession)
+app.include_router(router_dir_credit)
+app.include_router(router_docs_credit)
 
 # Для mail
 app.include_router(router_incoming_mail)

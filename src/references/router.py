@@ -883,11 +883,11 @@ async def get_legal_docs(section_card_id: int = None, legal_section_id: int = No
 
     try:
         if section_card_id:
-            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.legal_section_id.in_([legal_section_id, 1]),
-                                                                           ref_legal_docs.c.legal_section_id == None)))
-        elif legal_section_id:
             query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.section_card_id.in_([section_card_id, 1]),
                                                                            ref_legal_docs.c.section_card_id == None)))
+        elif legal_section_id:
+            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.legal_section_id.in_([legal_section_id, 1]),
+                                                                           ref_legal_docs.c.legal_section_id == None)))
         else:
             query = await session.execute(select(ref_legal_docs))
 
@@ -895,11 +895,13 @@ async def get_legal_docs(section_card_id: int = None, legal_section_id: int = No
         for item in query.mappings().all():
 
             result.append({
-                "legal_docs": item['name'],
+                "legal_docs": item.name,
                 "value": {
-                    "legal_docs_id": item["id"],
-                    "section_card_id": item["section_card_id"],
-                    "legal_section_id": item["legal_section_id"],
+                    "legal_docs_id": item.id,
+                    "section_card_id": item.section_card_id,
+                    "legal_section_id": item.legal_section_id,
+                    "type_statement_id": item.type_statement_id,
+                    "result_statement_id": item.type_statement_id,
                 },
             })
 
@@ -909,6 +911,41 @@ async def get_legal_docs(section_card_id: int = None, legal_section_id: int = No
             "status": "error",
             "data": None,
             "details": ex
+        }
+
+
+@router_ref_legal_docs.post("/")
+async def add_legal_docs(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    req_data = data_json['data_json']
+
+    try:
+        data = {
+            "name": req_data['name'],
+            "section_card_id": req_data['section_card_id'],
+            "legal_section_id": req_data['legal_section_id'],
+            "type_statement_id": req_data['type_statement_id'],
+            "result_statement_id": req_data['result_statement_id'],
+        }
+        if req_data["id"]:
+            legal_docs_id = int(req_data["id"])
+            post_data = update(ref_legal_docs).where(ref_legal_docs.c.id == legal_docs_id).values(data)
+        else:
+            post_data = insert(ref_legal_docs).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Наименование документа успешно сохранено'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
 
 
@@ -945,44 +982,44 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
         }
 
 
-# Получить/добавить Виды задач
-router_ref_task = APIRouter(
-    prefix="/v1/RefTask",
-    tags=["References"]
-)
+# # Получить/добавить Виды задач
+# router_ref_task = APIRouter(
+#     prefix="/v1/RefTask",
+#     tags=["References"]
+# )
 
 
-@router_ref_task.get("/")
-async def get_task(section_card_id: int = None, session: AsyncSession = Depends(get_async_session)):
-
-    try:
-        if section_card_id:
-            query = await session.execute(select(ref_task).where(or_(ref_task.c.section_card_id.in_([section_card_id, 1]),
-                                                                     ref_task.c.section_card_id == None)))
-        else:
-            query = await session.execute(select(ref_task))
-
-        result = []
-        for item in query.mappings().all():
-
-            result.append({
-                "task_name": item['name'],
-                "value": {
-                    "task_name_id": item["id"],
-                    "section_card_id": item["section_card_id"],
-                    "type_statement_id": item["type_statement_id"],
-                    "legal_doc_id": item["legal_doc_id"],
-                    "result_statement_id": item["result_statement_id"],
-                },
-            })
-
-        return result
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": ex
-        }
+# @router_ref_task.get("/")
+# async def get_task(section_card_id: int = None, session: AsyncSession = Depends(get_async_session)):
+#
+#     try:
+#         if section_card_id:
+#             query = await session.execute(select(ref_task).where(or_(ref_task.c.section_card_id.in_([section_card_id, 1]),
+#                                                                      ref_task.c.section_card_id == None)))
+#         else:
+#             query = await session.execute(select(ref_task))
+#
+#         result = []
+#         for item in query.mappings().all():
+#
+#             result.append({
+#                 "task_name": item['name'],
+#                 "value": {
+#                     "task_name_id": item["id"],
+#                     "section_card_id": item["section_card_id"],
+#                     "type_statement_id": item["type_statement_id"],
+#                     "legal_doc_id": item["legal_doc_id"],
+#                     "result_statement_id": item["result_statement_id"],
+#                 },
+#             })
+#
+#         return result
+#     except Exception as ex:
+#         return {
+#             "status": "error",
+#             "data": None,
+#             "details": ex
+#         }
 
 
 

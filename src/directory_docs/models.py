@@ -40,7 +40,7 @@ dir_folder = Table(
     "dir_folder",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(150), nullable=False, doc='Наименование папки в досье'),
+    Column("name", String(100), nullable=False, doc='Наименование папки в досье'),
 )
 
 # Дефолтные наименования документов в папках досье
@@ -58,6 +58,7 @@ docs_folder = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(150), nullable=False, doc='Наименование документа'),
-    Column("credit_dir_id", Integer, ForeignKey(dir_credit.c.id), doc='Директория досье_id'),
+    Column("name_folder", String(100), doc='Наименование папки'),
+    Column("dir_credit_id", Integer, ForeignKey(dir_credit.c.id), doc='Директория досье_id'),
     Column("path", String(200), doc='Путь к документу'),
 )

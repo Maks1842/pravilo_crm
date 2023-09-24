@@ -824,9 +824,9 @@ async def get_legal_section(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "legal_section": item['name'],
+                "legal_section": item.name,
                 "value": {
-                    "legal_section_id": item["id"],
+                    "legal_section_id": item.id,
                 },
             })
 

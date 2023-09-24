@@ -19,6 +19,7 @@ loct - предложный -- О ком? О чём?
 '''
 import re
 import os
+import subprocess
 from datetime import datetime
 import random
 
@@ -130,7 +131,7 @@ def doc_pattern(context_dict, count, template_json):
     try:
         doc_path = os.path.join(generator_docs_path, template_json["value"]["path_template_file"])
         doc = DocxTemplate(doc_path)
-        name = context_dict['Должник']
+        name = re.sub(r'\s', '_', context_dict['Должник'])
         num_credit = context_dict['Номер_КД']
         num = re.sub(r'/', '_', num_credit)
         result_path = os.path.join(generator_docs_path, f'{generator_docs_path}/result/{template_json["template_name"]}')
@@ -138,8 +139,12 @@ def doc_pattern(context_dict, count, template_json):
         if not os.path.exists(result_path):
             os.mkdir(result_path)
 
+        path_doc = f'{result_path}/{name}_{num}_{template_json["template_name"]}.docx'
+
         doc.render(context_dict)
-        doc.save(f'{result_path}/{name}_{num}_{template_json["template_name"]}.docx')
+        doc.save(path_doc)
+
+        subprocess.call(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', result_path, path_doc])
     except Exception as ex:
         return {
             "status": "error",

@@ -13,6 +13,8 @@ from src.references.router import router_ref_status_credit, router_ref_claimer_e
 
 from src.collection_debt.router import router_ed_debtor
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
+from src.legal_work.routers.succession_rout import router_succession
+
 from src.tasks.router import router_task, router_task_all
 
 from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json, \
@@ -97,6 +99,7 @@ app.include_router(router_ed_debtor)
 
 # Для legal_work
 app.include_router(router_tribunal_write)
+app.include_router(router_succession)
 
 # Для routers_task
 app.include_router(router_task)

@@ -52,7 +52,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
     try:
         filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
         filter_set = filter_query.mappings().fetchone()
-        reg_struct_id: int = filter_set['registry_structure_id']
+        reg_struct_id: int = filter_set.registry_structure_id
 
         reg_struct_query = await session.execute(select(registry_structures.c.items_json).where(registry_structures.c.id == reg_struct_id))
         registry_structur = reg_struct_query.scalar()
@@ -65,9 +65,9 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
             reg_header_query = await session.execute(select(registry_headers).where(registry_headers.c.id == int(item['id'])))
             reg_header = reg_header_query.mappings().fetchone()
             headers.append({
-                "text": reg_header['headers'],
-                "value": reg_header['headers_key'],
-                "width": reg_header['width_field']})
+                "text": reg_header.headers,
+                "value": reg_header.headers_key,
+                "width": reg_header.width_field})
 
         values_for_filters = None
         if model:
@@ -77,13 +77,13 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
             values_for_filters = []
             for item_set in queryset:
                 if model == 'executive_document':
-                    values_for_filters.append(item_set['credit_id'])
+                    values_for_filters.append(item_set.credit_id)
                 elif model == 'executive_productions':
-                    values_for_filters.append(item_set['credit_id'])
+                    values_for_filters.append(item_set.credit_id)
                 else:
-                    values_for_filters.append(item_set['id'])
+                    values_for_filters.append(item_set.id)
 
-        if filter_set['function_name'] is None:
+        if filter_set.function_name is None:
             if values_for_filters is None:
 
                 # Извлекаю все КД
@@ -122,7 +122,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                 statistics = {'total_credits': total_credits,
                           'balance_summa': balance_summa}
         else:
-            functions_control = getattr(control_filters, f'{filter_set["function_name"]}')
+            functions_control = getattr(control_filters, f'{filter_set.function_name}')
             credit_id_list = functions_control()
 
             credits_query = await session.execute(select(credit).where(credit.c.id.in_(credit_id_list)).order_by(credit.c.id).
@@ -236,83 +236,85 @@ async def calculation_of_filters(list_headers, credits_list, session):
         status_cd_query = await session.execute(select(ref_status_credit.c.name).where(ref_status_credit.c.id == int(credit_item['status_cd_id'])))
         status_cd = status_cd_query.scalar()
 
-        if cession_item['summa'] is not None and cession_item['summa'] != '':
+        if cession_item['summa'] is not None:
             summa_cessii = cession_item['summa'] / 100
-        if cession_item['date'] is not None and cession_item['date'] != '':
+        if cession_item['date'] is not None:
             try:
                 date_cessii = datetime.strptime(str(cession_item['date']), '%Y-%m-%d').strftime("%d.%m.%Y")
             except:
                 pass
 
-        if credit_item['summa_by_cession'] is not None and credit_item['summa_by_cession'] != '':
+        if credit_item['summa_by_cession'] is not None:
             summa_by_cession = credit_item['summa_by_cession'] / 100
-        if credit_item['summa'] is not None and credit_item['summa'] != '':
+        if credit_item['summa'] is not None:
             credit_summa = credit_item['summa'] / 100
-        if credit_item['overdue_od'] is not None and credit_item['overdue_od'] != '':
+        if credit_item['overdue_od'] is not None:
             overdue_od = credit_item['overdue_od'] / 100
-        if credit_item['percent_of_od'] is not None and credit_item['percent_of_od'] != '':
+        if credit_item['percent_of_od'] is not None:
             percent_of_od = credit_item['percent_of_od'] / 100
-        if credit_item['balance_debt'] is not None and credit_item['balance_debt'] != '':
+        if credit_item['balance_debt'] is not None:
             balance_debt = credit_item['balance_debt'] / 100
-        if credit_item['date_start'] is not None and credit_item['date_start'] != '':
+        if credit_item['date_start'] is not None:
             try:
                 credit_date_start = datetime.strptime(str(credit_item['date_start']), '%Y-%m-%d').strftime("%d.%m.%Y")
             except:
                 pass
 
-        if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                  f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+        if debtor_item.last_name_2 is not None:
+            fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                         f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
         else:
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
-        if debtor_item['birthday'] is not None and debtor_item['birthday'] != '':
+            fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
+        if debtor_item.birthday is not None:
             try:
-                birthday = datetime.strptime(str(debtor_item['birthday']), '%Y-%m-%d').strftime("%d.%m.%Y")
+                birthday = datetime.strptime(str(debtor_item.birthday), '%Y-%m-%d').strftime("%d.%m.%Y")
             except:
                 pass
 
-        if debtor_item['passport_num'] is not None and debtor_item['passport_num'] != '':
+        if debtor_item.passport_num is not None:
             try:
-                passport_date = datetime.strptime(str(debtor_item['passport_date']), '%Y-%m-%d').strftime("%d.%m.%Y")
+                passport_date = datetime.strptime(str(debtor_item.passport_date), '%Y-%m-%d').strftime("%d.%m.%Y")
             except:
                 passport_date = ''
-            passport = f"{debtor_item['passport_series']} {debtor_item['passport_num']} от {passport_date}"
-        if debtor_item['address_1'] is not None and debtor_item['address_1'] != '':
-            address_registry = f"{debtor_item['index_add_1']  or ''}, {debtor_item['address_1']  or ''}"
-        if debtor_item['address_2'] is not None and debtor_item['address_2'] != '':
-            address_resident = f"{debtor_item['index_add_2']  or ''}, {debtor_item['address_2']  or ''}"
-        if debtor_item['tribunal_id'] is not None and debtor_item['tribunal_id'] != '':
-            tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(debtor_item['tribunal_id'])))
+            passport = f"{debtor_item.passport_series} {debtor_item.passport_num} от {passport_date}"
+        if debtor_item.address_1 is not None:
+            address_registry = f"{debtor_item.index_add_1  or ''}, {debtor_item.address_1  or ''}"
+        if debtor_item.address_2 is not None:
+            address_resident = f"{debtor_item.index_add_2  or ''}, {debtor_item.address_2  or ''}"
+        if debtor_item.tribunal_id is not None:
+            tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(debtor_item.tribunal_id)))
             tribunal_item = tribunal_query.mappings().fetchone()
-            if tribunal_item['gaspravosudie']:
+            tribunal_name = tribunal_item.name
+            tribunal_address = tribunal_item.address
+            if tribunal_item.gaspravosudie:
                 gaspravosudie = 'Возможно'
 
         try:
             ed_query = await session.execute(select(executive_document).where(executive_document.c.credit_id == int(credit_item['id'])).
                                              order_by(desc(executive_document.c.id)))
             ed_item = ed_query.mappings().fetchone()
-            if ed_item['type_ed_id'] is not None and ed_item['type_ed_id'] != '':
-                type_ed_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == int(ed_item['type_ed_id'])))
+            if ed_item.type_ed_id is not None:
+                type_ed_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == int(ed_item.type_ed_id)))
                 type_ed = type_ed_query.scalar()
-            if ed_item['status_ed_id'] is not None and ed_item['status_ed_id'] != '':
-                status_ed_query = await session.execute(select(ref_status_ed.c.name).where(ref_status_ed.c.id == int(ed_item['status_ed_id'])))
+            if ed_item.status_ed_id is not None:
+                status_ed_query = await session.execute(select(ref_status_ed.c.name).where(ref_status_ed.c.id == int(ed_item.status_ed_id)))
                 status_ed = status_ed_query.scalar()
-            if ed_item['user_id'] is not None and ed_item['user_id'] != '':
-                user_query = await session.execute(select(user).where(user.c.id == int(ed_item['user_id'])))
+            if ed_item.user_id is not None:
+                user_query = await session.execute(select(user).where(user.c.id == int(ed_item.user_id)))
                 user_item = user_query.mappings().fetchone()
                 user_ed = f'{user_item["first_name"]} {user_item["last_name"] or ""}'
-            if ed_item['claimer_ed_id'] is not None and ed_item['claimer_ed_id'] != '':
-                claimer_ed_query = await session.execute(select(ref_claimer_ed.c.name).where(ref_claimer_ed.c.id == int(ed_item['claimer_ed_id'])))
+            if ed_item.claimer_ed_id is not None:
+                claimer_ed_query = await session.execute(select(ref_claimer_ed.c.name).where(ref_claimer_ed.c.id == int(ed_item.claimer_ed_id)))
                 claimer_ed = claimer_ed_query.scalar()
-            if ed_item['tribunal_id'] is not None and ed_item['tribunal_id'] != '':
-                tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(ed_item['tribunal_id'])))
+            if ed_item.tribunal_id is not None:
+                tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(ed_item.tribunal_id)))
                 tribunal_item = tribunal_query.mappings().fetchone()
-                tribunal_name = tribunal_item['name']
-                tribunal_address = tribunal_item['address']
-                # if tribunal_item['gaspravosudie'] == True:
+                tribunal_name = tribunal_item.name
+                tribunal_address = tribunal_item.address
+                # if tribunal_item.gaspravosudie == True:
                 #     gaspravosudie = 'Возможно'
-            if ed_item['summa_debt_decision'] is not None and ed_item['summa_debt_decision'] != '':
-                summa_tribun = ed_item['summa_debt_decision'] / 100
+            if ed_item.summa_debt_decision is not None:
+                summa_tribun = ed_item.summa_debt_decision / 100
                 summa_tribun_all += summa_tribun
         except:
             ed_item = ed_null
@@ -321,14 +323,14 @@ async def calculation_of_filters(list_headers, credits_list, session):
             ep_query = await session.execute(select(executive_productions).where(executive_productions.c.executive_document_id == int(ed_item['id'])).
                                              order_by(desc(executive_productions.c.date_on)))
             ep_item = ep_query.mappings().fetchone()
-            if ep_item['reason_end_id'] is not None and ep_item['reason_end_id'] != '':
-                reason_end_query = await session.execute(select(ref_reason_end_ep.c.name).where(ref_reason_end_ep.c.id == int(ep_item['reason_end_id'])))
+            if ep_item.reason_end_id is not None:
+                reason_end_query = await session.execute(select(ref_reason_end_ep.c.name).where(ref_reason_end_ep.c.id == int(ep_item.reason_end_id)))
                 reason_end = reason_end_query.scalar()
-            if ep_item['rosp_id'] is not None and ep_item['rosp_id'] != '':
-                rosp_query = await session.execute(select(ref_rosp).where(ref_rosp.c.id == int(ep_item['rosp_id'])))
+            if ep_item.rosp_id is not None:
+                rosp_query = await session.execute(select(ref_rosp).where(ref_rosp.c.id == int(ep_item.rosp_id)))
                 rosp = rosp_query.mappings().fetchone()
-                rosp_name = rosp['name']
-                rosp_address = f"{rosp['address_index']  or ''}, {rosp['address']  or ''}"
+                rosp_name = rosp.name
+                rosp_address = f"{rosp.address_index  or ''}, {rosp.address  or ''}"
         except:
             ep_item = ep_null
 
@@ -337,8 +339,8 @@ async def calculation_of_filters(list_headers, credits_list, session):
                                               order_by(desc(payment.c.date)))
             pay_item = pay_query.mappings().fetchone()
 
-            if pay_item['summa'] is not None and pay_item['summa'] != '':
-                summa_pay = pay_item['summa'] / 100
+            if pay_item.summa is not None:
+                summa_pay = pay_item.summa / 100
         except:
             pay_item = pay_null
 
@@ -424,6 +426,11 @@ async def calculation_of_filters(list_headers, credits_list, session):
             elif item['model'] == 'ref_tribunal':
                 if item['headers_key'] == 'gaspravosudie':
                     data_items[item['headers_key']] = gaspravosudie
+                elif item['headers_key'] == 'tribunal_name':
+                    data_items[item['headers_key']] = tribunal_name
+                elif item['headers_key'] == 'tribunal_address':
+                    data_items[item['headers_key']] = tribunal_address
+
 
         data_debtors.append(data_items)
 

@@ -38,58 +38,58 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 summa_debt_decision = 0
                 state_duty = 0
 
-                if item['summa_debt_decision'] is not None and item['summa_debt_decision'] != '':
-                    summa_debt_decision = item['summa_debt_decision'] / 100
+                if item.summa_debt_decision is not None:
+                    summa_debt_decision = item.summa_debt_decision / 100
 
-                if item['state_duty'] is not None and item['state_duty'] != '':
-                    state_duty = item['state_duty'] / 100
+                if item.state_duty is not None:
+                    state_duty = item.state_duty / 100
 
-                if item['type_ed_id'] is not None and item['type_ed_id'] != '':
-                    type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(item['type_ed_id'])))
+                if item.type_ed_id is not None:
+                    type_ed_query = await session.execute(select(ref_type_ed).where(ref_type_ed.c.id == int(item.type_ed_id)))
                     type_ed = type_ed_query.mappings().one()
 
-                    type_ed_name = type_ed['name']
-                    type_ed_id = type_ed['id']
+                    type_ed_name = type_ed.name
+                    type_ed_id = type_ed.id
 
-                if item['claimer_ed_id'] is not None and item['claimer_ed_id'] != '':
-                    claimer_ed_query = await session.execute(select(ref_claimer_ed).where(ref_claimer_ed.c.id == int(item['claimer_ed_id'])))
+                if item.claimer_ed_id is not None:
+                    claimer_ed_query = await session.execute(select(ref_claimer_ed).where(ref_claimer_ed.c.id == int(item.claimer_ed_id)))
                     claimer_ed = claimer_ed_query.mappings().one()
 
-                    claimer_ed_name = claimer_ed['name']
-                    claimer_ed_id = claimer_ed['id']
+                    claimer_ed_name = claimer_ed.name
+                    claimer_ed_id = claimer_ed.id
 
-                if item['tribunal_id'] is not None and item['tribunal_id'] != '':
-                    tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item['tribunal_id'])))
+                if item.tribunal_id is not None:
+                    tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item.tribunal_id)))
                     tribunal_set = tribunal_query.mappings().one()
 
-                    tribunal_id = item['tribunal_id']
-                    tribunal = tribunal_set['name']
-                    address_tribunal = tribunal_set['address']
-                    email_tribunal = tribunal_set['email']
-                    phone_tribunal = tribunal_set['phone']
+                    tribunal_id = item.tribunal_id
+                    tribunal = tribunal_set.name
+                    address_tribunal = tribunal_set.address
+                    email_tribunal = tribunal_set.email
+                    phone_tribunal = tribunal_set.phone
 
-                if item['status_ed_id'] is not None and item['status_ed_id'] != '':
-                    status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(item['status_ed_id'])))
+                if item.status_ed_id is not None:
+                    status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(item.status_ed_id)))
                     status_ed = status_ed_query.mappings().one()
 
-                    status_name = status_ed['name']
-                    status_id = status_ed['id']
+                    status_name = status_ed.name
+                    status_id = status_ed.id
 
                 result.append({
-                    'id': item['id'],
+                    'id': item.id,
                     'type_ed': type_ed_name,
                     'type_ed_id': type_ed_id,
-                    'number': item['number'],
-                    'date': item['date'],
-                    'case_number': item['case_number'],
-                    'date_of_receipt_ed': item['date_of_receipt_ed'],
-                    'date_decision': item['date_decision'],
+                    'number': item.number,
+                    'date': item.date,
+                    'case_number': item.case_number,
+                    'date_of_receipt_ed': item.date_of_receipt_ed,
+                    'date_decision': item.date_decision,
                     'summa_debt_decision': summa_debt_decision,
                     'state_duty': state_duty,
                     'status_ed': status_name,
                     'status_ed_id': status_id,
-                    'succession': item['succession'],
-                    'date_entry_force': item['date_entry_force'],
+                    'succession': item.succession,
+                    'date_entry_force': item.date_entry_force,
                     'claimer_ed': claimer_ed_name,
                     'claimer_ed_id': claimer_ed_id,
                     "tribunal": tribunal,
@@ -97,7 +97,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     "address_tribunal": address_tribunal,
                     "email_tribunal": email_tribunal,
                     "phone_tribunal": phone_tribunal,
-                    'comment': item['comment'],
+                    'comment': item.comment,
                 })
         return result
     except Exception as ex:

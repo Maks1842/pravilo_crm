@@ -18,3 +18,5 @@ path_main = pathlib.Path().resolve()
 main_dossier_path = f'{path_main}/Цессии_досье'
 logging_path = f'{path_main}/src/media/logs'
 generator_docs_path = f'{path_main}/src/media/generator_docs'
+
+printer_user = os.environ.get('printer_user')

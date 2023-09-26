@@ -18,15 +18,15 @@ from src.references.models import ref_legal_docs, ref_result_statement, ref_trib
 
 
 
-# Получить/добавить СП
-router_tribunal_write = APIRouter(
-    prefix="/v1/TribunalWrite",
+# Получить/добавить Правоприемство
+router_succession = APIRouter(
+    prefix="/v1/SuccessionProcedural",
     tags=["LegalWork"]
 )
 
 
-@router_tribunal_write.get("/")
-async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+@router_succession.get("/")
+async def get_succession(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
 
@@ -80,16 +80,8 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
             legal_docs_id = None
             result_1 = ''
             result_1_id = None
-            summa_ed = None
-            summa_state_duty_result = None
-            summa_result_2 = None
-            date_session_1 = None
-            date_result_1 = None
-            date_incoming_ed = None
-            date_entry_force = None
-            date_cancel_result = None
-            date_session_2 = None
-            date_result_2 = None
+            result_2 = ''
+            result_2_id = None
             tribunal_1 = ''
             tribunal_1_id = None
             address_tribunal_1 = ''
@@ -125,27 +117,10 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
                 result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
                 result_1 = result_1_query.scalar()
 
-            if item.summa_ed is not None:
-                summa_ed = item.summa_ed / 100
-            if item.summa_state_duty_result is not None:
-                summa_state_duty_result = item.summa_state_duty_result / 100
-            if item.summa_result_2 is not None:
-                summa_result_2 = item.summa_result_2 / 100
-
-            if item.date_session_1 is not None:
-                date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_1 is not None:
-                date_result_1 = datetime.strptime(str(item.date_result_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_incoming_ed is not None:
-                date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_entry_force is not None:
-                date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_cancel_result is not None:
-                date_cancel_result = datetime.strptime(str(item.date_cancel_result), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_session_2 is not None:
-                date_session_2 = datetime.strptime(str(item.date_session_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_2 is not None:
-                date_result_2 = datetime.strptime(str(item.date_result_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.result_2_id is not None:
+                result_2_id: int = item.result_2_id
+                result_2_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_2_id))
+                result_2 = result_2_query.scalar()
 
             if item.tribunal_1_id is not None:
                 tribunal_1_id: int = item.tribunal_1_id
@@ -171,23 +146,21 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
                 "numberCase_1": item.number_case_1,
                 "legalDocs": legal_docs,
                 "legalDocs_id": legal_docs_id,
-                "dateSession_1": date_session_1,
-                "dateResult_1": date_result_1,
+                "dateSession_1": item.date_session_1,
+                "dateResult_1": item.date_result_1,
                 "result_1": result_1,
                 "result_1_id": result_1_id,
-                "summaED": summa_ed,
-                "summaStateDutyResult": summa_state_duty_result,
-                "dateIncomingED": date_incoming_ed,
-                "dateEntryIntoForce": date_entry_force,
+                "dateIncomingED": item.date_incoming_ed,
+                "dateEntryIntoForce": item.date_entry_force,
                 "tribun_1": tribunal_1,
                 "tribun_1_id": tribunal_1_id,
                 "addressTribun_1": address_tribunal_1,
                 "emailTribun_1": email_tribunal_1,
                 "phoneTribun_1": phone_tribunal_1,
-                "dateCancelResult": date_cancel_result,
-                "dateSession_2": date_session_2,
-                "dateResult_2": date_result_2,
-                "summaResult_2": summa_result_2,
+                "dateSession_2": item.date_session_2,
+                "dateResult_2": item.date_result_2,
+                "result_2": result_2,
+                "result_2_id": result_2_id,
                 "comment": item.comment,
                 "tribun_2_id": None,
                 "gaspravosudie": gaspravosudie,
@@ -206,8 +179,8 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
         }
 
 
-@router_tribunal_write.post("/")
-async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+@router_succession.post("/")
+async def add_succession(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
     data = data_json['data_json']
 
@@ -221,12 +194,9 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
     date_result_1 = None
     date_entry_force = None
     date_incoming_ed = None
-    date_cancel_result = None
+    date_session_1 = None
     date_session_2 = None
     date_result_2 = None
-    summa_ed = None
-    summa_state_duty_result = None
-    summa_result_2 = None
 
     if data['dateResult_1'] is not None:
         date_result_1 = datetime.strptime(data['dateResult_1'], '%Y-%m-%d').date()
@@ -237,23 +207,14 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
     if data['dateIncomingED'] is not None:
         date_incoming_ed = datetime.strptime(data['dateIncomingED'], '%Y-%m-%d').date()
 
-    if data['dateCancelResult'] is not None:
-        date_cancel_result = datetime.strptime(data['dateCancelResult'], '%Y-%m-%d').date()
+    if data['dateSession_1'] is not None:
+        date_session_1 = datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date()
 
     if data['dateSession_2'] is not None:
         date_session_2 = datetime.strptime(data['dateSession_2'], '%Y-%m-%d').date()
 
     if data['dateResult_2'] is not None:
         date_result_2 = datetime.strptime(data['dateResult_2'], '%Y-%m-%d').date()
-
-    if data['summaED'] is not None:
-        summa_ed = int(float(data['summaED'])) * 100
-
-    if data['summaStateDutyResult'] is not None:
-        summa_state_duty_result = int(float(data['summaStateDutyResult'])) * 100
-
-    if data['summaResult_2'] is not None:
-        summa_result_2 = int(float(data['summaResult_2'])) * 100
 
 
     case_id = data['id']
@@ -264,18 +225,15 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
                      "legal_section_id": data['legalSection_id'],
                      "number_case_1": data['numberCase_1'],
                      "legal_docs_id": data['legalDocs_id'],
-                     # "date_session_1": datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date(),
+                     "date_session_1": date_session_1,
                      "date_result_1": date_result_1,
                      "result_1_id": data['result_1_id'],
                      "date_entry_force": date_entry_force,
                      "tribunal_1_id": data['tribun_1_id'],
-                     "summa_ed": summa_ed,
-                     "summa_state_duty_result": summa_state_duty_result,
                      "date_incoming_ed": date_incoming_ed,
-                     "date_cancel_result": date_cancel_result,
                      "date_session_2": date_session_2,
                      "date_result_2": date_result_2,
-                     "summa_result_2": summa_result_2,
+                     "result_2_id": data['result_2_id'],
                      "comment": data['comment'],
                      "credit_id": data['credit_id'],
                      }

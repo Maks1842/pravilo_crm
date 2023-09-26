@@ -25,8 +25,8 @@ async def get_status_cd(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "status_cd": item['name'],
-                "value": {"status_cd_id": item['id']},
+                "status_cd": item.name,
+                "value": {"status_cd_id": item.id},
             })
 
         return result
@@ -87,8 +87,8 @@ async def get_claimer_ed(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "claimer_ed": item['name'],
-                "value": {"claimer_ed_id": item['id']},
+                "claimer_ed": item.name,
+                "value": {"claimer_ed_id": item.id},
             })
 
         return result
@@ -117,8 +117,8 @@ async def get_type_ed(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "type_ed": item['name'],
-                "value": {"type_ed_id": item['id']},
+                "type_ed": item.name,
+                "value": {"type_ed_id": item.id},
             })
 
         return result
@@ -147,8 +147,8 @@ async def get_status_ed(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "status_ed": item['name'],
-                "value": {"status_ed_id": item['id']},
+                "status_ed": item.name,
+                "value": {"status_ed_id": item.id},
             })
 
         return result
@@ -177,8 +177,8 @@ async def get_reason_cansel_ed(session: AsyncSession = Depends(get_async_session
         for item in query.mappings().all():
 
             result.append({
-                "reason_cansel_ed": item['name'],
-                "value": {"reason_cansel_ed_id": item['id']},
+                "reason_cansel_ed": item.name,
+                "value": {"reason_cansel_ed_id": item.id},
             })
 
         return result
@@ -212,9 +212,9 @@ async def get_tribunal(fragment: str, session: AsyncSession = Depends(get_async_
                 gaspravosudie = 'НЕ возможна подача через ГАС'
 
             result.append({
-                "tribunal_name": item['name'],
+                "tribunal_name": item.name,
                 "value": {
-                    "tribunal_id": item["id"],
+                    "tribunal_id": item.id,
                     "class_code": item["class_code"],
                     "oktmo": item["oktmo"],
                     "address": item["address"],
@@ -296,9 +296,9 @@ async def get_financial_manager(session: AsyncSession = Depends(get_async_sessio
         for item in query.mappings().all():
 
             result.append({
-                "fin_man_name": item['name'],
+                "fin_man_name": item.name,
                 "value": {
-                    "fin_man_id": item["id"],
+                    "fin_man_id": item.id,
                     "organisation_fm": item["organisation_fm"],
                     "address_1": item["address_1"],
                     "address_2": item["address_2"],
@@ -333,9 +333,9 @@ async def get_type_department(session: AsyncSession = Depends(get_async_session)
         for item in query.mappings().all():
 
             result.append({
-                "type_department_name": item['name'],
+                "type_department_name": item.name,
                 "value": {
-                    "type_department_id": item["id"],
+                    "type_department_id": item.id,
                 },
             })
 
@@ -396,9 +396,9 @@ async def get_region(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "region": item['name'],
+                "region": item.name,
                 "value": {
-                    "region_id": item["id"],
+                    "region_id": item.id,
                     "index": item["index"],
                 },
             })
@@ -461,9 +461,9 @@ async def get_rosp(fragment: str, session: AsyncSession = Depends(get_async_sess
         for item in query.mappings().all():
 
             result.append({
-                "rosp_name": item['name'],
+                "rosp_name": item.name,
                 "value": {
-                    "rosp_id": item["id"],
+                    "rosp_id": item.id,
                     "type_department_id": item["type_department_id"],
                     "address": item["address"],
                     "address_index": item["address_index"],
@@ -538,9 +538,9 @@ async def get_bank(fragment: str, session: AsyncSession = Depends(get_async_sess
         for item in query.mappings().all():
 
             result.append({
-                "bank_name": item['name'],
+                "bank_name": item.name,
                 "value": {
-                    "bank_id": item["id"],
+                    "bank_id": item.id,
                     "type_department_id": item["type_department_id"],
                     "address": item["address"],
                     "address_index": item["address_index"],
@@ -619,9 +619,9 @@ async def get_pfr(fragment: str, session: AsyncSession = Depends(get_async_sessi
         for item in query.mappings().all():
 
             result.append({
-                "pfr_name": item['name'],
+                "pfr_name": item.name,
                 "value": {
-                    "pfr_id": item["id"],
+                    "pfr_id": item.id,
                     "type_department_id": item["type_department_id"],
                     "address": item["address"],
                     "address_index": item["address_index"],
@@ -696,9 +696,9 @@ async def get_reason_end_ep(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "reason_end_ep": item['name'],
+                "reason_end_ep": item.name,
                 "value": {
-                    "reason_end_ep_id": item["id"],
+                    "reason_end_ep_id": item.id,
                 },
             })
 
@@ -728,9 +728,9 @@ async def get_type_statement(session: AsyncSession = Depends(get_async_session))
         for item in query.mappings().all():
 
             result.append({
-                "type_statement": item['name'],
+                "type_statement": item.name,
                 "value": {
-                    "type_statement_id": item["id"],
+                    "type_statement_id": item.id,
                 },
             })
 
@@ -760,9 +760,9 @@ async def get_type_state_duty(session: AsyncSession = Depends(get_async_session)
         for item in query.mappings().all():
 
             result.append({
-                "type_state_duty": item['name'],
+                "type_state_duty": item.name,
                 "value": {
-                    "type_state_duty_id": item["id"],
+                    "type_state_duty_id": item.id,
                 },
             })
 
@@ -792,9 +792,9 @@ async def get_section_card_debtor(session: AsyncSession = Depends(get_async_sess
         for item in query.mappings().all():
 
             result.append({
-                "section_card_debtor": item['name'],
+                "section_card_debtor": item.name,
                 "value": {
-                    "section_card_debtor_id": item["id"],
+                    "section_card_debtor_id": item.id,
                 },
             })
 
@@ -856,9 +856,9 @@ async def get_type_templates(session: AsyncSession = Depends(get_async_session))
         for item in query.mappings().all():
 
             result.append({
-                "type_template": item['name'],
+                "type_template": item.name,
                 "value": {
-                    "type_template_id": item["id"],
+                    "type_template_id": item.id,
                 },
             })
 
@@ -966,9 +966,9 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
         for item in query.mappings().all():
 
             result.append({
-                "result_statement": item['name'],
+                "result_statement": item.name,
                 "value": {
-                    "result_statement_id": item["id"],
+                    "result_statement_id": item.id,
                     "type_statement_id": item["type_statement_id"],
                 },
             })
@@ -1003,9 +1003,9 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
 #         for item in query.mappings().all():
 #
 #             result.append({
-#                 "task_name": item['name'],
+#                 "task_name": item.name,
 #                 "value": {
-#                     "task_name_id": item["id"],
+#                     "task_name_id": item.id,
 #                     "section_card_id": item["section_card_id"],
 #                     "type_statement_id": item["type_statement_id"],
 #                     "legal_doc_id": item["legal_doc_id"],

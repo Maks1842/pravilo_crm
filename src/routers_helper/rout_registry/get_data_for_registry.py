@@ -10,7 +10,8 @@ from src.database import get_async_session
 from src.registries.models import registry_headers, registry_structures, registry_filters
 from src.debts.models import cession, debtor, credit
 from src.collection_debt.models import *
-from src.references.models import ref_status_credit
+from src.references.models import ref_status_credit, ref_result_statement
+from src.legal_work.models import legal_work
 from src.payments.models import payment
 
 import src.routers_helper.rout_registry.filters as control_filters
@@ -48,6 +49,7 @@ router_data_registry = APIRouter(
 async def get_data_registry(page: int, filter_id: int, model: str = None, field: str = None, values_filter: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
+    legal_section_id = None
 
     try:
         filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
@@ -143,7 +145,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                           'balance_summa': balance_summa}
 
         credits_list = credits_query.mappings().all()
-        values_for_registry = await calculation_of_filters(registry_structur, credits_list, session)
+        values_for_registry = await calculation_of_filters(registry_structur, credits_list, legal_section_id, session)
 
 
         result = {'headers': headers, 'data_debtors': values_for_registry, 'num_page_all': num_page_all, 'statistics': statistics}
@@ -156,7 +158,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
         }
 
 
-async def calculation_of_filters(list_headers, credits_list, session):
+async def calculation_of_filters(list_headers, credits_list, legal_section_id, session):
     '''
     В данном методе будут извлекаться все данные из всех моделей, с информацией о должниках КД и тд
     Список извлеченных данных сопоставляется с необходимым набором полей для реестра и отправляется на Фронт
@@ -218,6 +220,11 @@ async def calculation_of_filters(list_headers, credits_list, session):
             'object_ep': '',
             'claimer': '',
             'comment': ''
+        }
+
+        result_1 = ''
+        legal_null = {
+            'legal_number': '',
         }
 
         pay_null = {
@@ -334,6 +341,20 @@ async def calculation_of_filters(list_headers, credits_list, session):
         except:
             ep_item = ep_null
 
+        if legal_section_id:
+            try:
+                legal_work_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == int(legal_section_id),
+                                                                                       legal_work.c.credit_id == int(credit_item['id']))).
+                                                                                       order_by(desc(legal_work.c.id)))
+                legal_work_item = legal_work_query.mappings().fetchone()
+                if legal_work_item.result_1_id is not None:
+                    result_statement_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(legal_work_item.result_1_id)))
+                    result_1 = result_statement_query.scalar()
+            except:
+                legal_work_item = legal_null
+        else:
+            legal_work_item = legal_null
+
         try:
             pay_query = await session.execute(select(payment).where(payment.c.credit_id == int(credit_item['id'])).
                                               order_by(desc(payment.c.date)))
@@ -417,6 +438,12 @@ async def calculation_of_filters(list_headers, credits_list, session):
                 else:
                     data_items[item['headers_key']] = ep_item[f"{item['name_field']}"]
 
+            elif item['model'] == 'legal_work':
+                if item['headers_key'] == 'result_1_legal':
+                    data_items[item['headers_key']] = result_1
+                else:
+                    data_items[item['headers_key']] = legal_work_item[f"{item['name_field']}"]
+
             elif item['model'] == 'payment':
                 if item['headers_key'] == 'summa_last_payment':
                     data_items[item['headers_key']] = summa_pay
@@ -430,7 +457,6 @@ async def calculation_of_filters(list_headers, credits_list, session):
                     data_items[item['headers_key']] = tribunal_name
                 elif item['headers_key'] == 'tribunal_address':
                     data_items[item['headers_key']] = tribunal_address
-
 
         data_debtors.append(data_items)
 

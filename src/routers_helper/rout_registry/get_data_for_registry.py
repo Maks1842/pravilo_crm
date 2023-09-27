@@ -49,7 +49,7 @@ router_data_registry = APIRouter(
 async def get_data_registry(page: int, filter_id: int, model: str = None, field: str = None, values_filter: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
-    legal_section_id = None
+    legal_number = None
 
     try:
         filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
@@ -145,7 +145,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                           'balance_summa': balance_summa}
 
         credits_list = credits_query.mappings().all()
-        values_for_registry = await calculation_of_filters(registry_structur, credits_list, legal_section_id, session)
+        values_for_registry = await calculation_of_filters(registry_structur, credits_list, legal_number, session)
 
 
         result = {'headers': headers, 'data_debtors': values_for_registry, 'num_page_all': num_page_all, 'statistics': statistics}
@@ -158,7 +158,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
         }
 
 
-async def calculation_of_filters(list_headers, credits_list, legal_section_id, session):
+async def calculation_of_filters(list_headers, credits_list, legal_number, session):
     '''
     В данном методе будут извлекаться все данные из всех моделей, с информацией о должниках КД и тд
     Список извлеченных данных сопоставляется с необходимым набором полей для реестра и отправляется на Фронт
@@ -341,11 +341,9 @@ async def calculation_of_filters(list_headers, credits_list, legal_section_id, s
         except:
             ep_item = ep_null
 
-        if legal_section_id:
+        if legal_number:
             try:
-                legal_work_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == int(legal_section_id),
-                                                                                       legal_work.c.credit_id == int(credit_item['id']))).
-                                                                                       order_by(desc(legal_work.c.id)))
+                legal_work_query = await session.execute(select(legal_work).where(legal_work.c.legal_number == str(legal_number)))
                 legal_work_item = legal_work_query.mappings().fetchone()
                 if legal_work_item.result_1_id is not None:
                     result_statement_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(legal_work_item.result_1_id)))

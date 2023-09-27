@@ -38,7 +38,7 @@ async def generator_docs(data_dict: dict, session: AsyncSession = Depends(get_as
     try:
         credits_id_array = data_dict['credits_id_array']
         template_json = data_dict['template_json']
-        legal_section_id = data_dict['legal_section_id']
+        legal_number = data_dict['legal_number']
 
         credits_query = await session.execute(select(credit).where(credit.c.id.in_(credits_id_array)))
         credits_list = credits_query.mappings().all()
@@ -51,7 +51,7 @@ async def generator_docs(data_dict: dict, session: AsyncSession = Depends(get_as
         headers_query = await session.execute(select(registry_headers).where(registry_headers.c.id.in_(headers_id_list)))
         headers_list = headers_query.mappings().all()
 
-        values_for_generator = await calculation_of_filters(headers_list, credits_list, legal_section_id, session)
+        values_for_generator = await calculation_of_filters(headers_list, credits_list, legal_number, session)
 
         result = await select_from_variables(values_for_generator, template_json, session)
 

@@ -5,6 +5,25 @@ from src.references.models import ref_status_credit, ref_tribunal
 
 metadata = MetaData()
 
+
+# Займы
+lending = Table(
+    "lending",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("creditor", String(100), nullable=False, doc='Инвестор'),
+    Column("number", String(50), nullable=False, doc='Номер договора займа'),
+    Column("date_start", DATE, nullable=False, doc='Дата договора'),
+    Column("summa", Integer, doc='Сумма инвестиций, в копейках'),
+    Column("interest_rate", Numeric(5, 2), doc='Процентная ставка, годовых'),
+    Column("date_end", DATE, nullable=False, doc='Дата возврата займа'),
+    Column("loan_repayment_procedure", String(200), doc='Порядок возврата займа'),
+    Column("dividends_payment_procedure", String(200), doc='Порядок выплаты дивидендов'),
+    Column("balance_debt", Integer, doc='Остаток долга'),
+    Column("comment", String(200), doc='Комментарий'),
+)
+
+
 # Цессии
 cession = Table(
     "cession",
@@ -17,6 +36,7 @@ cession = Table(
     Column("cedent", String(100), doc='Цедент'),
     Column("cessionari", String(100), doc='Цессионарий'),
     Column("date_old_cession", String(100), doc='Даты предыдущих цессий'),
+    Column("lending_id", Integer, ForeignKey(lending.c.id), doc='Займ_id'),
 )
 
 # Должники

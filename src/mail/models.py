@@ -37,7 +37,7 @@ mail_out = Table(
     Column("addresser", String(200),  nullable=False, doc='Адресат'),
     Column("recipient_address",  String(200),  nullable=False, doc='Адрес получателя'),
     Column("mass", Integer, doc='Масса отправления, в граммах'),
-    Column("gov_toll", Integer, doc='Госпошлина, в копейках'),
+    Column("expenses_mail", Integer, doc='Почтовые расходы, в копейках'),
     Column("trek", String(20), doc='Трек номер'),
     Column("category_mail", String(20), doc='Почтовая категория'),
     Column("type_mail", JSON, doc='Тип отправления'),

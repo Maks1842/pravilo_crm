@@ -153,28 +153,30 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
         for item in query.mappings().all():
 
             summa_expenses = 0
-            date_expenses = ''
+            cession_id = None
+            cession_name = None
 
             expenses_category_query = await session.execute(select(ref_expenses_category).where(ref_expenses_category.c.id == int(item.expenses_category_id)))
             expenses_category_set = expenses_category_query.mappings().fetchone()
 
-            cession_query = await session.execute(select(cession).where(cession.c.id == int(item.cession_id)))
-            cession_set = cession_query.mappings().fetchone()
+            if item.cession_id:
+                cession_query = await session.execute(select(cession).where(cession.c.id == int(item.cession_id)))
+                cession_set = cession_query.mappings().fetchone()
+                cession_id = cession_set.id
+                cession_name = cession_set.name
 
             if item.summa:
                 summa_expenses = item.summa / 100
-            if item.date:
-                date_expenses = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
 
             data_expenses.append({
                 "id": item.id,
-                "date": date_expenses,
+                "date": item.date,
                 "summa": summa_expenses,
                 "expenses_category_id": expenses_category_set.id,
                 "expenses_category": expenses_category_set.name,
                 "payment_purpose": item.payment_purpose,
-                "cession_id": cession_set.id,
-                "cession_name": cession_set.name,
+                "cession_id": cession_id,
+                "cession_name": cession_name,
 
             })
 
@@ -203,7 +205,7 @@ async def add_expenses(data_json: dict, session: AsyncSession = Depends(get_asyn
         date = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
 
     if req_data['summa'] is not None:
-        summa = int(float(req_data['summa'])) * 100
+        summa = int(float(req_data['summa']) * 100)
 
 
     try:

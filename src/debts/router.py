@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
-from src.references.models import ref_status_credit, ref_type_ed
+from src.references.models import ref_status_credit, ref_type_ed, ref_tribunal
 from src.debts.schemas import CessionCreate, CreditCreate
 from src.payments.models import payment
 from src.collection_debt.models import executive_document, executive_productions
@@ -297,11 +297,57 @@ router_debtor = APIRouter(
 
 @router_debtor.get("/")
 async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+
+    tribunal_id = None
+    tribunal_name = None
+    gaspravosudie = 'НЕ возможно'
+
     try:
         query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
 
-        result = query.mappings().fetchone()
-        return result
+        result = []
+        for item in query.mappings().all():
+            if item.tribunal_id:
+                tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item.tribunal_id)))
+                tribunal_set = tribunal_query.mappings().fetchone()
+
+                if tribunal_set:
+                    tribunal_id = tribunal_set.id
+                    tribunal_name = tribunal_set.name
+                    if tribunal_set.gaspravosudie:
+                        gaspravosudie = 'Возможно'
+
+            result.append({
+                'id': item.id,
+                'last_name_1': item.last_name_1,
+                'first_name_1': item.first_name_1,
+                'second_name_1': item.second_name_1,
+                'last_name_2': item.last_name_2,
+                'first_name_2': item.first_name_2,
+                'second_name_2': item.second_name_2,
+                'pol': item.pol,
+                'birthday': item.birthday,
+                'pensioner': item.pensioner,
+                'place_of_birth': item.place_of_birth,
+                'passport_series': item.passport_series,
+                'passport_num': item.passport_num,
+                'passport_date': item.passport_date,
+                'passport_department': item.passport_department,
+                'inn': item.inn,
+                'snils': item.snils,
+                'address_1': item.address_1,
+                'address_2': item.address_2,
+                'index_add_1': item.index_add_1,
+                'index_add_2': item.index_add_2,
+                'phone': item.phone,
+                'email': item.email,
+                'tribunal_id': tribunal_id,
+                'tribunal_name': tribunal_name,
+                'gaspravosudie': gaspravosudie,
+                'comment': item.comment,
+            })
+
+        return result[0]
     except Exception as ex:
         return {
             "status": "error",

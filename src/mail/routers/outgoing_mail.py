@@ -1,5 +1,6 @@
 import math
 from datetime import date, datetime
+import re
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, and_
@@ -82,8 +83,9 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
         data_mail = []
         for item in mail_query.mappings().all():
 
-            debtor_fio = ''
-            credit_number = ''
+            debtor_fio = None
+            credit_number = None
+            expenses_mail = 0
 
             if item['credit_id'] is not None and item['credit_id'] != '':
                 credit_id: int = item['credit_id']
@@ -101,6 +103,9 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
                 else:
                     debtor_fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
 
+                if item.expenses_mail is not None:
+                    expenses_mail = item.expenses_mail / 100
+
             user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item['user_id'])))
             user_set = user_query.mappings().fetchone()
             user_name = f'{user_set["first_name"]} {user_set["last_name"] or ""}'
@@ -108,7 +113,8 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
             data_mail.append({
                 "id": item['id'],
                 "sequenceNum": item['sequence_num'],
-                "mailDate": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                # "mailDate": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "mailDate": item.date,
                 "barcodeNum": item['barcode'],
                 "user": user_name,
                 "user_id": item['user_id'],
@@ -124,7 +130,7 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
                 "mailCategory": item['category_mail'],
                 "packageType": item['type_package'],
                 "symbolNum": item['num_symbol'],
-                "stateDuty": item['gov_toll'],
+                "expensesMail": expenses_mail,
                 "trekNum": item['trek'],
                 "comment": item['comment'],
             })
@@ -174,6 +180,8 @@ async def save_outgoing_mail(reg_data, session):
 
     if data['mailDate'] == None:
         current_date = date.today()
+    # elif re.findall(r'\d{2}\.\d{2}\.\d{4}', data['mailDate']):
+    #     current_date = datetime.strptime(data['mailDate'], '%d.%m.%Y').date()
     else:
         current_date = datetime.strptime(data['mailDate'], '%Y-%m-%d').date()
 
@@ -195,6 +203,11 @@ async def save_outgoing_mail(reg_data, session):
         sequence_num = data['sequenceNum']
         barcode = data['barcodeNum']
 
+    if data['expensesMail'] is not None:
+        expenses_mail = int(float(data['expensesMail']) * 100)
+    else:
+        expenses_mail = None
+
     try:
         data_mail = {
             "sequence_num": sequence_num,
@@ -205,7 +218,7 @@ async def save_outgoing_mail(reg_data, session):
             "addresser": data['mailRecipient'],
             "recipient_address": data['addressRecipient'],
             "mass": int(data['mailMass']),
-            "gov_toll": data['stateDuty'],
+            "expenses_mail": expenses_mail,
             "trek": data['trekNum'],
             "category_mail": data['mailCategory'],
             "type_mail": data['mailType'],
@@ -215,7 +228,6 @@ async def save_outgoing_mail(reg_data, session):
             "user_id": data['user_id'],
             "comment": data['comment'],
         }
-
         if data["id"]:
             mail_id: int = data["id"]
             post_data = update(mail_out).where(mail_out.c.id == mail_id).values(data_mail)

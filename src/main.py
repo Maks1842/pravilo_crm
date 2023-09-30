@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.auth.base_config import auth_backend, fastapi_users
 from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
-from src.debts.router import router_cession, router_credits, router_debtor, router_credit_debtor, router_debtor_inn, \
+from src.debts.router import router_lending, router_cession, router_credits, router_debtor, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name
 from src.references.router import router_ref_status_credit, router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
     router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
@@ -66,6 +66,7 @@ app.include_router(
 
 
 # Для debts
+app.include_router(router_lending)
 app.include_router(router_cession)
 app.include_router(router_get_cession_name)
 app.include_router(router_credits)

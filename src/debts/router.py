@@ -6,11 +6,110 @@ from sqlalchemy import select, insert, func, distinct, update, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.debts.models import cession, credit, debtor
+from src.debts.models import lending, cession, credit, debtor
 from src.references.models import ref_status_credit, ref_type_ed, ref_tribunal
 from src.debts.schemas import CessionCreate, CreditCreate
 from src.payments.models import payment
 from src.collection_debt.models import executive_document, executive_productions
+
+
+# Получить/добавить Займы
+router_lending = APIRouter(
+    prefix="/v1/Lending",
+    tags=["Debts"]
+)
+
+
+@router_lending.get("/")
+async def get_lending(cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
+
+    summa = 0
+    balance_debt = 0
+
+    try:
+        if cession_id:
+            query = await session.execute(select(cession.c.lending_id).where(cession.c.id == cession_id))
+            lending_id = query.scalar()
+
+            lending_query = await session.execute(select(lending).where(lending.c.id == int(lending_id)))
+        else:
+            lending_query = await session.execute(select(lending))
+
+        result = []
+        for item in lending_query.mappings().all():
+
+            if item.summa is not None:
+                summa = item.summa / 100
+
+            if item.balance_debt is not None:
+                balance_debt = item.balance_debt / 100
+
+            result.append({
+                "id": item.id,
+                "creditor": item.creditor,
+                "number": item.number,
+                "date_start": item.date_start,
+                "summa": summa,
+                "interest_rate": item.interest_rate,
+                "date_end": item.date_end,
+                "loan_repayment_procedure": item.loan_repayment_procedure,
+                "dividends_payment_procedure": item.dividends_payment_procedure,
+                "balance_debt": balance_debt,
+                "comment": item.comment,
+            })
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+@router_lending.post("/")
+async def add_lending(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    req_data = data_json['data_json']
+
+    try:
+        summa = int(float(req_data["summa"]) * 100)
+        balance_debt = int(float(req_data["balance_debt"]) * 100)
+        interest_rate = float(req_data["interest_rate"])
+
+        data = {
+            "creditor": req_data["creditor"],
+            "number": req_data["number"],
+            "date_start": datetime.strptime(req_data["date_start"], '%Y-%m-%d').date(),
+            "summa": summa,
+            "interest_rate": interest_rate,
+            "date_end": datetime.strptime(req_data["date_end"], '%Y-%m-%d').date(),
+            "loan_repayment_procedure": req_data['loan_repayment_procedure'],
+            "dividends_payment_procedure": req_data['dividends_payment_procedure'],
+            "balance_debt": balance_debt,
+            "comment": req_data['comment'],
+        }
+
+        if req_data["id"]:
+            lending_id: int = req_data["id"]
+
+            post_data = update(lending).where(lending.c.id == lending_id).values(data)
+        else:
+            post_data = insert(lending).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Займ успешно сохранен'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
+        }
 
 
 # Получить/добавить цессию
@@ -24,10 +123,10 @@ router_cession = APIRouter(
 async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         if credit_id:
-            cession_query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
-            cession_id = cession_query.mappings().one()
+            query = await session.execute(select(credit.c.cession_id).where(credit.c.id == credit_id))
+            cession_id = query.scalar()
 
-            query = select(cession).where(cession.c.id == int(cession_id['cession_id']))
+            query = select(cession).where(cession.c.id == int(cession_id))
         else:
             query = select(cession)
 
@@ -35,20 +134,28 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
         result = []
         for item in answer.mappings().all():
 
-            if item['summa'] is not None and item['summa'] != '':
-                summa = item['summa'] / 100
+            if item.summa is not None:
+                summa = item.summa / 100
             else:
                 summa = 0
 
+            if item.lending_id is not None:
+                lending_query = await session.execute(select(lending.c.creditor).where(lending.c.id == int(item.lending_id)))
+                creditor = lending_query.scalar()
+            else:
+                creditor = None
+
             result.append({
-                "id": item['id'],
-                "name": item['name'],
-                "number": item['number'],
-                "date": item['date'],
+                "id": item.id,
+                "name": item.name,
+                "number": item.number,
+                "date": item.date,
                 "summa": summa,
-                "cedent": item['cedent'],
-                "cessionari": item['cessionari'],
-                "date_old_cession": item['date_old_cession']
+                "cedent": item.cedent,
+                "cessionari": item.cessionari,
+                "date_old_cession": item.date_old_cession,
+                "lending_id": item.lending_id,
+                "creditor": creditor
             })
         return result
     except Exception as ex:
@@ -65,7 +172,7 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
     req_data = new_cession.model_dump()
 
     try:
-        summa = req_data["summa"] * 100
+        summa = int(float(req_data["summa"]) * 100)
 
         data = {
             "name": req_data["name"],
@@ -75,6 +182,7 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
             "cedent": req_data["cedent"],
             "cessionari": req_data["cessionari"],
             "date_old_cession": req_data['date_old_cession'],
+            "lending_id": req_data['lending_id'],
         }
 
         if req_data["id"]:
@@ -118,9 +226,9 @@ async def get_cession_name(session: AsyncSession = Depends(get_async_session)):
         for item in query.mappings().all():
 
             result.append({
-                "cession_name": item['name'],
+                "cession_name": item.name,
                 "value": {
-                    "cession_id": item["id"],
+                    "cession_id": item.id,
                 },
             })
 
@@ -144,80 +252,78 @@ router_credits = APIRouter(
 async def get_credits(credit_id: int = None, debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
         if credit_id:
-            query = select(credit).where(credit.c.id == credit_id)
+            query = await session.execute(select(credit).where(credit.c.id == credit_id))
         else:
-            query = select(credit).where(credit.c.debtor_id == debtor_id)
-
-        answer = await session.execute(query)
+            query = await session.execute(select(credit).where(credit.c.debtor_id == debtor_id))
 
         result = []
-        for data in answer.mappings().all():
+        for data in query.mappings().all():
 
-            status_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(data['status_cd_id'])))
+            status_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(data.status_cd_id)))
             status_set = status_query.mappings().one()
-            status = status_set['name']
+            status = status_set.name
 
-            if data['summa'] is not None and data['summa'] != '':
-                summa = data['summa'] / 100
+            if data.summa is not None:
+                summa = data.summa / 100
             else:
                 summa = 0
 
-            if data['summa_by_cession'] is not None and data['summa_by_cession'] != '':
-                summa_by_cession = data['summa_by_cession'] / 100
+            if data.summa_by_cession is not None:
+                summa_by_cession = data.summa_by_cession / 100
             else:
                 summa_by_cession = 0
 
-            if data['percent_of_od'] is not None and data['percent_of_od'] != '':
-                percent_of_od = data['percent_of_od'] / 100
+            if data.percent_of_od is not None:
+                percent_of_od = data.percent_of_od / 100
             else:
                 percent_of_od = 0
 
-            if data['overdue_od'] is not None and data['overdue_od'] != '':
-                overdue_od = data['overdue_od'] / 100
+            if data.overdue_od is not None:
+                overdue_od = data.overdue_od / 100
             else:
                 overdue_od = 0
 
-            if data['overdue_percent'] is not None and data['overdue_percent'] != '':
-                overdue_percent = data['overdue_percent'] / 100
+            if data.overdue_percent is not None:
+                overdue_percent = data.overdue_percent / 100
             else:
                 overdue_percent = 0
 
-            if data['penalty'] is not None and data['penalty'] != '':
-                penalty = data['penalty'] / 100
+            if data.penalty is not None:
+                penalty = data.penalty / 100
             else:
                 penalty = 0
 
-            if data['gov_toll'] is not None and data['gov_toll'] != '':
-                gov_toll = data['gov_toll'] / 100
+            if data.gov_toll is not None:
+                gov_toll = data.gov_toll / 100
             else:
                 gov_toll = 0
 
-            if data['balance_debt'] is not None and data['balance_debt'] != '':
-                balance_debt = data['balance_debt'] / 100
+            if data.balance_debt is not None:
+                balance_debt = data.balance_debt / 100
             else:
                 balance_debt = 0
 
             result.append({
-                'id': data['id'],
-                'debtor_id': data['debtor_id'],
+                'id': data.id,
+                'debtor_id': data.debtor_id,
                 'status_cd': status,
-                'status_cd_id': data['status_cd_id'],
-                'creditor': data['creditor'],
-                'number': data['number'],
-                'date_start': data['date_start'],
-                'date_end': data['date_end'],
+                'status_cd_id': data.status_cd_id,
+                'creditor': data.creditor,
+                'number': data.number,
+                'date_start': data.date_start,
+                'date_end': data.date_end,
                 'summa': summa,
                 'summa_by_cession': summa_by_cession,
-                'interest_rate': data['interest_rate'],
+                'interest_rate': data.interest_rate,
                 'percent_of_od': percent_of_od,
                 'overdue_od': overdue_od,
                 'overdue_percent': overdue_percent,
                 'penalty': penalty,
                 'gov_toll': gov_toll,
-                'cession_id': data['cession_id'],
+                'cession_id': data.cession_id,
                 'balance_debt': balance_debt,
-                'credits_old': data['credits_old'],
-                'comment': data['comment'],
+                'credits_old': data.credits_old,
+                'comment': data.comment,
             })
         return result
     except Exception as ex:
@@ -434,14 +540,14 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
             debtors_id = ()
             for debtor_item in debtors_set:
 
-                if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                          f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+                if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                          f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
                 else:
-                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
                 if re.findall(rf'(?i){fragment}', fio):
-                    debtors_id = debtors_id + (debtor_item['id'],)
+                    debtors_id = debtors_id + (debtor_item.id,)
 
             credits_query = await session.execute(select(credit).where(credit.c.debtor_id.in_(debtors_id)))
             credits_set = credits_query.mappings().all()
@@ -449,19 +555,19 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
         result = []
         for credit_item in credits_set:
 
-            number = credit_item['number']
+            number = credit_item.number
 
-            debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
+            debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item.debtor_id)))
             debtor_item = debtor_query.mappings().one()
 
-            value_id = {"credit_id": credit_item['id'],
-                        "debtor_id": debtor_item['id']}
+            value_id = {"credit_id": credit_item.id,
+                        "debtor_id": debtor_item.id}
 
-            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                      f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                      f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
             result.append({
                 "value": value_id,
@@ -497,14 +603,14 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
             debtors_id = ()
             for debtor_item in debtors_set:
 
-                if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                          f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+                if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                          f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
                 else:
-                    fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
                 if re.findall(rf'(?i){fragment}', fio):
-                    debtors_id = debtors_id + (debtor_item['id'],)
+                    debtors_id = debtors_id + (debtor_item.id,)
 
             debtors_query = await session.execute(select(debtor).where(debtor.c.id.in_(debtors_id)))
             debtors_set = debtors_query.mappings().all()
@@ -512,16 +618,16 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
         result = []
         for debtor_item in debtors_set:
 
-            inn = debtor_item['inn']
+            inn = debtor_item.inn
 
-            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                      f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                      f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
             result.append({
-                "debtor_id": debtor_item['id'],
+                "debtor_id": debtor_item.id,
                 "text": f'{fio}, {inn}',
             })
         return result
@@ -549,25 +655,25 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
         credit_item = credit_query.mappings().one()
 
-        if credit_item['balance_debt'] is not None and credit_item['balance_debt'] != '':
-            balance_debt = credit_item['balance_debt'] / 100
+        if credit_item.balance_debt is not None and credit_item.balance_debt != '':
+            balance_debt = credit_item.balance_debt / 100
         else:
             balance_debt = 0
 
-        if credit_item['summa_by_cession'] is not None and credit_item['summa_by_cession'] != '':
-            summa_by_cession = credit_item['summa_by_cession'] / 100
+        if credit_item.summa_by_cession is not None and credit_item.summa_by_cession != '':
+            summa_by_cession = credit_item.summa_by_cession / 100
         else:
             summa_by_cession = 0
 
-        debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item['debtor_id'])))
+        debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item.debtor_id)))
         debtor_item = debtor_query.mappings().one()
 
-        cession_query = await session.execute(select(cession).where(cession.c.id == int(credit_item['cession_id'])))
+        cession_query = await session.execute(select(cession).where(cession.c.id == int(credit_item.cession_id)))
         cession_item = cession_query.mappings().one()
 
-        status_cd_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(credit_item['status_cd_id'])))
+        status_cd_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(credit_item.status_cd_id)))
         status_cd_item = status_cd_query.mappings().one()
-        status_cd = status_cd_item['name']
+        status_cd = status_cd_item.name
 
         try:
             summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id == credit_id))
@@ -575,8 +681,8 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
 
             pay_query = await session.execute(select(payment).where(payment.c.credit_id == credit_id).order_by(desc(payment.c.id)))
             payment_set = pay_query.mappings().first()
-            pay_last = payment_set['summa'] / 100
-            date_last = payment_set['date']
+            pay_last = payment_set.summa / 100
+            date_last = payment_set.date
         except:
             summa_all = 0
             pay_last = 0
@@ -586,13 +692,13 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             ed_query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
             ed_set = ed_query.mappings().first()
 
-            ed_type_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == int(ed_set['type_ed_id'])))
+            ed_type_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == int(ed_set.type_ed_id)))
             ed_type = ed_type_query.scalar()
-            ed_id = ed_set['id']
+            ed_id = ed_set.id
             edType = ed_type
-            edNum = ed_set['number']
-            edSumma = ed_set['summa_debt_decision'] / 100
-            edSuccession = ed_set['succession']
+            edNum = ed_set.number
+            edSumma = ed_set.summa_debt_decision / 100
+            edSuccession = ed_set.succession
         except:
             ed_id = None
             edType = ''
@@ -606,39 +712,39 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         except:
             claimer_ep = ''
 
-        if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                  f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+        if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+            fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                  f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
         else:
-            fio = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+            fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-        if debtor_item['passport_series'] is not None and debtor_item['passport_series'] != '':
-            passport = f"{debtor_item['passport_series']} {debtor_item['passport_num']}"
+        if debtor_item.passport_series is not None:
+            passport = f"{debtor_item.passport_series} {debtor_item.passport_num}"
         else:
             passport = ''
 
-        if debtor_item['pensioner'] == True:
+        if debtor_item.pensioner == True:
             pensioner = 'Пенсионер'
         else:
             pensioner = ''
 
-        if debtor_item['birthday'] is not None and debtor_item['birthday'] != '':
+        if debtor_item.birthday is not None:
             try:
-                birthday = datetime.strptime(str(debtor_item['birthday']), '%Y-%m-%d').strftime("%d.%m.%Y")
+                birthday = datetime.strptime(str(debtor_item.birthday), '%Y-%m-%d').strftime("%d.%m.%Y")
             except:
                 pass
 
         result = {
-            "creditNum": credit_item['number'],
+            "creditNum": credit_item.number,
             "creditStatus": status_cd,
             "debtorName": fio,
             "debtorBirthday": birthday,
             "debtorPassport": passport,
             "debtorGrand": pensioner,
-            "debtorGender": debtor_item['pol'],
-            "cessionName": cession_item['name'],
+            "debtorGender": debtor_item.pol,
+            "cessionName": cession_item.name,
             "claimerEP": claimer_ep,
-            "cessionDate": cession_item['date'],
+            "cessionDate": cession_item.date,
             "cessionSumma": summa_by_cession,
             "ed_id": ed_id,
             "edType": edType,

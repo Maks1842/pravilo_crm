@@ -229,7 +229,7 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
     date_session_2 = None
     date_result_2 = None
     summa_ed = None
-    summa_state_duty_result = None
+    summa_state_duty_claim = None
     summa_result_2 = None
 
     if data['dateResult_1'] is not None:
@@ -251,10 +251,10 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
         date_result_2 = datetime.strptime(data['dateResult_2'], '%Y-%m-%d').date()
 
     if data['summaED'] is not None:
-        summa_ed = int(float(data['summaED'])) * 100
+        summa_ed = round(float(data['summaED']) * 100)
 
-    if data['summaStateDutyResult'] is not None:
-        summa_state_duty_result = round(float(data['summaStateDutyResult']) * 100)
+    if data['summaStateDutyClaim'] is not None:
+        summa_state_duty_claim = round(float(data['summaStateDutyClaim']) * 100)
 
     if data['summaResult_2'] is not None:
         summa_result_2 = round(float(data['summaResult_2']) * 100)
@@ -274,7 +274,7 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
                      "date_entry_force": date_entry_force,
                      "tribunal_1_id": data['tribun_1_id'],
                      "summa_ed": summa_ed,
-                     "summa_state_duty_result": summa_state_duty_result,
+                     "summa_state_duty_claim": summa_state_duty_claim,
                      "date_incoming_ed": date_incoming_ed,
                      "date_cancel_result": date_cancel_result,
                      "date_session_2": date_session_2,

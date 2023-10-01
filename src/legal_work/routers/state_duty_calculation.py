@@ -1,21 +1,10 @@
-import math
-from datetime import date, datetime
-
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.debts.models import cession, credit, debtor
-from src.tasks.models import task
-from src.legal_work.models import legal_work
+from src.debts.models import credit, debtor
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
-from src.references.models import ref_legal_docs, ref_result_statement, ref_tribunal
-
-'''
-Метод для судебной работы
-'''
-
 
 
 # Получить/добавить СП
@@ -42,8 +31,6 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
 
         if data['legalSection_name'] == 'СП':
             summa_state_duty_claim = duty_tribunal_write_calculate(credit_set)
-
-
 
         debtor_query = await session.execute(select(debtor.c.tribunal_id).where(debtor.c.id == debtor_id))
         tribunal_id: int = debtor_query.scalar()
@@ -74,7 +61,6 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
     }
 
 
-
 def duty_tribunal_write_calculate(credit_set):
 
     summa_claim = 0
@@ -82,7 +68,6 @@ def duty_tribunal_write_calculate(credit_set):
 
     if credit_set.summa_by_cession is not None:
         summa_by_cession = credit_set.summa_by_cession
-        print(f'{summa_by_cession=}')
 
         if summa_by_cession <= 2000000:
             summa_claim = summa_by_cession * 0.04

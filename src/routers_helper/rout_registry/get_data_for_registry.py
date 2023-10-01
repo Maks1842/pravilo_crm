@@ -223,6 +223,7 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
         }
 
         result_1 = ''
+        summa_state_duty_claim = 0
         legal_null = {
             'legal_number': '',
         }
@@ -348,6 +349,20 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
                 if legal_work_item.result_1_id is not None:
                     result_statement_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(legal_work_item.result_1_id)))
                     result_1 = result_statement_query.scalar()
+                if legal_work_item.summa_state_duty_claim is not None:
+                    summa_state_duty_claim = legal_work_item.summa_state_duty_claim / 100
+            except:
+                legal_work_item = legal_null
+        elif legal_number is None:
+            try:
+                legal_work_query = await session.execute(select(legal_work).where(legal_work.c.credit_id == int(credit_item['id'])).
+                                                         order_by(desc(legal_work.c.id)))
+                legal_work_item = legal_work_query.mappings().fetchone()
+                if legal_work_item.result_1_id is not None:
+                    result_statement_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == int(legal_work_item.result_1_id)))
+                    result_1 = result_statement_query.scalar()
+                if legal_work_item.summa_state_duty_claim is not None:
+                    summa_state_duty_claim = legal_work_item.summa_state_duty_claim / 100
             except:
                 legal_work_item = legal_null
         else:
@@ -439,6 +454,8 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
             elif item['model'] == 'legal_work':
                 if item['headers_key'] == 'result_1_legal':
                     data_items[item['headers_key']] = result_1
+                elif item['headers_key'] == 'summa_state_duty_claim':
+                    data_items[item['headers_key']] = summa_state_duty_claim
                 else:
                     data_items[item['headers_key']] = legal_work_item[f"{item['name_field']}"]
 

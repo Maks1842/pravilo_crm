@@ -113,8 +113,7 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
             data_mail.append({
                 "id": item['id'],
                 "sequenceNum": item['sequence_num'],
-                # "mailDate": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
-                "mailDate": item.date,
+                "mailDate": datetime.strptime(str(item['date']), '%Y-%m-%d').strftime("%d.%m.%Y"),
                 "barcodeNum": item['barcode'],
                 "user": user_name,
                 "user_id": item['user_id'],
@@ -180,8 +179,6 @@ async def save_outgoing_mail(reg_data, session):
 
     if data['mailDate'] == None:
         current_date = date.today()
-    # elif re.findall(r'\d{2}\.\d{2}\.\d{4}', data['mailDate']):
-    #     current_date = datetime.strptime(data['mailDate'], '%d.%m.%Y').date()
     else:
         current_date = datetime.strptime(data['mailDate'], '%Y-%m-%d').date()
 

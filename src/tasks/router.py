@@ -55,6 +55,9 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
             type_statement_id = None
             result_statement = ''
             result_statement_id = None
+            date_task = None
+            date_statement = None
+            date_answer = None
 
             name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.name_id)))
             name_task = name_task_query.scalar()
@@ -74,6 +77,13 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
                 result_statement = result_stat_query.scalar()
                 result_statement_id = item['result_id']
 
+            if item.date_task is not None:
+                date_task = datetime.strptime(str(item.date_task), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_statement is not None:
+                date_statement = datetime.strptime(str(item.date_statement), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_answer is not None:
+                date_answer = datetime.strptime(str(item.date_answer), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == int(item.user_id)))
             user_set = [item for item in user_query.mappings().all()]
             user_name = f'{user_set[0]["first_name"]} {user_set[0]["last_name"] or ""}'
@@ -90,13 +100,13 @@ async def get_task(credit_id: int = None, section_card_debtor_id: int = None, se
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
                 "section_card_debtor_id": section_task_id,
-                "date_task": item.date_task,
+                "date_task": date_task,
                 "timeframe": item.timeframe,
                 "user_name": user_name,
                 "user_id": item.user_id,
-                "date_statement": item.date_statement,
+                "date_statement": date_statement,
                 "track_num": item.track_num,
-                "date_answer": item.date_answer,
+                "date_answer": date_answer,
                 "result": result_statement,
                 "result_id": result_statement_id,
                 "comment": item.comment,
@@ -182,6 +192,9 @@ router_task_all = APIRouter(
 async def get_task_all(page: int, user_id: int = None, name_task_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
+    date_task = None
+    date_statement = None
+    date_answer = None
 
     try:
         if user_id and name_task_id == None:
@@ -250,6 +263,13 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
                 result_statement = result_stat_query.scalar()
                 result_statement_id = item_task.result_id
 
+            if item_task.date_task is not None:
+                date_task = datetime.strptime(str(item_task.date_task), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item_task.date_statement is not None:
+                date_statement = datetime.strptime(str(item_task.date_statement), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item_task.date_answer is not None:
+                date_answer = datetime.strptime(str(item_task.date_answer), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             user_id = int(item_task.user_id)
             user_query = await session.execute(select(user.c.first_name, user.c.last_name).where(user.c.id == user_id))
             user_set = [item for item in user_query.mappings().all()]
@@ -267,13 +287,13 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
                 "type_statement_id": type_statement_id,
                 "section_card_debtor": section_task,
                 "section_card_debtor_id": section_task_id,
-                "date_task": item_task.date_task,
+                "date_task": date_task,
                 "timeframe": item_task.timeframe,
                 "user_name": user_name,
                 "user_id": item_task.user_id,
-                "date_statement": item_task.date_statement,
+                "date_statement": date_statement,
                 "track_num": item_task.track_num,
-                "date_answer": item_task.date_answer,
+                "date_answer": date_answer,
                 "result": result_statement,
                 "result_id": result_statement_id,
                 "comment": item_task.comment,

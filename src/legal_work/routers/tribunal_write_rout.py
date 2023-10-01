@@ -82,6 +82,7 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
             result_1_id = None
             summa_ed = None
             summa_state_duty_result = None
+            summa_state_duty_claim = None
             summa_result_2 = None
             date_session_1 = None
             date_result_1 = None
@@ -129,6 +130,8 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
                 summa_ed = item.summa_ed / 100
             if item.summa_state_duty_result is not None:
                 summa_state_duty_result = item.summa_state_duty_result / 100
+            if item.summa_state_duty_claim is not None:
+                summa_state_duty_claim = item.summa_state_duty_claim / 100
             if item.summa_result_2 is not None:
                 summa_result_2 = item.summa_result_2 / 100
 
@@ -176,6 +179,7 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
                 "result_1": result_1,
                 "result_1_id": result_1_id,
                 "summaED": summa_ed,
+                "summaStateDutyClaim": summa_state_duty_claim,
                 "summaStateDutyResult": summa_state_duty_result,
                 "dateIncomingED": date_incoming_ed,
                 "dateEntryIntoForce": date_entry_force,
@@ -250,10 +254,10 @@ async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(ge
         summa_ed = int(float(data['summaED'])) * 100
 
     if data['summaStateDutyResult'] is not None:
-        summa_state_duty_result = int(float(data['summaStateDutyResult'])) * 100
+        summa_state_duty_result = round(float(data['summaStateDutyResult']) * 100)
 
     if data['summaResult_2'] is not None:
-        summa_result_2 = int(float(data['summaResult_2'])) * 100
+        summa_result_2 = round(float(data['summaResult_2']) * 100)
 
 
     case_id = data['id']

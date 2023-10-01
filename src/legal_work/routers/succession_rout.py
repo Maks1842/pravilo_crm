@@ -82,6 +82,12 @@ async def get_succession(page: int, credit_id: int = None, cession_id: int = Non
             result_1_id = None
             result_2 = ''
             result_2_id = None
+            date_session_1 = None
+            date_result_1 = None
+            date_incoming_ed = None
+            date_entry_force = None
+            date_session_2 = None
+            date_result_2 = None
             tribunal_1 = ''
             tribunal_1_id = None
             address_tribunal_1 = ''
@@ -122,6 +128,21 @@ async def get_succession(page: int, credit_id: int = None, cession_id: int = Non
                 result_2_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_2_id))
                 result_2 = result_2_query.scalar()
 
+            if item.date_session_1 is not None:
+                date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_result_1 is not None:
+                date_result_1 = datetime.strptime(str(item.date_result_1), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_incoming_ed is not None:
+                date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_entry_force is not None:
+                date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_session_2 is not None:
+                date_session_2 = datetime.strptime(str(item.date_session_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_result_2 is not None:
+                date_result_2 = datetime.strptime(str(item.date_result_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+
+
+
             if item.tribunal_1_id is not None:
                 tribunal_1_id: int = item.tribunal_1_id
                 tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_1_id))
@@ -146,19 +167,19 @@ async def get_succession(page: int, credit_id: int = None, cession_id: int = Non
                 "numberCase_1": item.number_case_1,
                 "legalDocs": legal_docs,
                 "legalDocs_id": legal_docs_id,
-                "dateSession_1": item.date_session_1,
-                "dateResult_1": item.date_result_1,
+                "dateSession_1": date_session_1,
+                "dateResult_1": date_result_1,
                 "result_1": result_1,
                 "result_1_id": result_1_id,
-                "dateIncomingED": item.date_incoming_ed,
-                "dateEntryIntoForce": item.date_entry_force,
+                "dateIncomingED": date_incoming_ed,
+                "dateEntryIntoForce": date_entry_force,
                 "tribun_1": tribunal_1,
                 "tribun_1_id": tribunal_1_id,
                 "addressTribun_1": address_tribunal_1,
                 "emailTribun_1": email_tribunal_1,
                 "phoneTribun_1": phone_tribunal_1,
-                "dateSession_2": item.date_session_2,
-                "dateResult_2": item.date_result_2,
+                "dateSession_2": date_session_2,
+                "dateResult_2": date_result_2,
                 "result_2": result_2,
                 "result_2_id": result_2_id,
                 "comment": item.comment,

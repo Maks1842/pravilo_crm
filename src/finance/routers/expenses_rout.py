@@ -170,7 +170,7 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
 
             data_expenses.append({
                 "id": item.id,
-                "date": item.date,
+                "date": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
                 "summa": summa_expenses,
                 "expenses_category_id": expenses_category_set.id,
                 "expenses_category": expenses_category_set.name,

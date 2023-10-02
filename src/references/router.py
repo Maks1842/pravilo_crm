@@ -7,6 +7,7 @@ from src.references.models import *
 from src.references.schemas import *
 
 from src.routers_helper.rout_scraping.gaspravosudie_tribunals import parse_sudrf_index, parse_ej_sudrf
+from src.routers_helper.rout_scraping.rosp_helper import extract_rosp_excel
 
 # Получить/добавить статус КД
 router_ref_status_credit = APIRouter(
@@ -484,9 +485,13 @@ async def get_rosp(fragment: str, session: AsyncSession = Depends(get_async_sess
 
 
 @router_ref_rosp.post("/")
-async def add_rosp(new_rosp: RefRospCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_rosp(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_rosp.model_dump()
+    # # Первичная загрузка списка РОСП, с помощью helper. В боевом режиме отключить
+    # await extract_rosp_excel(session)
+    # return
+
+    req_data = data_json['data_json']
 
     try:
         data = {

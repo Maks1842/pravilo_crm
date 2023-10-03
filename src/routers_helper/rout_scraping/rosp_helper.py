@@ -12,7 +12,7 @@ from src.references.models import ref_rosp
 '''
 
 def import_excel():
-    excel_data = pd.read_excel(f'/home/maks/Загрузки/Тест_РОСП.xlsx')
+    excel_data = pd.read_excel(f'/home/maks/Загрузки/Реестр отделов РОСП_для CRM.xlsx')
     json_str = excel_data.to_json(orient='records', date_format='iso')
     parsed = json.loads(json_str)
     return parsed
@@ -27,7 +27,9 @@ async def extract_rosp_excel(session):
     count = 0
     for item in data_excel:
 
-        class_code = item['class_code']
+        class_code = str(item['class_code'])
+        if len(class_code) == 4:
+            class_code = f'0{class_code}'
 
         if item['address']:
             try:

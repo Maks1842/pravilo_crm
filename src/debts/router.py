@@ -112,6 +112,38 @@ async def add_lending(data_json: dict, session: AsyncSession = Depends(get_async
         }
 
 
+# Получить наименование Займов
+router_get_lending_name = APIRouter(
+    prefix="/v1/GetLendingName",
+    tags=["Debts"]
+)
+
+
+@router_get_lending_name.get("/")
+async def get_lending_name(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(lending))
+
+        result = []
+        for item in query.mappings().all():
+
+            result.append({
+                "creditor": item.creditor,
+                "value": {
+                    "lending_id": item.id,
+                },
+            })
+
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
 # Получить/добавить цессию
 router_cession = APIRouter(
     prefix="/v1/Cession",
@@ -167,9 +199,9 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
 
 
 @router_cession.post("/")
-async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_cession(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_cession.model_dump()
+    req_data = data_json['data_json']
 
     try:
         summa = int(float(req_data["summa"]) * 100)
@@ -177,7 +209,7 @@ async def add_cession(new_cession: CessionCreate, session: AsyncSession = Depend
         data = {
             "name": req_data["name"],
             "number": req_data["number"],
-            "date": req_data["date"],
+            "date": datetime.strptime(req_data["date"], '%Y-%m-%d').date(),
             "summa": summa,
             "cedent": req_data["cedent"],
             "cessionari": req_data["cessionari"],

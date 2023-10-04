@@ -14,7 +14,7 @@ from src.routers_helper.rout_debt_import.re_pattern_for_excel import RePattern
 from src.config import main_dossier_path, logging_path
 from src.debts.models import cession, debtor, credit
 from src.directory_docs.models import dir_cession, dir_folder, dir_credit
-from src.references.models import ref_type_ed, ref_claimer_ed, ref_tribunal, ref_rosp
+from src.references.models import ref_type_ed, ref_claimer_ed, ref_tribunal, ref_rosp, ref_reason_end_ep
 from src.collection_debt.models import executive_document, executive_productions
 
 import logging
@@ -100,8 +100,11 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
         phone = None
         type_ed_id = None
         ed_id = None
+        date_ed = datetime.strptime('01.01.1900', '%d.%m.%Y').date()
+        reason_end_id = None
         claimer_ed_id = None
         tribunal_id = None
+        number_ep = None
         rosp_id = None
         summary_case = None
 
@@ -153,6 +156,16 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                             passport_date = passport['passport_date']
                             passport_department = passport['passport_department']
 
+                        elif item["name_field"] == 'passport_series':
+                            passport_series = debt_exl[f'{item["excel_field"]}']
+                            if len(str(passport_series)) == 3:
+                                passport_series = f'0{passport_series}'
+
+                        elif item["name_field"] == 'passport_num':
+                            passport_num = debt_exl[f'{item["excel_field"]}']
+                            if len(str(passport_num)) == 5:
+                                passport_num = f'0{passport_num}'
+
                         elif item["headers_key"] == 'address_registry':
                             addr = parsing_address(debt_exl[f'{item["excel_field"]}'])
                             index_1 = addr['index']
@@ -185,8 +198,8 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                             debtors_data[f'{item["name_field"]}'] = None
 
 
-                    debtors_data['passport_series'] = passport_series
-                    debtors_data['passport_num'] = passport_num
+                    debtors_data['passport_series'] = str(passport_series)
+                    debtors_data['passport_num'] = str(passport_num)
                     if passport_date:
                         debtors_data['passport_date'] = passport_date
                     if passport_department:
@@ -246,9 +259,15 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                     if item["excel_field"] != '' and item["excel_field"] is not None:
                         if item["name_field"] == 'type_ed_id':
                             type_ed = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
-
                             type_ed_query = await session.execute(select(ref_type_ed.c.id).where(ref_type_ed.c.name == str(type_ed)))
                             type_ed_id = type_ed_query.scalar()
+
+                        elif item["name_field"] == 'date':
+                            date_ed = debt_exl[f'{item["excel_field"]}']
+                            if date_ed is None:
+                                date_ed = datetime.strptime('01.01.1900', '%d.%m.%Y').date()
+
+
                         elif item["name_field"] == 'claimer_ed_id':
                             claimer_ed = debt_exl[f'{item["excel_field"]}']
                             claimer_ed_query = await session.execute(select(ref_claimer_ed.c.id).where(ref_claimer_ed.c.name == str(claimer_ed)))
@@ -273,6 +292,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                     ed_data['status_ed_id'] = 1
                     ed_data['claimer_ed_id'] = claimer_ed_id
                     ed_data['tribunal_id'] = tribunal_id
+                    ed_data['date'] = date_ed
                 except Exception as ex:
                     return {
                         "status": "error",
@@ -283,12 +303,20 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
             elif item['model'] == 'executive_productions':
                 try:
                     if item["excel_field"] != '' and item["excel_field"] is not None:
-                        if item["name_field"] == 'rosp_id':
-                            rosp = debt_exl[f'{item["excel_field"]}']
-                            rosp_query = await session.execute(select(ref_rosp.c.id).where(ref_rosp.c.name == str(rosp)))
+                        if item["name_field"] == 'number':
+                            rosp_class_code = rosp_code(debt_exl[f'{item["excel_field"]}'])
+                            rosp_query = await session.execute(select(ref_rosp.c.id).where(ref_rosp.c.class_code == str(rosp_class_code)))
                             rosp_id = rosp_query.scalar()
+                            number_ep = debt_exl[f'{item["excel_field"]}']
                             if rosp_id is None:
-                                logging.debug(f"По КД {credits_data['number']}, РОСП ({rosp}) не найден")
+                                logging.debug(f"По КД {credits_data['number']}, РОСП по ИП ({item['name_field']}) не найден")
+                        elif item["name_field"] == 'reason_end_id':
+                            reason_end = debt_exl[f'{item["excel_field"]}']
+                            # print(f'{reason_end=}')
+                            reason_end_query = await session.execute(select(ref_reason_end_ep.c.id).where(ref_reason_end_ep.c.name == reason_end))
+                            reason_end_id = reason_end_query.scalar()
+                            if reason_end_id is None:
+                                logging.debug(f"По КД {credits_data['number']}, причина окончания ИП ({item['name_field']}) не найдена")
                         elif item["name_field"] == 'summary_case':
                             summary_case = debt_exl[f'{item["excel_field"]}']
                             if summary_case == 0 or summary_case == '':
@@ -299,7 +327,9 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         if item["name_field"] != 'None':
                             ep_data[f'{item["name_field"]}'] = None
 
+                    ep_data['number'] = number_ep
                     ep_data['rosp_id'] = rosp_id
+                    ep_data['reason_end_id'] = reason_end_id
                     ep_data['summary_case'] = summary_case
                 except Exception as ex:
                     return {
@@ -323,6 +353,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         "data": None,
                         "details": f'Ошибка при извлечении данных из excel в модель executive_document, на строке {count_all}. {ex}'
                     }
+
 
         """
         При импортировании реестра должников из Excel в DB_CRM, необходимо чтобы Справочники (Суды, РОСПы, Банки, Статусы, Взыскатель по ИД (Цессионарий) и тд.) были заполнены.
@@ -820,6 +851,15 @@ def parsing_execut_production(ep):
               'consolidat_ep': consolidat_ep}
 
     return result
+
+
+def rosp_code(rosp):
+    try:
+        rosp_code = re.search(RePattern.rosp_code, rosp).group().strip()
+    except:
+        rosp_code = None
+
+    return rosp_code
 
 
 def create_dir_cession(name_cession):

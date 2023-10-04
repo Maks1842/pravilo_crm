@@ -20,3 +20,4 @@ class RePattern:
     execut_production = r'(?i)[\d\/]+-ИП'
     consolidat_ep = r'(?i)[\d\/]+-СД'
     date_ep = r'\d{2}\.\d{2}\.\d{4}'
+    rosp_code = r'(?i)[\d]+(?=-ИП)'

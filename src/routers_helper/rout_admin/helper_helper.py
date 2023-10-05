@@ -13,8 +13,14 @@ router_helper = APIRouter(
 )
 
 @router_helper.get("/")
-async def helper_helper(session: AsyncSession = Depends(get_async_session)):
+async def helper_helper(function, session: AsyncSession = Depends(get_async_session)):
 
+    if function == 'ed_delete':
+        await ed_delete(session)
+
+
+# Метод удаления записей из Таблицы executive_document
+async def ed_delete(session):
     ed_query = await session.execute(select(executive_document.c.id))
     list_ed_id = ed_query.mappings().all()
 

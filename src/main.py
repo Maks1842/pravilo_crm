@@ -40,6 +40,8 @@ from src.routers_helper.rout_admin.helper_helper import router_helper
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
 
+from src.payments.routers.payments import router_payment
+
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -149,6 +151,9 @@ app.include_router(router_helper)
 # Для finance
 app.include_router(router_expenses_category)
 app.include_router(router_expenses)
+
+# Для payment
+app.include_router(router_payment)
 
 
 origins = [

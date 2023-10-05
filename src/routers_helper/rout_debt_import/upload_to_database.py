@@ -244,7 +244,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                         credits_data['creditor'] = cessions_data['cedent']
                     except:
                         credits_data['creditor'] = 'Кредитор'
-                    credits_data['status_cd_id'] = 2
+                    credits_data['status_cd_id'] = 1
 
 
                 except Exception as ex:

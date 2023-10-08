@@ -40,7 +40,8 @@ from src.routers_helper.rout_admin.helper_helper import router_helper
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
 
-from src.payments.routers.payments import router_payment
+from src.payments.routers.payments import router_payment, router_post_payment_list
+from src.payments.routers.extract_payments import router_extract_payments
 
 
 app = FastAPI(
@@ -154,6 +155,8 @@ app.include_router(router_expenses)
 
 # Для payment
 app.include_router(router_payment)
+app.include_router(router_post_payment_list)
+app.include_router(router_extract_payments)
 
 
 origins = [

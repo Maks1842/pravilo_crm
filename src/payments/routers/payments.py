@@ -9,7 +9,6 @@ from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
 from src.payments.models import payment
 from src.collection_debt.models import executive_document
-from src.auth.models import user
 
 
 # Получить по credit_id/добавить платежи
@@ -94,6 +93,7 @@ async def get_payment(page: int, credit_id: int = None, cession_id: int = None, 
         else:
             payment_query = await session.execute(select(payment).order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
+
             summa_query = await session.execute(select(func.sum(payment.c.summa)))
             summa_all = summa_query.scalar() / 100
 
@@ -126,16 +126,16 @@ async def get_payment(page: int, credit_id: int = None, cession_id: int = None, 
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
             if cession_id:
-                cession_query = await session.execute(select(cession).where(cession.c.id == cession_id))
+                cession_query = await session.execute(select(cession.c.name).where(cession.c.id == cession_id))
                 cession_name = cession_query.scalar()
 
             data_payment.append({
                 "id": item.id,
-                "debtor_id": debtor.id,
+                "debtor_id": debtor_id,
                 "debtorName": debtor_fio,
-                "credit_id": credit_set.id,
-                "creditNum": credit_set.number,
-                "summa": item['summa'],
+                "credit_id": credit_id,
+                "creditNum": credit_number,
+                "summa": item['summa'] / 100,
                 "date": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
                 "numPayDoc": item.payment_doc_num,
                 "departmentPay": item.comment,
@@ -169,18 +169,18 @@ async def add_payment(data_json: dict, session: AsyncSession = Depends(get_async
             "details": f"Не выбран Должник и № Кредитного договора"
         }
 
-    date = None
+    date_pay = date.today()
     summa = 0
 
     if data['date'] is not None:
-        date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        date_pay = datetime.strptime(data['date'], '%Y-%m-%d').date()
     if data['summa'] is not None:
         summa = int(float(data['summa']) * 100)
 
     try:
         pay_data = {
             "credit_id": data["credit_id"],
-            "date": date,
+            "date": date_pay,
             "summa": summa,
             "payment_doc_num": data['numPayDoc'],
             "comment": data['departmentPay']
@@ -195,7 +195,7 @@ async def add_payment(data_json: dict, session: AsyncSession = Depends(get_async
         await session.execute(post_data)
         await session.commit()
 
-        result = await calculate_and_post_balance(data['credit_id'], summa, session)
+        result = await calculate_and_post_balance(data['credit_id'], session)
 
         return result
     except Exception as ex:
@@ -206,31 +206,89 @@ async def add_payment(data_json: dict, session: AsyncSession = Depends(get_async
         }
 
 
-async def calculate_and_post_balance(credit_id: int, summa, session):
+
+# Добавить платежи списком
+router_post_payment_list = APIRouter(
+    prefix="/v1/PostPaymentsList",
+    tags=["Payments"]
+)
+
+
+@router_post_payment_list.post("/")
+async def add_payment_list(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    data = data_json['data_json']
+
+    date_pay = date.today()
+    summa = 0
+
+    count_pay = 0
+    for item in data:
+
+        if item['credit_id'] is not None and item['credit_id'] != '':
+            count_pay += 1
+            if item['date'] is not None:
+                date_pay = datetime.strptime(item["date"], '%d.%m.%Y').date()
+            if item['summa'] is not None:
+                summa = int(float(item['summa']) * 100)
+
+            try:
+                pay_data = {
+                    "credit_id": item["credit_id"],
+                    "date": date_pay,
+                    "summa": summa,
+                    "payment_doc_num": item['numPayDoc'],
+                    "comment": item['departmentPay']
+                }
+
+                post_data = insert(payment).values(pay_data)
+
+                await session.execute(post_data)
+                await session.commit()
+
+                await calculate_and_post_balance(item['credit_id'], session)
+
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": None,
+                    "details": f"Ошибка при добавлении/изменении данных. {ex}"
+                }
+
+    return {
+        'status': 'success',
+        'data': None,
+        'details': f'Успешно сохранено {count_pay} платежей'
+    }
+
+
+async def calculate_and_post_balance(credit_id: int, session):
+
     credits_query = await session.execute(select(credit).where(credit.c.id == credit_id))
     credit_set = credits_query.mappings().fetchone()
+
+    summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id == credit_id))
+    summa_all = summa_query.scalar()
+
+    if credit_set.summa_by_cession:
+        balance = credit_set.summa_by_cession - summa_all
+    else:
+        balance = 0 - summa_all
 
     try:
         ed_query = await session.execute(select(executive_document.c.summa_debt_decision).where(executive_document.c.credit_id == credit_id))
         summa_debt_decision = ed_query.scalar()
-
-        summa_query = await session.execute(select(func.sum(payment.c.summa)))
-        summa_all = summa_query.scalar()
-
-        if summa_all:
-            summa_pay = summa_all
-        else:
-            summa_pay = 0
-        balance_debt = summa_debt_decision - summa_pay
+        balance_debt = summa_debt_decision - summa_all
     except:
-        balance_debt = credit_set.balance_debt - summa
+        balance_debt = balance
 
     try:
-        post_data = update(credit).where(credit.c.id == credit_id).values(balance_debt)
+        post_data = update(credit).where(credit.c.id == credit_id).values(balance_debt=int(balance_debt))
 
         await session.execute(post_data)
         await session.commit()
     except Exception as ex:
+        print(f'{ex=}')
         return {
             "status": "error",
             "data": None,

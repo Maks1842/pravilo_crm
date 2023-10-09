@@ -200,24 +200,26 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
         if user_id and name_task_id == None:
             tasks_query = await session.execute(select(task).where(task.c.user_id == user_id).order_by(desc(task.c.date_task)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_query = await session.execute(select(func.count(distinct(task.c.id)).filter(task.c.user_id == user_id)))
         elif user_id == None and name_task_id:
             tasks_query = await session.execute(select(task).where(task.c.name_id == name_task_id).order_by(desc(task.c.date_task)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_query = await session.execute(select(func.count(distinct(task.c.id)).filter(task.c.name_id == name_task_id)))
         elif user_id and name_task_id:
             tasks_query = await session.execute(select(task).where(and_(task.c.user_id == user_id, task.c.name_id == name_task_id)).
                                                 order_by(desc(task.c.date_task)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_query = await session.execute(select(func.count(distinct(task.c.id)).filter(and_(task.c.user_id == user_id, task.c.name_id == name_task_id))))
         else:
             tasks_query = await session.execute(select(task).order_by(desc(task.c.date_task)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_query = await session.execute(select(func.count(distinct(task.c.id))))
 
-        query_set = tasks_query.mappings().all()
-
-        total_item = len(query_set)
+        total_item = total_query.scalar()
         num_page_all = int(math.ceil(total_item / per_page))
 
         data_tasks = []
-        for item_task in query_set:
+        for item_task in tasks_query.mappings().all():
 
             section_task = ''
             section_task_id = None

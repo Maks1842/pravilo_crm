@@ -32,7 +32,7 @@ router_outgoing_mail = APIRouter(
 
 
 @router_outgoing_mail.get("/")
-async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: str = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
 
@@ -51,33 +51,37 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: int = N
             mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
         elif debtor_id and dates1 == None:
             mail_query = await session.execute(select(mail_out).where(mail_out.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(mail_out.c.credit_id.in_(credits_id_list)))
         elif debtor_id and dates1:
             mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
                                                                      order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                                      limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
         elif recipient and dates1 == None:
             mail_query = await session.execute(select(mail_out).where(mail_out.c.addresser.icontains(recipient)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(mail_out.c.addresser.icontains(recipient)))
         elif recipient and dates1:
             mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
                                                                       order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                                       limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
         else:
             mail_query = await session.execute(select(mail_out).order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))))
 
-        query_set = mail_query.mappings().all()
-
-        total_item = len(query_set)
+        total_item = total_mail_query.scalar()
         num_page_all = int(math.ceil(total_item / per_page))
 
         data_mail = []
-        for item in query_set:
+        for item in mail_query.mappings().all():
 
             debtor_fio = None
             credit_number = None

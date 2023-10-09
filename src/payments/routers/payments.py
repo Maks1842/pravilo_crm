@@ -40,70 +40,77 @@ async def get_payment(page: int, credit_id: int = None, cession_id: int = None, 
                                                order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
 
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.date >= dates1, payment.c.date <= dates2)))
-            summa_all = summa_query.scalar() / 100
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2)))
         elif credit_id and dates1 == None and department_pay == None and cession_id == None:
             payment_query = await session.execute(select(payment).where(payment.c.credit_id == credit_id).
                                                order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id == credit_id))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(payment.c.credit_id == credit_id)))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id == credit_id))
         elif credit_id and dates1 and department_pay == None and cession_id == None:
             payment_query = await session.execute(select(payment).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id == credit_id)).
                                                   order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                   limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id == credit_id)))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id == credit_id))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id == credit_id)))
         elif dates1 == None and department_pay and cession_id == None:
             payment_query = await session.execute(select(payment).where(payment.c.comment.icontains(department_pay)).
                                                order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.comment.icontains(department_pay)))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(payment.c.comment.icontains(department_pay))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.comment.icontains(department_pay)))
         elif dates1 and department_pay and cession_id == None:
             payment_query = await session.execute(select(payment).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.comment.icontains(department_pay))).
                                                   order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                   limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.comment.icontains(department_pay))))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.comment.icontains(department_pay)))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.comment.icontains(department_pay))))
         elif dates1 == None and department_pay == None and cession_id:
             payment_query = await session.execute(select(payment).where(payment.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id.in_(credits_id_list)))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(payment.c.credit_id.in_(credits_id_list))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
         elif dates1 and department_pay == None and cession_id:
             payment_query = await session.execute(select(payment).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list))).
                                                   order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                   limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list))))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list)))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list))))
         elif dates1 and department_pay and cession_id:
             payment_query = await session.execute(select(payment).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))).
                                                   order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                   limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay)))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= dates1, payment.c.date <= dates2, payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))))
         elif dates1 == None and department_pay and cession_id:
             payment_query = await session.execute(select(payment).where(and_(payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))).
                                                   order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                   limit(per_page).offset((page - 1) * per_page))
-            summa_query = await session.execute(select(func.sum(payment.c.summa)).where(and_(payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))))
-            summa_all = summa_query.scalar() / 100
+
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id)).filter(and_(payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay)))))
+            summa_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.credit_id.in_(credits_id_list), payment.c.comment.icontains(department_pay))))
         else:
             payment_query = await session.execute(select(payment).order_by(desc(payment.c.date)).order_by(desc(payment.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
 
+            total_pay_query = await session.execute(select(func.count(distinct(payment.c.id))))
             summa_query = await session.execute(select(func.sum(payment.c.summa)))
-            summa_all = summa_query.scalar() / 100
 
-        query_set = payment_query.mappings().all()
-
-        total_item = len(query_set)
-        num_page_all = int(math.ceil(total_item / per_page))
+        total_pay = total_pay_query.scalar()
+        summa_all = summa_query.scalar() / 100
+        num_page_all = int(math.ceil(total_pay / per_page))
 
         data_payment = []
-        for item in query_set:
+        for item in payment_query.mappings().all():
 
             debtor_fio = None
             credit_number = None
@@ -145,7 +152,7 @@ async def get_payment(page: int, credit_id: int = None, cession_id: int = None, 
 
         result = {'data_payment': data_payment,
                   'summa_all': summa_all,
-                  'count_all': total_item,
+                  'count_all': total_pay,
                   'num_page_all': num_page_all}
 
         return result

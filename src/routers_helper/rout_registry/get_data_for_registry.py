@@ -110,12 +110,12 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                 credits_query = await session.execute(select(credit).where(credit.c.id.in_(values_for_filters)).order_by(credit.c.id).
                                                       limit(per_page).offset((page - 1) * per_page))
 
-                total_credits_query = await session.execute(func.count(distinct(credit.c.id.in_(values_for_filters))))
+                total_credits_query = await session.execute(select(func.count(distinct(credit.c.id.in_(values_for_filters)))))
                 total_credits = total_credits_query.scalar()
                 num_page_all = int(math.ceil(total_credits / per_page))
 
 
-                summ_credits_query = await session.execute(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(values_for_filters)))
+                summ_credits_query = await session.execute(select(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(values_for_filters))))
                 balance_summa = summ_credits_query.scalar()
 
                 if balance_summa is not None:
@@ -130,12 +130,12 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
             credits_query = await session.execute(select(credit).where(credit.c.id.in_(credit_id_list)).order_by(credit.c.id).
                                                   limit(per_page).offset((page - 1) * per_page))
 
-            total_credits_query = await session.execute(func.count(distinct(credit.c.id.in_(credit_id_list))))
+            total_credits_query = await session.execute(select(func.count(distinct(credit.c.id.in_(credit_id_list)))))
             total_credits = total_credits_query.scalar()
             num_page_all = int(math.ceil(total_credits / per_page))
 
 
-            summ_credits_query = await session.execute(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(credit_id_list)))
+            summ_credits_query = await session.execute(select(func.sum(distinct(credit.c.balance_debt)).filter(credit.c.id.in_(credit_id_list))))
             balance_summa = summ_credits_query.scalar()
 
             if balance_summa is not None:

@@ -457,6 +457,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                                                                             credit.c.number == str(credits_data['number']))))
         credits_data['debtor_id'] = debtor_id
         credits_data['cession_id'] = cession_id
+        credits_data['balance_debt'] = credits_data['summa_by_cession']
         credit_item = credit_query.mappings().fetchone()
         if credit_item is not None:
             credit_id = credit_item['id']

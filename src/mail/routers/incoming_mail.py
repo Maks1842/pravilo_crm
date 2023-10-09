@@ -48,25 +48,27 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
             mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.date >= dates1, mail_in.c.date <= dates2)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.date >= dates1, mail_in.c.date <= dates2)))
         elif debtor_id and dates1 == None:
             mail_query = await session.execute(select(mail_in).where(mail_in.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(mail_in.c.credit_id.in_(credits_id_list)))
         elif debtor_id and dates1:
             mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= dates1, mail_in.c.date <= dates2).
                                                                      order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page)))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= dates1, mail_in.c.date <= dates2)))
         else:
             mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))))
 
-        query_set = mail_query.mappings().all()
-
-        total_item = len(query_set)
+        total_item = total_mail_query.scalar()
         num_page_all = int(math.ceil(total_item / per_page))
 
         data_mail = []
-        for item in query_set:
+        for item in mail_query.mappings().all():
 
             name_doc_id = None
             resolution_id = None

@@ -64,8 +64,7 @@ def mail_out_to_excel(data_json):
             # print('3')
 
             column = 4
-            date_conv = datetime.strptime(data['mailDate'], '%Y-%m-%d').strftime('%d.%m.%Y')
-            sheet.cell(row, column).value = f"№ {data['sequenceNum']} от {date_conv}, {data['docName']}"
+            sheet.cell(row, column).value = f"№ {data['sequenceNum']} от {data['mailDate']}, {data['docName']}"
             sheet.cell(row, column).style = style['style_main']
             # print('4')
 

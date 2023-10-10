@@ -25,15 +25,15 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
 
 
     credits_id_array = data_dict['credits_id_array']
-    recipient_id = data_dict['recipient_id']['id']
+    recipient_id = data_dict['recipient_id']
     user_id = data_dict['user_id']
     name_docs = data_dict['name_docs']
 
     credits_query = await session.execute(select(credit).where(credit.c.id.in_(credits_id_array)))
 
     for item in credits_query.mappings().all():
-        credit_id: int = item['id']
-        debtor_id: int = item['debtor_id']
+        credit_id: int = item.id
+        debtor_id: int = item.debtor_id
         addresser = None
         recipient_address = None
         mass = 10
@@ -44,14 +44,14 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
         if recipient_id == 1:
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
-            if debtor_item['last_name_2'] is not None and debtor_item['last_name_2'] != '':
-                addresser = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}" \
-                             f" ({debtor_item['last_name_2']} {debtor_item['first_name_2']} {debtor_item['second_name_2'] or ''})"
+            if debtor_item.last_name_2 is not None:
+                addresser = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                             f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                addresser = f"{debtor_item['last_name_1']} {debtor_item['first_name_1']} {debtor_item['second_name_1'] or ''}"
+                addresser = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            if debtor_item['address_1'] is not None and debtor_item['address_1'] != '':
-                recipient_address = f"{debtor_item['index_add_1'] or ''}, {debtor_item['address_1']}"
+            if debtor_item.address_1 is not None:
+                recipient_address = f"{debtor_item.index_add_1 or ''}, {debtor_item.address_1}"
         elif recipient_id == 2:
             pass
         elif recipient_id == 3:
@@ -80,6 +80,7 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
             "packageType": type_package,
             "barcodeNum": None,
             "symbolNum": None,
+            "expensesMail": None,
             "user_id": user_id,
             "comment": None,
         }}

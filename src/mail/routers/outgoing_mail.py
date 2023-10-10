@@ -150,13 +150,9 @@ async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: str = N
 @router_outgoing_mail.post("/")
 async def add_outgoing_mail(new_mail: dict, session: AsyncSession = Depends(get_async_session)):
 
-    await save_outgoing_mail(new_mail, session)
+    result = await save_outgoing_mail(new_mail, session)
 
-    return {
-        'status': 'success',
-        'data': None,
-        'details': 'Исходящая почта успешно сохранена'
-    }
+    return result
 
 
 async def save_outgoing_mail(reg_data, session):
@@ -209,7 +205,7 @@ async def save_outgoing_mail(reg_data, session):
         data_mail = {
             "sequence_num": sequence_num,
             "case_number": data['caseNum'],
-            "credit_id": data.credit_id,
+            "credit_id": data['credit_id'],
             "date": current_date,
             "name_doc": data['docName'],
             "addresser": data['mailRecipient'],
@@ -222,7 +218,7 @@ async def save_outgoing_mail(reg_data, session):
             "type_package": data['packageType'],
             "barcode": barcode,
             "num_symbol": data['symbolNum'],
-            "user_id": data.user_id,
+            "user_id": data['user_id'],
             "comment": data['comment'],
         }
         if data["id"]:
@@ -233,6 +229,7 @@ async def save_outgoing_mail(reg_data, session):
 
         await session.execute(post_data)
         await session.commit()
+
     except Exception as ex:
         return {
             "status": "error",
@@ -240,7 +237,13 @@ async def save_outgoing_mail(reg_data, session):
             "details": f"Ошибка при добавлении/изменении Исходящей почты. {ex}"
         }
 
-    return
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Исходящая почта успешно сохранена'
+    }
+
+
 
 
 # Создает почтовый реестр Excel

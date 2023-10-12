@@ -73,7 +73,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
 
         values_for_filters = None
         if model:
-            query = await session.execute(select(eval(model)).where(getattr(eval(model).c, field) == values_filter))
+            query = await session.execute(select(eval(model)).where(getattr(eval(model).c, field) == int(values_filter)))
             queryset = query.mappings().all()
 
             values_for_filters = []

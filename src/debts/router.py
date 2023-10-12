@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc
+from sqlalchemy import select, insert, func, distinct, update, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -260,7 +260,9 @@ async def get_cession_name(session: AsyncSession = Depends(get_async_session)):
             result.append({
                 "cession_name": item.name,
                 "value": {
-                    "cession_id": item.id,
+                    "item_id": item.id,
+                    "model": 'credit',
+                    "field": 'cession_id'
                 },
             })
 
@@ -662,6 +664,50 @@ async def get_debtor_inn(fragment: str, session: AsyncSession = Depends(get_asyn
                 "debtor_id": debtor_item.id,
                 "text": f'{fio}, {inn}',
             })
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить ФИО
+router_debtor_name = APIRouter(
+    prefix="/v1/GetDebtorName",
+    tags=["Debts"]
+)
+
+
+@router_debtor_name.get("/")
+async def get_debtor_name(fragment: str, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        debtors_query = await session.execute(select(debtor).where(or_(debtor.c.last_name_1.icontains(fragment),
+                                                                       debtor.c.first_name_1.icontains(fragment),
+                                                                       debtor.c.second_name_1.icontains(fragment),
+                                                                       debtor.c.last_name_2.icontains(fragment),
+                                                                       debtor.c.first_name_2.icontains(fragment),
+                                                                       debtor.c.second_name_2.icontains(fragment))))
+        debtors_set = debtors_query.mappings().all()
+
+        result = []
+        for debtor_item in debtors_set:
+
+            if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                      f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
+            else:
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
+
+            result.append({
+                "fio_debtor": fio,
+                "value": {"item_id": debtor_item.id,
+                          "model": 'credit',
+                          "field": 'debtor_id'}})
+
+
         return result
     except Exception as ex:
         return {

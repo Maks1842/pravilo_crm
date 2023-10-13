@@ -369,24 +369,24 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
 
 
 @router_credits.post("/")
-async def add_credits(new_credit: CreditCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_credits(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_credit.model_dump()
+    req_data = data_json['data_json']
 
-    summa = req_data["summa"] * 100
-    summa_by_cession = req_data["summa_by_cession"] * 100
-    overdue_od = req_data["overdue_od"] * 100
-    overdue_percent = req_data["overdue_percent"] * 100
-    penalty = req_data["penalty"] * 100
-    percent_of_od = req_data["percent_of_od"] * 100
-    gov_toll = req_data["gov_toll"] * 100
-    balance_debt = req_data["balance_debt"] * 100
+    summa = int(float(req_data["summa"]) * 100)
+    summa_by_cession = int(float(req_data["summa_by_cession"]) * 100)
+    overdue_od = int(float(req_data["overdue_od"]) * 100)
+    overdue_percent = int(float(req_data["overdue_percent"]) * 100)
+    penalty = int(float(req_data["penalty"]) * 100)
+    percent_of_od = int(float(req_data["percent_of_od"]) * 100)
+    gov_toll = int(float(req_data["gov_toll"]) * 100)
+    balance_debt = int(float(req_data["balance_debt"]) * 100)
 
     try:
         data = {
             "creditor": req_data["creditor"],
             "number": req_data["number"],
-            "date_start": req_data["date_start"],
+            "date_start": datetime.strptime(req_data["date_start"], '%Y-%m-%d').date(),
             "date_end": req_data["date_end"],
             "summa_by_cession": summa_by_cession,
             "summa": summa,

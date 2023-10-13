@@ -173,9 +173,12 @@ router_ed_number = APIRouter(
 
 
 @router_ed_number.get("/")
-async def get_ed_number(credit_id: int, session: AsyncSession = Depends(get_async_session)):
+async def get_ed_number(credit_id: int = None, fragment: str = None, session: AsyncSession = Depends(get_async_session)):
     try:
-        query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id))
+        if credit_id:
+            query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id))
+        else:
+            query = await session.execute(select(executive_document).where(executive_document.c.number.icontains(fragment)))
 
         result = []
         for item in query.mappings().all():
@@ -207,10 +210,8 @@ async def get_department_presentation(type_department_id: int, fragment: str, se
             department_query = await session.execute(select(ref_rosp).where(ref_rosp.c.name.icontains(fragment)))
         elif type_department_id == 2:
             department_query = await session.execute(select(ref_bank).where(ref_bank.c.name.icontains(fragment)))
-        elif type_department_id == 3 or type_department_id == 4:
-            department_query = await session.execute(select(ref_pfr).where(ref_pfr.c.name.icontains(fragment)))
         else:
-            department_query = None
+            department_query = await session.execute(select(ref_pfr).where(ref_pfr.c.name.icontains(fragment)))
 
         result = []
         for item in department_query.mappings().all():
@@ -340,13 +341,10 @@ async def get_collection_debt(page: int, credit_id: int = None, type_department_
 
                 if item.type_department_id == 1:
                     department_query = await session.execute(select(ref_rosp).where(ref_rosp.c.id == int(item.department_presentation_id)))
-
                 elif item.type_department_id == 2:
                     department_query = await session.execute(select(ref_bank).where(ref_bank.c.id == int(item.department_presentation_id)))
-                elif item.type_department_id == 3 or item.type_department_id == 4:
-                    department_query = await session.execute(select(ref_pfr).where(ref_pfr.c.id == int(item.department_presentation_id)))
                 else:
-                    department_query = None
+                    department_query = await session.execute(select(ref_pfr).where(ref_pfr.c.id == int(item.department_presentation_id)))
 
                 department_set = department_query.mappings().fetchone()
                 department_presentation = department_set.name

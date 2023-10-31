@@ -19,10 +19,13 @@ router_helper = APIRouter(
 @router_helper.get("/")
 async def helper_helper(function, session: AsyncSession = Depends(get_async_session)):
 
+    result = 'ERROR'
     if function == 'ed_delete':
-        await ed_delete(session)
+        result = await ed_delete(session)
     elif function == 'add_docs_dossier':
-        await add_docs_dossier(session)
+        result = await add_docs_dossier(session)
+
+    return result
 
 
 # Метод удаления записей из Таблицы executive_document
@@ -42,15 +45,20 @@ async def ed_delete(session):
             await session.commit()
             print(f'{ed_id=}')
 
+    result = f'Успешно ed_delete'
+    return result
+
 
 # Метод копирования файлов в досье должников
 async def add_docs_dossier(session):
-    path_out = '/home/maks/Документы/ИКЦ Правило'
+    path_out = '/home/maks/Загрузки/тест досье'
     path_in = '/media/maks/Новый том/Python/work/fast_api/pravilo_crm/Цессии_досье/Рубль_09_2023/Кредитные досье'
 
     folders_dossier_out = os.listdir(path_out)
     folders_dossier_in = os.listdir(path_in)
 
+    count = 0
+    count_docs_all = 0
     for f_out in folders_dossier_out:
 
         if re.findall(r'\d{6}', f_out):
@@ -66,9 +74,21 @@ async def add_docs_dossier(session):
                 number = re.search(r'\d+', f_in).group()
 
                 if number in number_credit:
-                    print(f'{path_folder=}')
-                    print(f'{path_dir_cd=}')
 
-                    # shutil.copy2(path_folder, path_dir_cd)
-                    #
-                    # print(f'{f_in=}')
+                    count_docs = copy_file(path_folder, docs_dossier, path_dir_cd)
+                    count_docs_all += count_docs
+
+                    count += 1
+    result = f'Успешно скопировано {count_docs_all} документов, из {count} досье.'
+    return result
+
+
+def copy_file(path_folder, docs_dossier, path_dir_cd):
+
+    count = 0
+    for docs in docs_dossier:
+
+        path_docs = os.path.join(path_folder, docs)
+        shutil.copy2(path_docs, path_dir_cd)
+        count += 1
+    return count

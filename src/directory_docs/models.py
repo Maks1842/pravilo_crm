@@ -60,5 +60,5 @@ docs_folder = Table(
     Column("name", String(150), nullable=False, doc='Наименование документа'),
     Column("name_folder", String(100), doc='Наименование папки'),
     Column("dir_credit_id", Integer, ForeignKey(dir_credit.c.id), doc='Директория досье_id'),
-    Column("path", String(200), doc='Путь к документу'),
+    Column("path", String(400), doc='Путь к документу'),
 )

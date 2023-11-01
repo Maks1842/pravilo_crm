@@ -93,4 +93,5 @@ credit = Table(
     Column("status_cd_id", Integer, ForeignKey(ref_status_credit.c.id), doc='Статус долга_id'),
     Column("comment", String(200), doc='Комментарий'),
     Column("credits_old", String(100), doc='Старые кредиты'),
+    Column("parent_id", Integer, doc='Идентификатор id кредита_родителя'),
 )

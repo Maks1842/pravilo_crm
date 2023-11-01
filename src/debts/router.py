@@ -402,6 +402,7 @@ async def add_credits(data_json: dict, session: AsyncSession = Depends(get_async
             "status_cd_id": req_data["status_cd_id"],
             "comment": req_data["comment"],
             "credits_old": req_data["credits_old"],
+            "parent_id": req_data["parent_id"],
         }
 
         if req_data["id"]:

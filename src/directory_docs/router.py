@@ -1,6 +1,7 @@
 import os
 
 from fastapi import APIRouter, Depends, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select, insert, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -171,10 +172,8 @@ async def get_dir_credit(credit_id: int = None, session: AsyncSession = Depends(
     try:
         dir_credit_query = await session.execute(select(dir_credit).where(dir_credit.c.credit_id == credit_id))
         dir_credit_set = dir_credit_query.mappings().fetchone()
-        print(dir_credit_set)
 
         path_dir_cd = dir_credit_set.path
-        print(path_dir_cd)
 
         folder_list = []
         for item in os.listdir(path_dir_cd):
@@ -186,6 +185,7 @@ async def get_dir_credit(credit_id: int = None, session: AsyncSession = Depends(
             "dir_credit_path": path_dir_cd,
             "folder_list": folder_list
         }
+        print(result)
         return result
     except Exception as ex:
         return {
@@ -308,6 +308,32 @@ async def get_defolt_docs(session: AsyncSession = Depends(get_async_session)):
             })
 
         return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Скачать файл из досье КД
+router_download_file_credit = APIRouter(
+    prefix="/v1/DownloadFileCredit",
+    tags=["DirectoryDocs"]
+)
+
+
+@router_download_file_credit.get("/")
+async def download_file_credit(file_id: int = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        docs_credit_query = await session.execute(select(docs_folder).where(docs_folder.c.id == file_id))
+        file_set = docs_credit_query.mappings().fetchone()
+
+        path_file = file_set.path
+        file_name = file_set.name
+
+        # отдаем сохраненный файл в качестве ответа
+        return FileResponse(path=path_file, filename=file_name, media_type='multipart/form-data')
     except Exception as ex:
         return {
             "status": "error",

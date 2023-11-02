@@ -9,7 +9,7 @@ from datetime import date, timedelta
 '''
 
 
-def control_section8():
+def control_section8(period):
     pass
 
     # queryset = Executive_Documents.objects.filter(status_ed=2).values()
@@ -52,7 +52,7 @@ def control_section8():
     # return credit_id_list
 
 
-def control_return_section8():
+def control_return_section8(period):
     pass
 
     # queryset = Executive_Documents.objects.filter(status_ed=2).values()
@@ -78,7 +78,7 @@ def control_return_section8():
     # return credit_id_list
 
 
-def control_not_excitement_ep():
+def control_not_excitement_ep(period):
     pass
 
     # queryset = Collection_Debt.objects.filter(type_department=1).values()
@@ -112,7 +112,7 @@ def control_not_excitement_ep():
     # return credit_id_list
 
 
-def control_not_return_ed():
+def control_not_return_ed(period):
     pass
 
     # date_end_set = Executive_Productions.objects.filter(date_end__isnull=False).values()

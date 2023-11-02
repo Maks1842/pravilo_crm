@@ -46,7 +46,7 @@ router_data_registry = APIRouter(
 
 
 @router_data_registry.get("/")
-async def get_data_registry(page: int, filter_id: int, model: str = None, field: str = None, values_filter: str = None, session: AsyncSession = Depends(get_async_session)):
+async def get_data_registry(page: int, filter_id: int, model: str = None, field: str = None, values_filter: str = None, period: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
     legal_number = None
@@ -125,7 +125,7 @@ async def get_data_registry(page: int, filter_id: int, model: str = None, field:
                           'balance_summa': balance_summa}
         else:
             functions_control = getattr(control_filters, f'{filter_set.function_name}')
-            credit_id_list = functions_control()
+            credit_id_list = functions_control(period)
 
             credits_query = await session.execute(select(credit).where(credit.c.id.in_(credit_id_list)).order_by(credit.c.id).
                                                   limit(per_page).offset((page - 1) * per_page))

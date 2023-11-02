@@ -189,3 +189,36 @@ async def add_ep_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
             "data": None,
             "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
+
+
+# Получить номера ИП
+router_ep_number = APIRouter(
+    prefix="/v1/GetEP",
+    tags=["Collection_debt"]
+)
+
+
+@router_ep_number.get("/")
+async def get_ep_number(credit_id: int = None, fragment: str = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        if credit_id:
+            query = await session.execute(select(executive_productions).where(executive_productions.c.credit_id == credit_id))
+        else:
+            query = await session.execute(select(executive_productions).where(executive_productions.c.number.icontains(fragment)))
+
+        result = []
+        for item in query.mappings().all():
+
+            result.append({
+                'number': item.number,
+                "value": {"item_id": item.id,
+                          "model": 'executive_productions',
+                          "field": 'id'}
+            })
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }

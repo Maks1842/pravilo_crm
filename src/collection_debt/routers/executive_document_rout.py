@@ -183,8 +183,10 @@ async def get_ed_number(credit_id: int = None, fragment: str = None, session: As
         for item in query.mappings().all():
 
             result.append({
-                'executive_document_id': item.id,
                 'number': item.number,
+                "value": {"item_id": item.id,
+                          "model": 'executive_document',
+                          "field": 'id'}
             })
         return result
     except Exception as ex:

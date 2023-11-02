@@ -596,7 +596,10 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
             debtor_item = debtor_query.mappings().one()
 
             value_id = {"credit_id": credit_item.id,
-                        "debtor_id": debtor_item.id}
+                        "debtor_id": debtor_item.id,
+                        "item_id": debtor_item.id,
+                        "model": 'credit',
+                        "field": 'debtor_id'}
 
             if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
                 fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \

@@ -1,8 +1,7 @@
-import math
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, and_
+from sqlalchemy import select, insert, update, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session

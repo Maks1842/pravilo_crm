@@ -1,14 +1,13 @@
 import re
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_
+from sqlalchemy import select, insert, func, update, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import lending, cession, credit, debtor
 from src.references.models import ref_status_credit, ref_type_ed, ref_tribunal
-from src.debts.schemas import CessionCreate, CreditCreate
 from src.payments.models import payment
 from src.collection_debt.models import executive_document, executive_productions
 
@@ -358,6 +357,7 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
                 'balance_debt': balance_debt,
                 'credits_old': data.credits_old,
                 'comment': data.comment,
+                'parent_id': data.parent_id,
             })
         return result
     except Exception as ex:

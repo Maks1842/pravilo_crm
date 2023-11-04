@@ -1,4 +1,5 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey, JSON
+from src.references.models import ref_type_filter
 
 
 metadata = MetaData()
@@ -33,6 +34,8 @@ registry_filters = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(100), nullable=False, unique=True, doc='Наименование фильтра'),
+    Column("type_filter_id", Integer, ForeignKey(ref_type_filter.c.id), doc='Идентификатор типа Фильтра'),
     Column("function_name", String(50), doc='Название функции'),
     Column("registry_structure_id", Integer, ForeignKey(registry_structures.c.id), doc='Идентификатор структуры реестра'),
+    Column("comment", String(300), doc='Описание фильтра'),
 )

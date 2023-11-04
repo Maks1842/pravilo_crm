@@ -9,7 +9,7 @@ from src.references.router import router_ref_status_credit, router_ref_claimer_e
     router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
     router_ref_region, router_ref_rosp, router_ref_bank, router_ref_pfr, router_ref_reason_end_ep, router_ref_type_statement, \
     router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, router_ref_legal_docs, \
-    router_ref_result_statement
+    router_ref_result_statement, router_ref_type_filters
 
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
 from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number
@@ -105,6 +105,7 @@ app.include_router(router_ref_section_card_debtor)
 app.include_router(router_ref_legal_docs)
 app.include_router(router_ref_legal_section)
 app.include_router(router_ref_result_statement)
+app.include_router(router_ref_type_filters)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)

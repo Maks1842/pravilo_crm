@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -21,13 +21,13 @@ async def get_registry_headers(session: AsyncSession = Depends(get_async_session
 
         result = []
         for item in registry_query.mappings().all():
-            if item['employ_registry']:
+            if item.employ_registry:
                 result.append({
-                    "id": item['id'],
-                    "model": item['model'],
-                    "name_field": item['name_field'],
-                    "headers": item['headers'],
-                    "headers_key": item['headers_key'],
+                    "id": item.id,
+                    "model": item.model,
+                    "name_field": item.name_field,
+                    "headers": item.headers,
+                    "headers_key": item.headers_key,
                     "excel_field": ""
                 })
         return result
@@ -92,9 +92,9 @@ async def get_registry_structures(session: AsyncSession = Depends(get_async_sess
         for item in query.mappings().all():
 
             result.append({
-                "text": item['name'],
+                "text": item.name,
                 "value": {
-                    "reg_struct_id": item["id"],
+                    "reg_struct_id": item.id,
                 },
             })
 
@@ -169,19 +169,24 @@ router_registry_filters = APIRouter(
 
 
 @router_registry_filters.get("/")
-async def get_registry_filters(session: AsyncSession = Depends(get_async_session)):
+async def get_registry_filters(type_filter_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
-        query = await session.execute(select(registry_filters))
+        if type_filter_id:
+            query = await session.execute(select(registry_filters).where(registry_filters.c.type_filter_id == type_filter_id))
+        else:
+            query = await session.execute(select(registry_filters))
 
         result = []
         for item in query.mappings().all():
 
             result.append({
-                "text": item['name'],
+                "text": item.name,
                 "value": {
-                    "reg_filter_id": item["id"],
-                    "reg_struct_id": item["registry_structure_id"],
-                    "function_name": item["function_name"],
+                    "filter_id": item.id,
+                    "type_filter_id": item.type_filter_id,
+                    "reg_struct_id": item.registry_structure_id,
+                    "function_name": item.function_name,
+                    "comment": item.comment,
                 },
             })
 

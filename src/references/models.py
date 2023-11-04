@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey, DATE, Numeric
+from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey
 
 
 metadata = MetaData()
@@ -203,15 +203,10 @@ ref_legal_docs = Table(
     Column("result_statement_id", Integer, ForeignKey(ref_result_statement.c.id), doc='Результат_id'),
 )
 
-
-# УДАЛИТЬ МОДЕЛЬ
-ref_task = Table(
-    "ref_task",
+# Типы фильтров
+ref_type_filter = Table(
+    "ref_type_filter",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("name", String(100), nullable=False, unique=True, doc='Задача'),
-    Column("section_card_id", Integer, ForeignKey(ref_section_card_debtor.c.id), doc='Раздер карточки должника_id'),
-    Column("type_statement_id", Integer, ForeignKey(ref_type_statement.c.id), doc='Тип обращения_id'),
-    Column("legal_doc_id", Integer, ForeignKey(ref_legal_docs.c.id), doc='Юридический документ_id'),
-    Column("result_statement_id", Integer, ForeignKey(ref_result_statement.c.id), doc='Результат_id'),
+    Column("name", String(100), nullable=False, unique=True, doc='Наименование типа Фильтра'),
 )

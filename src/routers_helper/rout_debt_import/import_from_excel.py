@@ -2,10 +2,8 @@ from transliterate import translit
 import re
 import openpyxl
 import pandas as pd
-from fastapi import APIRouter, Depends, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, UploadFile
 
-from src.database import get_async_session
 from src.config import path_main
 
 

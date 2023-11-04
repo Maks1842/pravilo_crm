@@ -987,44 +987,36 @@ async def get_result_statement(session: AsyncSession = Depends(get_async_session
         }
 
 
-# # Получить/добавить Виды задач
-# router_ref_task = APIRouter(
-#     prefix="/v1/RefTask",
-#     tags=["References"]
-# )
+# Получить/добавить Типы фильтров
+router_ref_type_filters = APIRouter(
+    prefix="/v1/RefTypeFilters",
+    tags=["References"]
+)
 
 
-# @router_ref_task.get("/")
-# async def get_task(section_card_id: int = None, session: AsyncSession = Depends(get_async_session)):
-#
-#     try:
-#         if section_card_id:
-#             query = await session.execute(select(ref_task).where(or_(ref_task.c.section_card_id.in_([section_card_id, 1]),
-#                                                                      ref_task.c.section_card_id == None)))
-#         else:
-#             query = await session.execute(select(ref_task))
-#
-#         result = []
-#         for item in query.mappings().all():
-#
-#             result.append({
-#                 "task_name": item.name,
-#                 "value": {
-#                     "task_name_id": item.id,
-#                     "section_card_id": item["section_card_id"],
-#                     "type_statement_id": item["type_statement_id"],
-#                     "legal_doc_id": item["legal_doc_id"],
-#                     "result_statement_id": item["result_statement_id"],
-#                 },
-#             })
-#
-#         return result
-#     except Exception as ex:
-#         return {
-#             "status": "error",
-#             "data": None,
-#             "details": ex
-#         }
+@router_ref_type_filters.get("/")
+async def get_type_filters(session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(ref_type_filter))
+
+        result = []
+        for item in query.mappings().all():
+
+            result.append({
+                "type_filter": item.name,
+                "value": {
+                    "type_filter_id": item.id,
+                },
+            })
+
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
 
 
 

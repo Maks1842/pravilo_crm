@@ -276,7 +276,7 @@ async def add_database(data_dict: dict, session: AsyncSession = Depends(get_asyn
                                 logging.debug(f"По КД {credits_data['number']}, Взыскатель ({claimer_ed}) не найден")
 
                         elif item["headers_key"] == 'tribunal_name_ed':
-                            tribunal = parsing_type_ed(debt_exl[f'{item["excel_field"]}'])
+                            tribunal = debt_exl[f'{item["excel_field"]}']
                             tribunal_query = await session.execute(select(ref_tribunal.c.id).where(and_(ref_tribunal.c.name == str(tribunal))))
                             tribunal_id = tribunal_query.scalar()
                             if tribunal_id is None:

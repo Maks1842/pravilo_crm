@@ -32,6 +32,7 @@ from src.mail.routers.incoming_mail import router_incoming_mail
 from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
+from src.routers_helper.rout_creating_docs.generator_txt import router_generator_txt
 from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
 from src.routers_helper.rout_admin.user_api import router_profile_user, router_list_users
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
@@ -158,6 +159,7 @@ app.include_router(router_data_registry)
 app.include_router(router_func_filters)
 app.include_router(router_reg_outgoing_mail)
 app.include_router(router_helper)
+app.include_router(router_generator_txt)
 
 # Для finance
 app.include_router(router_expenses_category)

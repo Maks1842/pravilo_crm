@@ -21,10 +21,6 @@ router_lending = APIRouter(
 
 @router_lending.get("/")
 async def get_lending(cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
-
-    summa = 0
-    balance_debt = 0
-
     try:
         if cession_id:
             query = await session.execute(select(cession.c.lending_id).where(cession.c.id == cession_id))
@@ -37,20 +33,30 @@ async def get_lending(cession_id: int = None, session: AsyncSession = Depends(ge
         result = []
         for item in lending_query.mappings().all():
 
+            summa = 0
+            balance_debt = 0
+            date_start = None
+            date_end = None
+
             if item.summa is not None:
                 summa = item.summa / 100
 
             if item.balance_debt is not None:
                 balance_debt = item.balance_debt / 100
 
+            if item.date_start is not None:
+                date_start = datetime.strptime(str(item.date_start), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_end is not None:
+                date_end = datetime.strptime(str(item.date_end), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             result.append({
                 "id": item.id,
                 "creditor": item.creditor,
                 "number": item.number,
-                "date_start": datetime.strptime(str(item.date_start), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "date_start": date_start,
                 "summa": summa,
                 "interest_rate": item.interest_rate,
-                "date_end": datetime.strptime(str(item.date_end), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "date_end": date_end,
                 "loan_repayment_procedure": item.loan_repayment_procedure,
                 "dividends_payment_procedure": item.dividends_payment_procedure,
                 "balance_debt": balance_debt,
@@ -165,6 +171,8 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
         result = []
         for item in answer.mappings().all():
 
+            date = None
+
             if item.summa is not None:
                 summa = item.summa / 100
             else:
@@ -176,11 +184,14 @@ async def get_cession(credit_id: int = None, session: AsyncSession = Depends(get
             else:
                 creditor = None
 
+            if item.date is not None:
+                date = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             result.append({
                 "id": item.id,
                 "name": item.name,
                 "number": item.number,
-                "date": item.date,
+                "date": date,
                 "summa": summa,
                 "cedent": item.cedent,
                 "cessionari": item.cessionari,
@@ -292,6 +303,8 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
         result = []
         for data in query.mappings().all():
 
+            date_start = None
+
             status_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(data.status_cd_id)))
             status_set = status_query.mappings().one()
             status = status_set.name
@@ -336,6 +349,9 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
             else:
                 balance_debt = 0
 
+            if data.date_start is not None:
+                date_start = datetime.strptime(str(data.date_start), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             result.append({
                 'id': data.id,
                 'debtor_id': data.debtor_id,
@@ -343,7 +359,7 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
                 'status_cd_id': data.status_cd_id,
                 'creditor': data.creditor,
                 'number': data.number,
-                'date_start': data.date_start,
+                'date_start': date_start,
                 'date_end': data.date_end,
                 'summa': summa,
                 'summa_by_cession': summa_by_cession,
@@ -439,15 +455,20 @@ router_debtor = APIRouter(
 @router_debtor.get("/")
 async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
-    tribunal_id = None
-    tribunal_name = None
-    gaspravosudie = 'НЕ возможно'
+
 
     try:
         query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
 
         result = []
         for item in query.mappings().all():
+
+            tribunal_id = None
+            tribunal_name = None
+            gaspravosudie = 'НЕ возможно'
+            # birthday = None
+            # passport_date = None
+
             if item.tribunal_id:
                 tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(item.tribunal_id)))
                 tribunal_set = tribunal_query.mappings().fetchone()
@@ -457,6 +478,11 @@ async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_
                     tribunal_name = tribunal_set.name
                     if tribunal_set.gaspravosudie:
                         gaspravosudie = 'Возможно'
+
+            # if item.birthday is not None:
+            #     birthday = datetime.strptime(str(item.birthday), '%Y-%m-%d').strftime("%d.%m.%Y")
+            # if item.passport_date is not None:
+            #     passport_date = datetime.strptime(str(item.passport_date), '%Y-%m-%d').strftime("%d.%m.%Y")
 
             result.append({
                 'id': item.id,

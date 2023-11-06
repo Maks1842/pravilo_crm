@@ -17,6 +17,7 @@ from src.collection_debt.routers.executive_productions_rout import router_ep_deb
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
+from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt
 
 from src.tasks.router import router_task, router_task_all
 
@@ -120,6 +121,7 @@ app.include_router(router_ep_number)
 app.include_router(router_tribunal_write)
 app.include_router(router_succession)
 app.include_router(router_duty_legal_calculation)
+app.include_router(router_calculation_debt)
 
 # Для routers_task
 app.include_router(router_task)

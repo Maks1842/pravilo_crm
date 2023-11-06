@@ -46,10 +46,13 @@ router_data_registry = APIRouter(
 
 
 @router_data_registry.get("/")
-async def get_data_registry(page: int, filter_id: int, model: str = None, field: str = None, values_filter: str = None, period: str = None, cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
+async def get_data_registry(page: int, filter_id: int = None, model: str = None, field: str = None, values_filter: str = None, period: str = None, cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
     legal_number = None
+
+    if filter_id is None:
+        filter_id = 1
 
     try:
         filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))

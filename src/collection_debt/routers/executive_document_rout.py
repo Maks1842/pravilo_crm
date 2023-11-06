@@ -40,6 +40,11 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 status_id = None
                 summa_debt_decision = 0
                 state_duty = 0
+                date = None
+                date_of_receipt_ed = None
+                date_decision = None
+                date_entry_force = None
+                succession = None
 
                 if item.summa_debt_decision is not None:
                     summa_debt_decision = item.summa_debt_decision / 100
@@ -74,25 +79,35 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 if item.status_ed_id is not None:
                     status_ed_query = await session.execute(select(ref_status_ed).where(ref_status_ed.c.id == int(item.status_ed_id)))
                     status_ed = status_ed_query.mappings().one()
-
                     status_name = status_ed.name
                     status_id = status_ed.id
+
+                if item.date is not None:
+                    date = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if item.date_of_receipt_ed is not None:
+                    date_of_receipt_ed = datetime.strptime(str(item.date_of_receipt_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if item.date_decision is not None:
+                    date_decision = datetime.strptime(str(item.date_decision), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if item.date_entry_force is not None:
+                    date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if item.succession is not None:
+                    succession = datetime.strptime(str(item.succession), '%Y-%m-%d').strftime("%d.%m.%Y")
 
                 result.append({
                     'id': item.id,
                     'type_ed': type_ed_name,
                     'type_ed_id': type_ed_id,
                     'number': item.number,
-                    'date': item.date,
+                    'date': date,
                     'case_number': item.case_number,
-                    'date_of_receipt_ed': item.date_of_receipt_ed,
-                    'date_decision': item.date_decision,
+                    'date_of_receipt_ed': date_of_receipt_ed,
+                    'date_decision': date_decision,
                     'summa_debt_decision': summa_debt_decision,
                     'state_duty': state_duty,
                     'status_ed': status_name,
                     'status_ed_id': status_id,
-                    'succession': item.succession,
-                    'date_entry_force': item.date_entry_force,
+                    'succession': succession,
+                    'date_entry_force': date_entry_force,
                     'claimer_ed': claimer_ed_name,
                     'claimer_ed_id': claimer_ed_id,
                     "tribunal": tribunal,
@@ -113,28 +128,49 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
 
 # Изменить данные об ИД
 @router_ed_debtor.post("/")
-async def add_ed_debtor(new_ed_debtor: EDocCreate, session: AsyncSession = Depends(get_async_session)):
+async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = new_ed_debtor.model_dump()
+    req_data = data_json['data_json']
 
-    summa_debt_decision = req_data["summa_debt_decision"] * 100
-    state_duty = req_data["state_duty"] * 100
+    date = None
+    date_of_receipt_ed = None
+    date_decision = None
+    succession = None
+    date_entry_force = None
+    summa_debt_decision = None
+    state_duty = None
+
+    if req_data['summa_debt_decision'] is not None:
+        summa_debt_decision = int(float(req_data["summa_debt_decision"]) * 100)
+    if req_data['state_duty'] is not None:
+        state_duty = int(float(req_data["state_duty"]) * 100)
+
+    if req_data['date'] is not None:
+        date = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
+    if req_data['date_of_receipt_ed'] is not None:
+        date_of_receipt_ed = datetime.strptime(req_data['date_of_receipt_ed'], '%Y-%m-%d').date()
+    if req_data['date_decision'] is not None:
+        date_decision = datetime.strptime(req_data['date_decision'], '%Y-%m-%d').date()
+    if req_data['succession'] is not None:
+        succession = datetime.strptime(req_data['succession'], '%Y-%m-%d').date()
+    if req_data['date_entry_force'] is not None:
+        date_entry_force = datetime.strptime(req_data['date_entry_force'], '%Y-%m-%d').date()
 
     try:
         data = {
             "number": req_data["number"],
-            "date": req_data["date"],
+            "date": date,
             "case_number": req_data["case_number"],
-            "date_of_receipt_ed": req_data["date_of_receipt_ed"],
-            "date_decision": req_data["date_decision"],
+            "date_of_receipt_ed": date_of_receipt_ed,
+            "date_decision": date_decision,
             "type_ed_id": req_data["type_ed_id"],
             "status_ed_id": req_data['status_ed_id'],
             "credit_id": req_data["credit_id"],
             "user_id": req_data["user_id"],
             "summa_debt_decision": summa_debt_decision,
             "state_duty": state_duty,
-            "succession": req_data["succession"],
-            "date_entry_force": req_data["date_entry_force"],
+            "succession": succession,
+            "date_entry_force": date_entry_force,
             "claimer_ed_id": req_data['claimer_ed_id'],
             "tribunal_id": req_data["tribunal_id"],
             "comment": req_data["comment"],

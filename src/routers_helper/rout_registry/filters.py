@@ -10,7 +10,7 @@ from datetime import date, timedelta
 
 
 def control_section8(period, cession_id):
-    pass
+    credit_id_list = [1, 2, 3, 4]
 
     # queryset = Executive_Documents.objects.filter(status_ed=2).values()
     #
@@ -49,7 +49,7 @@ def control_section8(period, cession_id):
     #         except:
     #             credit_id_list.append(item['credit_id'])
     #
-    # return credit_id_list
+    return credit_id_list
 
 
 def control_return_section8(period, cession_id):

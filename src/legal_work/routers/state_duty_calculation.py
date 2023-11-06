@@ -7,7 +7,7 @@ from src.debts.models import credit, debtor
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
 
 
-# Получить/добавить СП
+# Рассчитать сумму госпошлины
 router_duty_legal_calculation = APIRouter(
     prefix="/v1/StateDutyLegalCalculation",
     tags=["LegalWork"]

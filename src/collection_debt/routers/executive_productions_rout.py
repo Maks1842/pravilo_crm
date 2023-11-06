@@ -81,7 +81,6 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
 
                 if item.date_end is not None:
                     date_end = datetime.strptime(str(item.date_end), '%Y-%m-%d').strftime("%d.%m.%Y")
-
                 if item.date_request is not None:
                     date_request = datetime.strptime(str(item.date_request), '%Y-%m-%d').strftime("%d.%m.%Y")
 

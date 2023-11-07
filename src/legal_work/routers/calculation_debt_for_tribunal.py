@@ -3,10 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.debts.models import credit, debtor
+from src.debts.models import credit, debtor, cession
 from src.routers_helper.data_to_excel.calculating_debt_excel import calculating_debt_to_excel
-
-from datetime import datetime
 
 
 # Рассчитать сумму задолженности по графику
@@ -24,14 +22,17 @@ async def calculation_debt(data_json: dict, session: AsyncSession = Depends(get_
     count = 0
     for credit_id in list_credit_id:
         summa = 0
-        date_start = None
 
         credit_query = await session.execute(select(credit).where(credit.c.id == int(credit_id)))
         credit_set = credit_query.mappings().fetchone()
         debtor_id: int = credit_set.debtor_id
+        cession_id: int = credit_set.cession_id
 
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
         debtor_item = debtor_query.mappings().one()
+
+        cession_query = await session.execute(select(cession.c.date).where(cession.c.id == cession_id))
+        cession_date = cession_query.scalar()
 
         if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
             fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
@@ -44,20 +45,24 @@ async def calculation_debt(data_json: dict, session: AsyncSession = Depends(get_
         if credit_set.summa is not None:
             summa = credit_set.summa / 100
 
-        if credit_set.date_start is not None:
-            date_start = datetime.strptime(str(credit_set.date_start), '%Y-%m-%d').strftime("%d.%m.%Y")
+        if credit_set.date_start is None:
+            return {
+                "status": "error",
+                "data": None,
+                "details": f'Отсутствует дата выдачи КД {credit_set.number}'
+            }
 
         data = {"fio": fio,
                 "number_cd": credit_set.number,
-                "date_start_cd": date_start,
+                "date_start_cd": credit_set.date_start,
                 "summa_cd": summa,
                 "interest_rate": credit_set.interest_rate,
+                "date_end": credit_set.date_end,
+                "cession_date": cession_date,
                 }
 
-        # await calculating_debt_to_excel(data, session)
+        calculating_debt_to_excel(data)
         count += 1
-
-        print(data)
 
     return {
         'status': 'success',

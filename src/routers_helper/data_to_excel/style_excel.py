@@ -52,6 +52,21 @@ def style_excel():
     style_6.fill = PatternFill("solid", fgColor="f8cbad")
     style_6.alignment = Alignment(horizontal='center', vertical='center')
 
+    style_7 = NamedStyle(name="style_7")
+    style_7.font = Font(bold=False, size=10, color="000000")
+    side = Side(style='thin', color="000000")
+    style_7.border = Border(left=side, right=side, top=side, bottom=side)
+    style_7.fill = PatternFill("solid", fgColor="FFFFFF")
+    style_7.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    style_8 = NamedStyle(name="style_8")
+    style_8.font = Font(bold=True, size=12, color="000000")
+    style_8.alignment = Alignment(horizontal='left', vertical='center', wrap_text=False)
+
+    style_9 = NamedStyle(name="style_9")
+    style_9.font = Font(bold=False, size=12, color="000000")
+    style_9.alignment = Alignment(horizontal='left', vertical='center', wrap_text=False)
+
     return {
         'style_main': style_main,
         'style_1': style_1,
@@ -60,4 +75,7 @@ def style_excel():
         'style_4': style_4,
         'style_5': style_5,
         'style_6': style_6,
+        'style_7': style_7,
+        'style_8': style_8,
+        'style_9': style_9,
     }

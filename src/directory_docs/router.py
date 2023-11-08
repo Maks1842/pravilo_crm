@@ -185,7 +185,6 @@ async def get_dir_credit(credit_id: int = None, session: AsyncSession = Depends(
             "dir_credit_path": path_dir_cd,
             "folder_list": folder_list
         }
-        print(result)
         return result
     except Exception as ex:
         return {
@@ -223,7 +222,8 @@ async def get_file_credit(credit_id: int = None, folder: str = None, session: As
                 "id": item.id,
                 "file_name": item.name,
                 "dirName": item.name_folder,
-                "path": item.path
+                "path": item.path,
+                "dir_credit_id": dir_credit_id
             })
         return result
     except Exception as ex:
@@ -244,12 +244,8 @@ async def save_file_credit(credit_file: UploadFile, file_name: str, credit_id: i
     folder_path = os.path.join(dir_credit_set.path, folder)
     file_path = os.path.join(folder_path, file_name)
 
-    with open(file_path, 'wb+') as f:
-        for chunk in credit_file.file:
-            f.write(chunk)
-
     try:
-        docs_folder_qwery = await session.execute(select(docs_folder).where(docs_folder.c.name == file_name))
+        docs_folder_qwery = await session.execute(select(docs_folder).where(and_(docs_folder.c.name == file_name, docs_folder.c.dir_credit_id == dir_credit_id)))
         docs_folder_set = docs_folder_qwery.mappings().fetchone()
 
         if docs_folder_set is None:
@@ -264,6 +260,10 @@ async def save_file_credit(credit_file: UploadFile, file_name: str, credit_id: i
 
             await session.execute(post_data)
             await session.commit()
+
+            with open(file_path, 'wb+') as f:
+                for chunk in credit_file.file:
+                    f.write(chunk)
         else:
             return {
                 'status': 'error',
@@ -356,9 +356,17 @@ async def rename_file(data_json: dict, session: AsyncSession = Depends(get_async
     data = data_json['data_json']
 
     id_file: int = data["id"]
+    dir_credit_id: int = data["dir_credit_id"]
     old_file_name: str = data["file_name"]
     file_name_crude: str = data["new_file_name"]
     path: str = data["path"]
+
+    if file_name_crude == '':
+        return {
+            "status": "error",
+            "data": None,
+            "details": "Новое название файла не предоставлено"
+        }
 
     split_name_file = os.path.splitext(old_file_name)
     file_extension = split_name_file[1]
@@ -375,17 +383,8 @@ async def rename_file(data_json: dict, session: AsyncSession = Depends(get_async
 
     new_path_file = os.path.join(f'{dir_file}/', new_file_name)
 
-    if new_file_name == '':
-        return {
-            "status": "error",
-            "data": None,
-            "details": "Новое название файла не предоставлено"
-        }
-
     try:
-        os.rename(path, new_path_file)
-
-        docs_folder_qwery = await session.execute(select(docs_folder).where(docs_folder.c.name == new_file_name))
+        docs_folder_qwery = await session.execute(select(docs_folder).where(and_(docs_folder.c.name == new_file_name, docs_folder.c.dir_credit_id == dir_credit_id)))
         docs_folder_set = docs_folder_qwery.mappings().fetchone()
 
         if docs_folder_set is None:
@@ -399,6 +398,8 @@ async def rename_file(data_json: dict, session: AsyncSession = Depends(get_async
 
             await session.execute(post_data)
             await session.commit()
+
+            os.rename(path, new_path_file)
         else:
             return {
                 'status': 'error',

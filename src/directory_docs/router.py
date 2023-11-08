@@ -2,7 +2,7 @@ import os
 
 from fastapi import APIRouter, Depends, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import select, insert, and_
+from sqlalchemy import select, insert, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -195,7 +195,7 @@ async def get_dir_credit(credit_id: int = None, session: AsyncSession = Depends(
         }
 
 
-# Получить по dir_id файлы по КД
+# Получить/добавить по credit_id файлы по КД
 router_docs_credit = APIRouter(
     prefix="/v1/CreditFile",
     tags=["DirectoryDocs"]
@@ -221,7 +221,8 @@ async def get_file_credit(credit_id: int = None, folder: str = None, session: As
 
             result.append({
                 "id": item.id,
-                "docs_credit_name": item.name,
+                "file_name": item.name,
+                "dirName": item.name_folder,
                 "path": item.path
             })
         return result
@@ -339,4 +340,80 @@ async def download_file_credit(file_id: int = None, session: AsyncSession = Depe
             "status": "error",
             "data": None,
             "details": ex
+        }
+
+
+# Переименовать файл
+router_rename_file = APIRouter(
+    prefix="/v1/RenameFile",
+    tags=["DirectoryDocs"]
+)
+
+
+@router_rename_file.post("/")
+async def rename_file(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    data = data_json['data_json']
+
+    id_file: int = data["id"]
+    old_file_name: str = data["file_name"]
+    file_name_crude: str = data["new_file_name"]
+    path: str = data["path"]
+
+    split_name_file = os.path.splitext(old_file_name)
+    file_extension = split_name_file[1]
+
+    try:
+        split_new_file_name = os.path.splitext(file_name_crude)
+        file_name_crude = split_new_file_name[0]
+    except:
+        file_name_crude = file_name_crude
+
+    new_file_name = f'{file_name_crude}{file_extension}'
+
+    dir_file = os.path.dirname(path)
+
+    new_path_file = os.path.join(f'{dir_file}/', new_file_name)
+
+    if new_file_name == '':
+        return {
+            "status": "error",
+            "data": None,
+            "details": "Новое название файла не предоставлено"
+        }
+
+    try:
+        os.rename(path, new_path_file)
+
+        docs_folder_qwery = await session.execute(select(docs_folder).where(docs_folder.c.name == new_file_name))
+        docs_folder_set = docs_folder_qwery.mappings().fetchone()
+
+        if docs_folder_set is None:
+
+            data = {
+                "name": new_file_name,
+                "path": new_path_file,
+            }
+
+            post_data = update(docs_folder).where(docs_folder.c.id == id_file).values(data)
+
+            await session.execute(post_data)
+            await session.commit()
+        else:
+            return {
+                'status': 'error',
+                'data': None,
+                'details': 'Невозможно сохранить. Файл с таким именем существует'
+            }
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Файл успешно сохранен'
+    }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при сохранении файла. {ex}"
         }

@@ -106,8 +106,8 @@ def calculating_debt_to_excel(data):
             sheet.cell(row + 1, column).style = style['style_7']
 
             number_row += 1
-            date_start = date_second
-            date_start_format = date_second_formar
+            date_start = date_second + timedelta(days=1)
+            date_start_format = datetime.strptime(str(date_start), '%Y-%m-%d').strftime("%d.%m.%Y")
 
         row = row + 3
         column = 2

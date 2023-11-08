@@ -46,6 +46,7 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                 curent_debt = 0
                 summa_debt = 0
                 gov_toll = 0
+                date_on = None
                 date_end = None
                 date_request = None
 
@@ -79,6 +80,8 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                     ed_number = ed_query.scalar()
                     ed_id = item.executive_document_id
 
+                if item.date_on is not None:
+                    date_on = datetime.strptime(str(item.date_on), '%Y-%m-%d').strftime("%d.%m.%Y")
                 if item.date_end is not None:
                     date_end = datetime.strptime(str(item.date_end), '%Y-%m-%d').strftime("%d.%m.%Y")
                 if item.date_request is not None:
@@ -89,7 +92,7 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                     "id": item.id,
                     "number": item.number,
                     "summary_case": item.summary_case,
-                    "date_on": datetime.strptime(str(item.date_on), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                    "date_on": date_on,
                     "date_end": date_end,
                     "reason_end": reason_end,
                     "reason_end_id": reason_end_id,

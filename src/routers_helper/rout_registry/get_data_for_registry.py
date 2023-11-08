@@ -113,7 +113,7 @@ async def get_data_registry(page: int, filter_id: int = None, model: str = None,
                 credits_query = await session.execute(select(credit).where(credit.c.id.in_(values_for_filters)).order_by(credit.c.id).
                                                       limit(per_page).offset((page - 1) * per_page))
 
-                total_credits_query = await session.execute(select(func.count(distinct(credit.c.id.in_(values_for_filters)))))
+                total_credits_query = await session.execute(select(func.count(distinct(credit.c.number)).filter(credit.c.id.in_(values_for_filters))))
                 total_credits = total_credits_query.scalar()
                 num_page_all = int(math.ceil(total_credits / per_page))
 

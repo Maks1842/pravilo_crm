@@ -17,7 +17,7 @@ from src.collection_debt.routers.executive_productions_rout import router_ep_deb
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
-from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt
+from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
 
 from src.tasks.router import router_task, router_task_all
 
@@ -34,7 +34,7 @@ from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_creating_docs.generator_txt import router_generator_txt
-from src.routers_helper.rout_debtor.debtor_inform import router_calculating_pensioner
+from src.routers_helper.rout_calculator.debtor_inform import router_calculating_pensioner
 from src.routers_helper.rout_admin.user_api import router_profile_user, router_list_users
 from src.routers_helper.rout_debt_import.import_from_excel import router_import_headers_excel
 from src.routers_helper.rout_debt_import.upload_to_database import router_post_database
@@ -122,6 +122,7 @@ app.include_router(router_tribunal_write)
 app.include_router(router_succession)
 app.include_router(router_duty_legal_calculation)
 app.include_router(router_calculation_debt)
+app.include_router(router_calculation_annuity_payment)
 
 # Для routers_task
 app.include_router(router_task)

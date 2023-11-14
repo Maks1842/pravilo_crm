@@ -32,8 +32,6 @@ def get_calculation_annuity(data_json):
         num_period_year = 365/7
         number_periods_credit = int(period/7)
 
-        print(f'{number_periods_credit=}')
-
         rate_week = interest_rate/num_period_year/100
 
         if summa_pay_start == 0 or summa_pay_start > 0:
@@ -43,8 +41,6 @@ def get_calculation_annuity(data_json):
             number_periods_credit = int(period/7 - 1)
             summa_payments_decrease = summa_payments_decrease - summa_percent_start
             remains_debt = remains_debt - summa_pay_start
-
-            print(f'{remains_debt=}')
 
             summ_pay_total += summa_percent_start + summa_pay_start
             summ_percent_total += summa_percent_start
@@ -62,13 +58,9 @@ def get_calculation_annuity(data_json):
 
             date_start_pay = date_start_pay + timedelta(days=7)
 
-        print(f'{number_periods_credit=}')
-
         k_annuity = (rate_week * (1 + rate_week) ** number_periods_credit) / ((1 + rate_week) ** number_periods_credit - 1)
 
         annuity_pay = round(remains_debt * k_annuity, 2)
-
-        print(f'{annuity_pay=}')
 
         if date_start_cd > date_delta.date():
             while annuity_pay < summa_payments_decrease:

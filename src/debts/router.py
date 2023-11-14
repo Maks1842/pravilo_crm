@@ -761,6 +761,14 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         credit_query = await session.execute(select(credit).where(credit.c.id == credit_id))
         credit_item = credit_query.mappings().one()
 
+        cession_id: int = credit_item.cession_id
+
+        credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == cession_id))
+        credits_id_list = credits_id_query.scalars().all()
+
+        summa_cd_all_query = await session.execute(select(func.sum(credit.c.summa_by_cession)).filter(credit.c.id.in_(credits_id_list)))
+        summa_cd_all = summa_cd_all_query.scalar() / 100
+
         if credit_item.balance_debt is not None and credit_item.balance_debt != '':
             balance_debt = credit_item.balance_debt / 100
         else:
@@ -774,8 +782,14 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == int(credit_item.debtor_id)))
         debtor_item = debtor_query.mappings().one()
 
-        cession_query = await session.execute(select(cession).where(cession.c.id == int(credit_item.cession_id)))
+        cession_query = await session.execute(select(cession).where(cession.c.id == cession_id))
         cession_item = cession_query.mappings().one()
+
+        cession_summa = cession_item.summa / 100
+
+        k_purchase = cession_summa / summa_cd_all
+
+        cost_credit = round(summa_by_cession * k_purchase, 2)
 
         status_cd_query = await session.execute(select(ref_status_credit).where(ref_status_credit.c.id == int(credit_item.status_cd_id)))
         status_cd_item = status_cd_query.mappings().one()
@@ -861,6 +875,7 @@ async def get_debt_information(credit_id: int, session: AsyncSession = Depends(g
             "summaPayAll": summa_all,
             "summaPayLast": pay_last,
             "datePayLast": date_last,
+            "costCredit": cost_credit,
         }
         return result
     except Exception as ex:

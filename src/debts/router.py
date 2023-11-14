@@ -524,9 +524,7 @@ async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_
 
 
 @router_debtor.post("/")
-async def add_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    debtor_data = data_json['data_json']
+async def add_debtor(debtor_data: dict, session: AsyncSession = Depends(get_async_session)):
 
     try:
         data = {

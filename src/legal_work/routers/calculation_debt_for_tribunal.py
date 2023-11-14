@@ -152,7 +152,8 @@ async def calculation_annuity_payment(data_json: dict, session: AsyncSession = D
         "interest_rate": credit_set.interest_rate,
         "date_end": credit_set.date_end,
         "cession_date": cession_date,
-        "result": result
+        "result": result['annuity_list'],
+        "summ_percent_total": result['summ_percent_total']
     }
 
     result_calculator = calculating_annuity_to_excel(data_to_exl)

@@ -165,9 +165,7 @@ async def get_payment(page: int, credit_id: int = None, cession_id: int = None, 
 
 
 @router_payment.post("/")
-async def add_payment(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
+async def add_payment(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     if data['credit_id'] == None:
         return {
@@ -222,9 +220,7 @@ router_post_payment_list = APIRouter(
 
 
 @router_post_payment_list.post("/")
-async def add_payment_list(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
+async def add_payment_list(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     date_pay = date.today()
     summa = 0

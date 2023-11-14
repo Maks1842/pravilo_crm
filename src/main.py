@@ -43,7 +43,7 @@ from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_o
 from src.routers_helper.rout_admin.helper_helper import router_helper
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
-from src.finance.routers.reports_rout import router_report_parent_organisation
+from src.finance.routers.reports_rout import router_report_parent_organisation, router_report_for_investor
 
 from src.payments.routers.payments import router_payment, router_post_payment_list
 from src.payments.routers.extract_payments import router_extract_payments
@@ -170,6 +170,7 @@ app.include_router(router_generator_txt)
 app.include_router(router_expenses_category)
 app.include_router(router_expenses)
 app.include_router(router_report_parent_organisation)
+app.include_router(router_report_for_investor)
 
 # Для payment
 app.include_router(router_payment)

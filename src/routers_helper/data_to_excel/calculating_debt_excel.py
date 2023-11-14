@@ -159,7 +159,7 @@ def calculating_annuity_to_excel(data):
 
     current_date = datetime.now()
 
-    summa_stop = data['overdue_od'] * 1.5
+    summa_stop = data['summa_cd'] * 1.5
 
     annuity_list = data['result']
 
@@ -264,6 +264,7 @@ def calculating_annuity_to_excel(data):
         date_start_2 = date_start_2 + timedelta(days=1)
         date_start_2_formar = date_start_2.date().strftime("%d.%m.%Y")
 
+        summa_p = 0
         summa_percent_all = 0
         while summa_percent_all < summa_stop:
             sheet.cell(row, 2).style = style['style_7']
@@ -274,7 +275,9 @@ def calculating_annuity_to_excel(data):
             date_second_formar = date_second.date().strftime("%d.%m.%Y")
 
             summa_percent = round(data['overdue_od'] * 7 / 365 * int(data['interest_rate']) / 100, 2)
-            summa_percent_all += summa_percent
+
+            summa_p += summa_percent
+            summa_percent_all = summa_p + data["summ_percent_total"]
 
             column = 1
             sheet.cell(row, column).value = data['overdue_od']
@@ -317,13 +320,13 @@ def calculating_annuity_to_excel(data):
         sheet.cell(row, column).style = style['style_9']
 
         column = 2
-        sheet.cell(row + 2, column).value = f"Сумма основного долга - {data['summa_cd']}  руб."
+        sheet.cell(row + 2, column).value = f"Сумма основного долга - {data['overdue_od']}  руб."
         sheet.cell(row + 2, column).style = style['style_8']
         column = 2
         sheet.cell(row + 3, column).value = f"Сумма процентов - {round(summa_percent_all, 2)}  руб."
         sheet.cell(row + 3, column).style = style['style_9']
         column = 2
-        sheet.cell(row + 4, column).value = f"ИТОГО - {round(data['summa_cd'] + summa_percent_all, 2)}  руб."
+        sheet.cell(row + 4, column).value = f"ИТОГО - {round(data['overdue_od'] + summa_percent_all, 2)}  руб."
         sheet.cell(row + 4, column).style = style['style_9']
 
         column = 2

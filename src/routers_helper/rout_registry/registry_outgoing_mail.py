@@ -1,15 +1,11 @@
-import math
-from operator import itemgetter
-from datetime import datetime
-
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import credit, debtor
+from src.references.models import ref_tribunal
 from src.mail.routers.outgoing_mail import save_outgoing_mail
-from src.auth.models import user
 
 
 
@@ -23,7 +19,6 @@ router_reg_outgoing_mail = APIRouter(
 @router_reg_outgoing_mail.post("/")
 async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get_async_session)):
 
-
     credits_id_array = data_dict['credits_id_array']
     recipient_id = data_dict['recipient_id']
     user_id = data_dict['user_id']
@@ -34,8 +29,8 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
     for item in credits_query.mappings().all():
         credit_id: int = item.id
         debtor_id: int = item.debtor_id
-        addresser = None
-        recipient_address = None
+        addresser = 'НЕ ОПРЕДЕЛЕН'
+        recipient_address = 'НЕ ОПРЕДЕЛЕН'
         mass = 10
         category_mail = 'Простое'
         type_mail = {"text": "Письмо", "value": 2}
@@ -53,7 +48,16 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
             if debtor_item.address_1 is not None:
                 recipient_address = f"{debtor_item.index_add_1 or ''}, {debtor_item.address_1}"
         elif recipient_id == 2:
-            pass
+            debtor_query = await session.execute(select(debtor.c.tribunal_id).where(debtor.c.id == debtor_id))
+            tribunal = debtor_query.mappings().fetchone()
+
+            if tribunal.tribunal_id:
+                tribunal_id: int = tribunal.tribunal_id
+                tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_id))
+                tribunal_item = tribunal_query.mappings().one()
+
+                addresser = tribunal_item.name
+                recipient_address = tribunal_item.address
         elif recipient_id == 3:
             pass
         elif recipient_id == 4:

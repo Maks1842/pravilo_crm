@@ -82,9 +82,7 @@ router_calculation_annuity_payment = APIRouter(
 
 
 @router_calculation_annuity_payment.post("/")
-async def calculation_annuity_payment(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
+async def calculation_annuity_payment(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     credit_id: int = data['credit_id']
     date_start_pay = data['date_start_pay']
@@ -153,7 +151,8 @@ async def calculation_annuity_payment(data_json: dict, session: AsyncSession = D
         "date_end": credit_set.date_end,
         "cession_date": cession_date,
         "result": result['annuity_list'],
-        "summ_percent_total": result['summ_percent_total']
+        "summ_percent_total": result['summ_percent_total'],
+        'timeline': timeline
     }
 
     result_calculator = calculating_annuity_to_excel(data_to_exl)

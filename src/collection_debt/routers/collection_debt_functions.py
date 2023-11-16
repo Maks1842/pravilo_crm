@@ -17,7 +17,6 @@ async def get_collection_debt_all(data, session):
     credit_id: int = data['credit_id']
     type_department_id: int = data['type_department_id']
     department_id: int = data['department_id']
-    ed_id: int = data['ed_id']
     dates1 = data['dates1']
     dates2 = data['dates2']
 
@@ -33,22 +32,17 @@ async def get_collection_debt_all(data, session):
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(collection_debt.c.credit_id == credit_id))
-    elif ed_id:
-        collect_query = await session.execute(select(collection_debt).where(collection_debt.c.executive_document_id == ed_id).
-                                              order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
-                                              limit(per_page).offset((page - 1) * per_page))
-        total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(collection_debt.c.executive_document_id == ed_id))
-    elif credit_id == None and ed_id == None and dates1 and department_id == None and type_department_id == None:
+    elif credit_id == None and dates1 and department_id == None and type_department_id == None:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1, collection_debt.c.date_start <= dates2)).
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.date_start >= dates1, collection_debt.c.date_start <= dates2)))
-    elif credit_id == None and ed_id == None and dates1 == None and department_id == None and type_department_id:
+    elif credit_id == None and dates1 == None and department_id == None and type_department_id:
         collect_query = await session.execute(select(collection_debt).where(collection_debt.c.type_department_id == type_department_id).
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(collection_debt.c.type_department_id == type_department_id))
-    elif credit_id == None and ed_id == None and dates1 and department_id == None and type_department_id:
+    elif credit_id == None and dates1 and department_id == None and type_department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1,
                                                                                  collection_debt.c.date_start <= dates2,
                                                                                  collection_debt.c.type_department_id == type_department_id)).
@@ -57,14 +51,14 @@ async def get_collection_debt_all(data, session):
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.date_start >= dates1,
                                                                                                                    collection_debt.c.date_start <= dates2,
                                                                                                                    collection_debt.c.type_department_id == type_department_id)))
-    elif credit_id == None and ed_id == None and dates1 == None and department_id:
+    elif credit_id == None and dates1 == None and department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.department_presentation_id == department_id,
                                                                                  collection_debt.c.type_department_id == type_department_id)).
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.department_presentation_id == department_id,
                                                                                                                    collection_debt.c.type_department_id == type_department_id)))
-    elif credit_id == None and ed_id == None and dates1 and department_id:
+    elif credit_id == None and dates1 and department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1,
                                                                                  collection_debt.c.date_start <= dates2,
                                                                                  collection_debt.c.department_presentation_id == department_id,
@@ -91,7 +85,6 @@ async def get_collection_debt_1(data, session):
     credit_id: int = data['credit_id']
     type_department_id: int = data['type_department_id']
     department_id: int = data['department_id']
-    ed_id: int = data['ed_id']
     dates1 = data['dates1']
     dates2 = data['dates2']
 
@@ -107,22 +100,17 @@ async def get_collection_debt_1(data, session):
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(collection_debt.c.credit_id == credit_id))
-    elif ed_id:
-        collect_query = await session.execute(select(collection_debt).where(collection_debt.c.executive_document_id == ed_id).
-                                              order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
-                                              limit(per_page).offset((page - 1) * per_page))
-        total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(collection_debt.c.executive_document_id == ed_id))
-    elif credit_id == None and ed_id == None and dates1 and department_id == None and type_department_id == None:
+    elif credit_id == None and dates1 and department_id == None and type_department_id == None:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1, collection_debt.c.date_start <= dates2, collection_debt.c.date_return.is_(None))).
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.date_start >= dates1, collection_debt.c.date_start <= dates2, collection_debt.c.date_return.is_(None))))
-    elif credit_id == None and ed_id == None and dates1 == None and department_id == None and type_department_id:
+    elif credit_id == None and dates1 == None and department_id == None and type_department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.type_department_id == type_department_id, collection_debt.c.date_return.is_(None))).
                                               order_by(desc(collection_debt.c.date_start)).order_by(desc(collection_debt.c.id)).
                                               limit(per_page).offset((page - 1) * per_page))
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.type_department_id == type_department_id, collection_debt.c.date_return.is_(None))))
-    elif credit_id == None and ed_id == None and dates1 and department_id == None and type_department_id:
+    elif credit_id == None and dates1 and department_id == None and type_department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1,
                                                                                  collection_debt.c.date_start <= dates2,
                                                                                  collection_debt.c.type_department_id == type_department_id,
@@ -133,7 +121,7 @@ async def get_collection_debt_1(data, session):
                                                                                                                    collection_debt.c.date_start <= dates2,
                                                                                                                    collection_debt.c.type_department_id == type_department_id,
                                                                                                                    collection_debt.c.date_return.is_(None))))
-    elif credit_id == None and ed_id == None and dates1 == None and department_id:
+    elif credit_id == None and dates1 == None and department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.department_presentation_id == department_id,
                                                                                  collection_debt.c.type_department_id == type_department_id,
                                                                                  collection_debt.c.date_return.is_(None))).
@@ -142,7 +130,7 @@ async def get_collection_debt_1(data, session):
         total_collect_query = await session.execute(select(func.count(distinct(collection_debt.c.id))).filter(and_(collection_debt.c.department_presentation_id == department_id,
                                                                                                                    collection_debt.c.type_department_id == type_department_id),
                                                                                                                    collection_debt.c.date_return.is_(None)))
-    elif credit_id == None and ed_id == None and dates1 and department_id:
+    elif credit_id == None and dates1 and department_id:
         collect_query = await session.execute(select(collection_debt).where(and_(collection_debt.c.date_start >= dates1,
                                                                                  collection_debt.c.date_start <= dates2,
                                                                                  collection_debt.c.department_presentation_id == department_id,

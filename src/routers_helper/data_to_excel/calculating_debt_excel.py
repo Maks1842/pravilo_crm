@@ -159,9 +159,14 @@ def calculating_annuity_to_excel(data):
 
     current_date = datetime.now()
 
+    timeline = int(data['timeline'])
     summa_stop = data['summa_cd'] * 1.5
-
     annuity_list = data['result']
+
+    new_date_calculat_law = datetime.strptime('2023-07-01', '%Y-%m-%d').strftime("%d.%m.%Y")
+
+    if date_start_format <= new_date_calculat_law:
+        summa_stop = data['summa_cd'] * 1.3
 
     style = style_excel()
 
@@ -271,10 +276,10 @@ def calculating_annuity_to_excel(data):
             sheet.cell(row, 3).style = style['style_7']
             sheet.cell(row, 4).style = style['style_7']
 
-            date_second = date_start_2 + timedelta(days=6)
+            date_second = date_start_2 + timedelta(days=timeline - 1)
             date_second_formar = date_second.date().strftime("%d.%m.%Y")
 
-            summa_percent = round(data['overdue_od'] * 7 / 365 * int(data['interest_rate']) / 100, 2)
+            summa_percent = round(data['overdue_od'] * timeline / 365 * int(data['interest_rate']) / 100, 2)
 
             summa_perc_second += summa_percent
             summa_percent_all = summa_perc_second + data["summ_percent_total"]
@@ -293,11 +298,11 @@ def calculating_annuity_to_excel(data):
             sheet.cell(row, column).style = style['style_7']
 
             column = 7
-            sheet.cell(row, column).value = 7
+            sheet.cell(row, column).value = timeline
             sheet.cell(row, column).style = style['style_7']
 
             column = 8
-            sheet.cell(row, column).value = f"{data['overdue_od']}x7/365x{data['interest_rate']}%"
+            sheet.cell(row, column).value = f"{data['overdue_od']}x{timeline}/365x{data['interest_rate']}%"
             sheet.cell(row, column).style = style['style_7']
 
             column = 9

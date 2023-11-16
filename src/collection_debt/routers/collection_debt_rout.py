@@ -54,7 +54,7 @@ router_collection_debt = APIRouter(
 
 @router_collection_debt.get("/")
 async def get_collection_debt(page: int, filter_id: int = None, credit_id: int = None, type_department_id: int = None,
-                              department_id: int = None, dates1: str = None, dates2: str = None, ed_id: int = None, session: AsyncSession = Depends(get_async_session)):
+                              department_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
 
@@ -64,7 +64,6 @@ async def get_collection_debt(page: int, filter_id: int = None, credit_id: int =
         'credit_id': credit_id,
         'type_department_id': type_department_id,
         'department_id': department_id,
-        'ed_id': ed_id,
         'dates1': dates1,
         'dates2': dates2
     }

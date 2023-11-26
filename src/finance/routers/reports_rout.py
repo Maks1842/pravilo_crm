@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert, func, distinct, update, and_, desc
 
 from src.database import get_async_session
-from src.finance.routers.reports_functions import get_revenue, get_coefficient_cession
+from src.finance.routers.reports_functions import get_revenue, get_expenses_cession
 from src.debts.models import cession
 
 
@@ -25,7 +25,6 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
     profit_check = data_json['profit_check']
     statistic_check = data_json['statistic_check']
 
-
     if 'date_1' not in data_json:
         data_json["date_1"] = None
     if 'date_2' not in data_json:
@@ -34,21 +33,39 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
     data_json["cession_id_list"] = []
 
     if profit_check:
-
         try:
             result = await get_revenue(data_json, session)
 
-            return {
-                'status': 'success',
-                'data': None,
-                'details': f'Успешною {result}'
-            }
+            return result
+
+            # return {
+            #     'status': 'success',
+            #     'data': None,
+            #     'details': f'Успешною {result}'
+            # }
         except Exception as ex:
             return {
                 "status": "error",
                 "data": None,
                 "details": ex
             }
+    elif statistic_check:
+        try:
+            result = await get_expenses_cession(data_json, session)
+
+            return result
+            # return {
+            #     'status': 'success',
+            #     'data': None,
+            #     'details': f'Успешною {result}'
+            # }
+        except Exception as ex:
+            return {
+                "status": "error",
+                "data": None,
+                "details": ex
+            }
+
 
 
 
@@ -101,4 +118,4 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
 #     "statistic_check": False,
 # }
 
-# {"dates_1": null,"dates_2": null,"cession_id_list": [],"profit_check": true,"statistic_check": false}
+# {"dates_1": null,"dates_2": null,"cession_id": null,"profit_check": true,"statistic_check": false}

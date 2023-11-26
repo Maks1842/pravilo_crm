@@ -20,6 +20,7 @@ router_payment = APIRouter(
 
 @router_payment.get("/")
 async def get_payment(page: int, credit_id: int = None, cession_id: int = None, department_pay: str = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+
     per_page = 20
 
     if dates2 is None:
@@ -220,7 +221,8 @@ router_post_payment_list = APIRouter(
 
 
 @router_post_payment_list.post("/")
-async def add_payment_list(data: dict, session: AsyncSession = Depends(get_async_session)):
+async def add_payment_list(data_list: dict, session: AsyncSession = Depends(get_async_session)):
+    data = data_list['data']
 
     date_pay = date.today()
     summa = 0
@@ -270,6 +272,8 @@ async def calculate_and_post_balance(credit_id: int, session):
     credits_query = await session.execute(select(credit).where(credit.c.id == credit_id))
     credit_set = credits_query.mappings().fetchone()
 
+    status_cd = credit_set.status_cd_id
+
     summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id == credit_id))
     summa_all = summa_query.scalar()
 
@@ -285,8 +289,15 @@ async def calculate_and_post_balance(credit_id: int, session):
     except:
         balance_debt = balance
 
+    if balance_debt <= 0:
+        status_cd = 7
+
     try:
-        post_data = update(credit).where(credit.c.id == credit_id).values(balance_debt=int(balance_debt))
+        data_cd = {
+            'balance_debt': int(balance_debt),
+            'status_cd_id': int(status_cd),
+        }
+        post_data = update(credit).where(credit.c.id == credit_id).values(data_cd)
 
         await session.execute(post_data)
         await session.commit()

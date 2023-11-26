@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -24,7 +24,7 @@ async def get_outgoing_mail(data_dict: dict, session: AsyncSession = Depends(get
     user_id = data_dict['user_id']
     name_docs = data_dict['name_docs']
 
-    credits_query = await session.execute(select(credit).where(credit.c.id.in_(credits_id_array)))
+    credits_query = await session.execute(select(credit).where(credit.c.id.in_(credits_id_array)).order_by(desc(credit.c.id)))
 
     for item in credits_query.mappings().all():
         credit_id: int = item.id

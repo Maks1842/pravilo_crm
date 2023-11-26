@@ -48,6 +48,8 @@ from src.finance.routers.reports_rout import router_report_parent_organisation, 
 from src.payments.routers.payments import router_payment, router_post_payment_list
 from src.payments.routers.extract_payments import router_extract_payments
 
+from src.agreement.routers.agreements import router_agreement
+
 
 app = FastAPI(
     title="Pravilo_CRM"
@@ -176,6 +178,9 @@ app.include_router(router_report_for_investor)
 app.include_router(router_payment)
 app.include_router(router_post_payment_list)
 app.include_router(router_extract_payments)
+
+# Для agreement
+app.include_router(router_agreement)
 
 
 origins = [

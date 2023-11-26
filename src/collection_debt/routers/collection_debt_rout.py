@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.collection_debt.models import *
 from src.references.models import ref_rosp, ref_bank, ref_pfr, ref_type_department
-from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all, get_collection_debt_1
+from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all, get_collection_debt_1, get_collection_debt_2, get_collection_debt_3
 
 
 
@@ -71,6 +71,10 @@ async def get_collection_debt(page: int, filter_id: int = None, credit_id: int =
     try:
         if filter_id == 1:
             coll_deb_set = await get_collection_debt_1(data, session)
+        elif filter_id == 2:
+            coll_deb_set = await get_collection_debt_2(data, session)
+        elif filter_id == 3:
+            coll_deb_set = await get_collection_debt_3(data, session)
         else:
             coll_deb_set = await get_collection_debt_all(data, session)
 

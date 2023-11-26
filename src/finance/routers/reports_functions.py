@@ -24,7 +24,6 @@ async def get_revenue(data,  session):
 
     if cession_id:
         cession_query = await session.execute(select(cession).where(cession.c.id == int(cession_id)))
-
     else:
         cession_query = await session.execute(select(cession))
 
@@ -42,25 +41,6 @@ async def get_revenue(data,  session):
             else:
                 summa_query = await session.execute(select(func.sum(payment.c.summa)).
                                                     filter(and_(payment.c.date >= date_1, payment.c.date <= date_2, payment.c.credit_id.in_(credits_id_list))))
-
-            summa = summa_query.scalar()
-
-            if summa:
-                summa_revenue = round(summa / 100, 2)
-            else:
-                summa_revenue = 0
-
-            data_revenue.append({
-                "cession_id": cession_id,
-                "cession_name": cession_name,
-                "summa_revenue": summa_revenue,
-            })
-        else:
-            if date_1 == None:
-                summa_query = await session.execute(select(func.sum(payment.c.summa)))
-            else:
-                summa_query = await session.execute(select(func.sum(payment.c.summa)).
-                                                    filter(and_(payment.c.date >= date_1, payment.c.date <= date_2)))
 
             summa = summa_query.scalar()
 
@@ -118,6 +98,7 @@ async def get_expenses_cession(data,  session):
     date_1 = data['date_1']
     date_2 = data['date_2']
     cession_id = data['cession_id']
+    common_cession_id = 33
 
     if date_2 is None:
         date_2 = date_1
@@ -142,14 +123,15 @@ async def get_expenses_cession(data,  session):
         coefficient_cession = await get_coefficient_cession(cession_id,  session)
 
         data_expenses = []
+        total_summa_exp = 0
         for category in expenses_category:
             expenses_cat_id: int = category.id
             expenses_name = category.name
 
             if date_1:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id, expenses.c.date >= date_1, expenses.c.date <= date_2)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id == common_cession_id, expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id, expenses.c.date >= date_1, expenses.c.date <= date_2)))
             else:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id == common_cession_id, expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id)))
 
             summa_exp_category = 0
             for item_exp in expenses_query.mappings().all():
@@ -163,6 +145,8 @@ async def get_expenses_cession(data,  session):
                     summa_exp = item_exp.summa / 100 * coefficient_cession
                     summa_exp_category += summa_exp
 
+            total_summa_exp += summa_exp_category
+
             data_expenses.append({'expenses_name': expenses_name,
                                   'summa_exp_category': round(summa_exp_category, 2)})
 
@@ -170,6 +154,39 @@ async def get_expenses_cession(data,  session):
             "cession_id": cession_id,
             "cession_name": cession_name,
             "data_expenses": data_expenses,
+            "total_summa_exp": total_summa_exp
         })
 
     return cession_expenses
+
+
+'''
+Функция расчета Чистой прибыли по cession_id
+'''
+async def get_profit_cession(data,  session):
+
+    revenue_cession = await get_revenue(data,  session)
+
+    profit = []
+    for item in revenue_cession:
+        summa_revenue = item['summa_revenue']
+        cession_id = item['cession_id']
+
+        data_expenses = {
+            "cession_id": cession_id,
+            "date_1": data['date_1'],
+            "date_2": data['date_2'],
+        }
+
+        expenses_cession = await get_expenses_cession(data_expenses,  session)
+        summa_expenses = expenses_cession[0]['total_summa_exp']
+
+        profit_cession = round(summa_revenue - summa_expenses, 2)
+
+        profit.append({
+            "cession_id": cession_id,
+            "cession_name": item['cession_name'],
+            "profit_cession": profit_cession,
+        })
+
+    return profit

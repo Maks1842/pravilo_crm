@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert, func, distinct, update, and_, desc
 
 from src.database import get_async_session
-from src.finance.routers.reports_functions import get_revenue, get_expenses_cession
+from src.finance.routers.reports_functions import get_revenue, get_expenses_cession, get_profit_cession
 from src.debts.models import cession
 
 
@@ -17,7 +17,7 @@ router_report_parent_organisation = APIRouter(
 @router_report_parent_organisation.post("/")
 async def report_parent_organisation(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    # test_result = await get_coefficient_cession(data_json, session)
+    # test_result = await get_profit_cession(data_json, session)
     # return test_result
 
 
@@ -111,11 +111,11 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
 
 
 # data_json: {
-#     "dates_1": None,
-#     "dates_2": None,
+#     "date_1": None,
+#     "date_2": None,
 #     "cession_id_list": [],
 #     "profit_check": True,
 #     "statistic_check": False,
 # }
 
-# {"dates_1": null,"dates_2": null,"cession_id": null,"profit_check": true,"statistic_check": false}
+# {"date_1": null,"date_2": null,"cession_id": null,"profit_check": true,"statistic_check": false}

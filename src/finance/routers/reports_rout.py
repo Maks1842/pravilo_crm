@@ -17,8 +17,8 @@ router_report_parent_organisation = APIRouter(
 @router_report_parent_organisation.post("/")
 async def report_parent_organisation(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    # test_result = await get_profit_cession(data_json, session)
-    # return test_result
+    test_result = await get_profit_cession(data_json, session)
+    return test_result
 
 
 

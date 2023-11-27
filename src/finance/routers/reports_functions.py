@@ -65,7 +65,10 @@ async def get_revenue(data,  session):
 '''
 async def get_coefficient_cession(cession_id: int,  session):
 
-    total_credit_query = await session.execute(select(func.count(distinct(credit.c.id)).filter(credit.c.parent_id.is_(None))))
+    status_cd = 7
+
+    total_credit_query = await session.execute(select(func.count(distinct(credit.c.id)).filter(and_(credit.c.parent_id.is_(None),
+                                                                                                    credit.c.status_cd_id != status_cd))))
     total_credit = total_credit_query.scalar()
 
     # cession_query = await session.execute(select(cession))
@@ -73,7 +76,9 @@ async def get_coefficient_cession(cession_id: int,  session):
     # coefficient_data = []
     # for item in cession_query.mappings().all():
     #     cession_id: int = item.id
-    cession_number_credit_query = await session.execute(select(func.count(distinct(credit.c.id)).filter(and_(credit.c.cession_id == cession_id), credit.c.parent_id.is_(None))))
+    cession_number_credit_query = await session.execute(select(func.count(distinct(credit.c.id)).filter(and_(credit.c.cession_id == cession_id,
+                                                                                                             credit.c.parent_id.is_(None),
+                                                                                                             credit.c.status_cd_id != status_cd))))
     cession_number_credit = cession_number_credit_query.scalar()
 
     coefficient_cession = round(cession_number_credit / total_credit, 2)
@@ -98,7 +103,6 @@ async def get_expenses_cession(data,  session):
     date_1 = data['date_1']
     date_2 = data['date_2']
     cession_id = data['cession_id']
-    common_cession_id = 33
 
     if date_2 is None:
         date_2 = date_1
@@ -129,9 +133,9 @@ async def get_expenses_cession(data,  session):
             expenses_name = category.name
 
             if date_1:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id == common_cession_id, expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id, expenses.c.date >= date_1, expenses.c.date <= date_2)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id, expenses.c.date >= date_1, expenses.c.date <= date_2)))
             else:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id == common_cession_id, expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id)))
 
             summa_exp_category = 0
             for item_exp in expenses_query.mappings().all():

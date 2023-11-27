@@ -7,7 +7,9 @@ from src.finance.models import ref_expenses_category, expenses
 from src.debts.models import cession
 
 import math
-from datetime import datetime
+from datetime import datetime, date
+from src.finance.routers.reports_functions import get_coefficient_cession
+
 
 
 # Получить/добавить Категории расходов
@@ -213,11 +215,48 @@ async def add_expenses(data_json: dict, session: AsyncSession = Depends(get_asyn
 
     req_data = data_json['data_json']
 
-    date = None
-    summa = None
+    if req_data['cession_id'] is None:
+        cession_query = await session.execute(select(cession.c.id))
+
+        for item in cession_query.mappings().all():
+            cession_id: int = item['id']
+
+            coefficient_cession = await get_coefficient_cession(cession_id,  session)
+            summa = int(float(req_data['summa']) * coefficient_cession)
+
+            if summa > 0:
+
+                data = {
+                    "id": req_data["id"],
+                    "date": req_data['date'],
+                    "summa": summa,
+                    "expenses_category_id": req_data['expenses_category_id'],
+                    "payment_purpose": req_data['payment_purpose'],
+                    "cession_id": cession_id,
+                }
+
+                answer = await save_expenses(data, session)
+                if answer['status'] == 'error':
+                    return answer
+
+        result = {
+            'status': 'success',
+            'data': None,
+            'details': 'Расход успешно распределен по Портфелям и сохранен'
+        }
+
+    else:
+        result = await save_expenses(req_data, session)
+
+    return result
+
+
+async def save_expenses(req_data, session):
+    date_exp = date.today()
+    summa = 0
 
     if req_data['date'] is not None:
-        date = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
+        date_exp = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
 
     if req_data['summa'] is not None:
         summa = int(float(req_data['summa']) * 100)
@@ -225,7 +264,7 @@ async def add_expenses(data_json: dict, session: AsyncSession = Depends(get_asyn
 
     try:
         data = {
-            "date": date,
+            "date": date_exp,
             "summa": summa,
             "expenses_category_id": req_data['expenses_category_id'],
             "payment_purpose": req_data['payment_purpose'],

@@ -277,6 +277,9 @@ async def calculate_and_post_balance(credit_id: int, session):
     summa_query = await session.execute(select(func.sum(payment.c.summa)).where(payment.c.credit_id == credit_id))
     summa_all = summa_query.scalar()
 
+    if summa_all is None:
+        summa_all = 0
+
     if credit_set.summa_by_cession:
         balance = credit_set.summa_by_cession - summa_all
     else:
@@ -302,7 +305,6 @@ async def calculate_and_post_balance(credit_id: int, session):
         await session.execute(post_data)
         await session.commit()
     except Exception as ex:
-        print(f'{ex=}')
         return {
             "status": "error",
             "data": None,

@@ -1,5 +1,5 @@
 import math
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, and_
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.collection_debt.models import *
-from src.collection_debt.schemas import EDocCreate
+from src.payments.routers.payments import calculate_and_post_balance
 
 
 
@@ -40,7 +40,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                 status_id = None
                 summa_debt_decision = 0
                 state_duty = 0
-                date = None
+                date_ed = None
                 date_of_receipt_ed = None
                 date_decision = None
                 date_entry_force = None
@@ -83,7 +83,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     status_id = status_ed.id
 
                 if item.date is not None:
-                    date = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
+                    date_ed = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
                 if item.date_of_receipt_ed is not None:
                     date_of_receipt_ed = datetime.strptime(str(item.date_of_receipt_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
                 if item.date_decision is not None:
@@ -98,7 +98,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
                     'type_ed': type_ed_name,
                     'type_ed_id': type_ed_id,
                     'number': item.number,
-                    'date': date,
+                    'date': date_ed,
                     'case_number': item.case_number,
                     'date_of_receipt_ed': date_of_receipt_ed,
                     'date_decision': date_decision,
@@ -130,9 +130,7 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
 @router_ed_debtor.post("/")
 async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = data_json['data_json']
-
-    date = None
+    date_ed = None
     date_of_receipt_ed = None
     date_decision = None
     succession = None
@@ -140,51 +138,54 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
     summa_debt_decision = None
     state_duty = None
 
-    if req_data['summa_debt_decision'] is not None:
-        summa_debt_decision = int(float(req_data["summa_debt_decision"]) * 100)
-    if req_data['state_duty'] is not None:
-        state_duty = int(float(req_data["state_duty"]) * 100)
+    credit_id = data_json["credit_id"]
+    ed_id = data_json["id"]
 
-    if req_data['date'] is not None:
-        date = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
-    if req_data['date_of_receipt_ed'] is not None:
-        date_of_receipt_ed = datetime.strptime(req_data['date_of_receipt_ed'], '%Y-%m-%d').date()
-    if req_data['date_decision'] is not None:
-        date_decision = datetime.strptime(req_data['date_decision'], '%Y-%m-%d').date()
-    if req_data['succession'] is not None:
-        succession = datetime.strptime(req_data['succession'], '%Y-%m-%d').date()
-    if req_data['date_entry_force'] is not None:
-        date_entry_force = datetime.strptime(req_data['date_entry_force'], '%Y-%m-%d').date()
+    if data_json['summa_debt_decision'] is not None:
+        summa_debt_decision = int(float(data_json["summa_debt_decision"]) * 100)
+    if data_json['state_duty'] is not None:
+        state_duty = int(float(data_json["state_duty"]) * 100)
+
+    if data_json['date_decision'] is not None:
+        date_ed = datetime.strptime(data_json['date_decision'], '%Y-%m-%d').date()
+    if data_json['date_of_receipt_ed'] is not None:
+        date_of_receipt_ed = datetime.strptime(data_json['date_of_receipt_ed'], '%Y-%m-%d').date()
+    if data_json['date_decision'] is not None:
+        date_decision = datetime.strptime(data_json['date_decision'], '%Y-%m-%d').date()
+    if data_json['succession'] is not None:
+        succession = datetime.strptime(data_json['succession'], '%Y-%m-%d').date()
+    if data_json['date_entry_force'] is not None:
+        date_entry_force = datetime.strptime(data_json['date_entry_force'], '%Y-%m-%d').date()
 
     try:
         data = {
-            "number": req_data["number"],
-            "date": date,
-            "case_number": req_data["case_number"],
+            "number": data_json["number"],
+            "date": date_ed,
+            "case_number": data_json["case_number"],
             "date_of_receipt_ed": date_of_receipt_ed,
             "date_decision": date_decision,
-            "type_ed_id": req_data["type_ed_id"],
-            "status_ed_id": req_data['status_ed_id'],
-            "credit_id": req_data["credit_id"],
-            "user_id": req_data["user_id"],
+            "type_ed_id": data_json["type_ed_id"],
+            "status_ed_id": data_json['status_ed_id'],
+            "credit_id": credit_id,
+            "user_id": data_json["user_id"],
             "summa_debt_decision": summa_debt_decision,
             "state_duty": state_duty,
             "succession": succession,
             "date_entry_force": date_entry_force,
-            "claimer_ed_id": req_data['claimer_ed_id'],
-            "tribunal_id": req_data["tribunal_id"],
-            "comment": req_data["comment"],
+            "claimer_ed_id": data_json['claimer_ed_id'],
+            "tribunal_id": data_json["tribunal_id"],
+            "comment": data_json["comment"],
         }
-        if req_data["id"]:
-            ed_id = int(req_data["id"])
 
-            # Не срабатывает исключение, если нет указанного id в БД
-            post_data = update(executive_document).where(executive_document.c.id == ed_id).values(data)
+        if ed_id:
+            post_data = update(executive_document).where(executive_document.c.id == int(ed_id)).values(data)
         else:
             post_data = insert(executive_document).values(data)
 
         await session.execute(post_data)
         await session.commit()
+
+        await calculate_and_post_balance(credit_id, session)
 
         return {
             'status': 'success',

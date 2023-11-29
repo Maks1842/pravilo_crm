@@ -1,5 +1,5 @@
 import math
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
-from src.tasks.models import task
 from src.legal_work.models import legal_work
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
 from src.references.models import ref_legal_docs, ref_result_statement, ref_tribunal
@@ -38,35 +37,35 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
         dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
 
     try:
-        if credit_id == None and dates1:
-            legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.date_session_1 >= dates1, legal_work.c.date_session_1 <= dates2)).
-                                               order_by(desc(legal_work.c.legal_number)).
-                                               limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(func.count(distinct(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.date_session_1 == dates1))))
-        elif credit_id and dates1 == None:
+        if credit_id:
             legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)).
                                                 order_by(desc(legal_work.c.legal_number)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(func.count(distinct(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id))))
-        elif cession_id and dates1 == None:
+            total_item_query = await session.execute(select(func.count(distinct(legal_work.c.id)).filter(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id))))
+        elif credit_id == None and cession_id == None and dates1:
+            legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.date_result_1 >= dates1, legal_work.c.date_result_1 <= dates2)).
+                                               order_by(desc(legal_work.c.legal_number)).
+                                               limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(legal_work.c.id)).filter(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.date_result_1 >= dates1, legal_work.c.date_result_1 <= dates2))))
+        elif credit_id == None and cession_id and dates1 == None:
             credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == cession_id))
             credits_id_list = credits_id_query.scalars().all()
             legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list))).
                                                 order_by(desc(legal_work.c.legal_number)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(func.count(distinct(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list)))))
-        elif cession_id and dates1:
+            total_item_query = await session.execute(select(func.count(distinct(legal_work.c.id)).filter(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list)))))
+        elif credit_id == None and cession_id and dates1:
             credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == cession_id))
             credits_id_list = credits_id_query.scalars().all()
-            legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list), legal_work.c.date_session_1 >= dates1, legal_work.c.date_session_1 <= dates2)).
+            legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list), legal_work.c.date_result_1 >= dates1, legal_work.c.date_result_1 <= dates2)).
                                                 order_by(desc(legal_work.c.legal_number)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(func.count(distinct(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list), legal_work.c.date_session_1 >= dates1, legal_work.c.date_session_1 <= dates2))))
+            total_item_query = await session.execute(select(func.count(distinct(legal_work.c.id)).filter(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id.in_(credits_id_list), legal_work.c.date_result_1 >= dates1, legal_work.c.date_result_1 <= dates2))))
         else:
             legal_query = await session.execute(select(legal_work).where(legal_work.c.legal_section_id == legal_section_id).
                                                 order_by(desc(legal_work.c.legal_number)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(func.count(distinct(legal_work.c.legal_section_id == legal_section_id)))
+            total_item_query = await session.execute(select(func.count(distinct(legal_work.c.id)).filter(legal_work.c.legal_section_id == legal_section_id)))
 
         total_item = total_item_query.scalar()
         num_page_all = int(math.ceil(total_item / per_page))
@@ -211,10 +210,7 @@ async def get_tribunal_write(page: int, credit_id: int = None, cession_id: int =
 
 
 @router_tribunal_write.post("/")
-async def add_tribunal_write(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
-
+async def add_tribunal_write(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     if data['credit_id'] == None:
         return {

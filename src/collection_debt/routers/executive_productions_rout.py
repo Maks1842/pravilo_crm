@@ -18,6 +18,7 @@ router_ep_debtor = APIRouter(
 # Получить информацию об ИП
 @router_ep_debtor.get("/")
 async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+
     try:
         if credit_id:
             query = await session.execute(select(executive_productions).where(executive_productions.c.credit_id == credit_id).
@@ -124,9 +125,7 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
 
 # Изменить данные об ИП
 @router_ep_debtor.post("/")
-async def add_ep_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
+async def add_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     date_on = None
     date_end = None

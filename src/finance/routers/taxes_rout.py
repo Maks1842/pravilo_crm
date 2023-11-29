@@ -45,10 +45,10 @@ async def get_calculator_taxes(data_json: dict, session: AsyncSession = Depends(
     if data_json['checkboxTax'] and summa:
         summa_taxes = round(summa * taxes_percent / 100 / 100, 2)
 
-    if data_json['agencyFee'] and summa:
+    if data_json['checkboxAgent'] and summa:
         summa_agency = round(summa * float(agency_percent) / 100 / 100, 2)
 
-    result = {'summaTax': summa_taxes, 'summaAgent': summa_agency, 'cession_id': cession_id, 'month': month, 'month_id': month_id, 'year': year}
+    result = {'summaTax': summa_taxes, 'summaAgent': summa_agency, 'cession_id': cession_id, 'month': month, 'month_id': month_id, 'year': year, 'agency_percent': agency_percent}
 
     return result
 
@@ -107,7 +107,7 @@ async def add_taxes(data_json: dict, session: AsyncSession = Depends(get_async_s
                 return {
                     "status": "error",
                     "data": None,
-                    "details": f'Агентское вознаграждение за {reg_data["month"]} {reg_data["year"]} г. уже существует'
+                    "details": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г. уже существует'
                 }
             else:
                 data = {
@@ -115,7 +115,7 @@ async def add_taxes(data_json: dict, session: AsyncSession = Depends(get_async_s
                     "date": date_join,
                     "summa": reg_data['summaAgent'],
                     "expenses_category_id": 8,
-                    "payment_purpose": f'Агентское вознаграждение за {reg_data["month"]} {reg_data["year"]} г.',
+                    "payment_purpose": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
                 }
 

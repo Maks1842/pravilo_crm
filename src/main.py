@@ -16,6 +16,9 @@ from src.collection_debt.routers.executive_document_rout import router_ed_debtor
 from src.collection_debt.routers.executive_productions_rout import router_ep_debtor, router_ep_number
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
+from src.legal_work.routers.appeal_rout import router_appeal
+from src.legal_work.routers.claim_rout import router_claim
+from src.legal_work.routers.tribunal_208_rout import router_tribunal_208
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
 from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
 
@@ -124,6 +127,9 @@ app.include_router(router_ep_number)
 # Для legal_work
 app.include_router(router_tribunal_write)
 app.include_router(router_succession)
+app.include_router(router_appeal)
+app.include_router(router_claim)
+app.include_router(router_tribunal_208)
 app.include_router(router_duty_legal_calculation)
 app.include_router(router_calculation_debt)
 app.include_router(router_calculation_annuity_payment)

@@ -49,8 +49,6 @@ async def add_expenses_category(data_json: dict, session: AsyncSession = Depends
 
     req_data = data_json['data_json']
 
-    print(req_data)
-
     try:
         data = {
             "name": req_data['expenses_category'],
@@ -221,13 +219,14 @@ async def add_expenses(data_json: dict, session: AsyncSession = Depends(get_asyn
         for item in cession_query.mappings().all():
             cession_id: int = item['id']
 
-            coefficient_cession = await get_coefficient_cession(cession_id,  session)
+            data_coefficient = await get_coefficient_cession(cession_id,  session)
+            coefficient_cession = data_coefficient['coefficient_cession']
             summa = int(float(req_data['summa']) * coefficient_cession)
 
             if summa > 0:
 
                 data = {
-                    "id": req_data["id"],
+                    "id": None,
                     "date": req_data['date'],
                     "summa": summa,
                     "expenses_category_id": req_data['expenses_category_id'],

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, func, distinct, update, and_, desc
+from sqlalchemy import select
 
 from src.database import get_async_session
-from src.finance.routers.reports_functions import get_revenue, get_expenses_cession, get_profit_cession
+from src.finance.routers.reports_functions import get_revenue, get_statistic
 from src.debts.models import cession
+from src.routers_helper.data_to_excel.statistic_to_excel import statistic_to_excel
 
 
 # Получить отчеты по головной организации
@@ -17,10 +18,8 @@ router_report_parent_organisation = APIRouter(
 @router_report_parent_organisation.post("/")
 async def report_parent_organisation(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    test_result = await get_profit_cession(data_json, session)
-    return test_result
-
-
+    # test_result = await get_statistic(data_json, session)
+    # return test_result
 
     profit_check = data_json['profit_check']
     statistic_check = data_json['statistic_check']
@@ -34,15 +33,15 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
 
     if profit_check:
         try:
-            result = await get_revenue(data_json, session)
+            # result = await get_revenue(data_json, session)
 
-            return result
+            print('Заглушка')
 
-            # return {
-            #     'status': 'success',
-            #     'data': None,
-            #     'details': f'Успешною {result}'
-            # }
+            return {
+                'status': 'success',
+                'data': None,
+                'details': f'Данная функция в разработке'
+            }
         except Exception as ex:
             return {
                 "status": "error",
@@ -51,23 +50,17 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
             }
     elif statistic_check:
         try:
-            result = await get_expenses_cession(data_json, session)
+            data_statistic = await get_statistic(data_json, session)
+
+            result = statistic_to_excel(data_statistic)
 
             return result
-            # return {
-            #     'status': 'success',
-            #     'data': None,
-            #     'details': f'Успешною {result}'
-            # }
         except Exception as ex:
             return {
                 "status": "error",
                 "data": None,
                 "details": ex
             }
-
-
-
 
 # Получить отчеты для Инвестора
 router_report_for_investor = APIRouter(
@@ -95,12 +88,13 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
     if profit_check:
 
         try:
-            result = await get_revenue(data_json, session)
+            # result = await get_revenue(data_json, session)
+            print('Заглушка')
 
             return {
                 'status': 'success',
                 'data': None,
-                'details': f'Успешною {result}'
+                'details': f'Данная функция в разработке'
             }
         except Exception as ex:
             return {
@@ -118,4 +112,4 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
 #     "statistic_check": False,
 # }
 
-# {"date_1": null,"date_2": null,"cession_id": null,"profit_check": true,"statistic_check": false}
+# {"date_1": null,"date_2": null,"cession_id": null,"profit_check": false,"statistic_check": true}

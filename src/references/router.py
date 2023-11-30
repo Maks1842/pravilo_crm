@@ -27,7 +27,9 @@ async def get_status_cd(session: AsyncSession = Depends(get_async_session)):
 
             result.append({
                 "status_cd": item.name,
-                "value": {"status_cd_id": item.id},
+                "value": {"item_id": item.id,
+                          "model": 'credit',
+                          "field": 'status_cd_id'}
             })
 
         return result
@@ -149,7 +151,9 @@ async def get_status_ed(session: AsyncSession = Depends(get_async_session)):
 
             result.append({
                 "status_ed": item.name,
-                "value": {"status_ed_id": item.id},
+                "value": {"item_id": item.id,
+                          "model": 'executive_document',
+                          "field": 'status_ed_id'}
             })
 
         return result

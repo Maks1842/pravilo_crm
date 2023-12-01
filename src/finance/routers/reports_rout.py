@@ -5,7 +5,7 @@ from sqlalchemy import select
 from src.database import get_async_session
 from src.finance.routers.reports_functions import get_revenue, get_statistic
 from src.debts.models import cession
-from src.routers_helper.data_to_excel.statistic_to_excel import statistic_to_excel
+from src.routers_helper.data_to_excel.statistic_to_excel import statistic_to_excel_organisation, statistic_to_excel_investor
 
 
 # Получить отчеты по головной организации
@@ -29,7 +29,7 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
     if 'date_2' not in data_json:
         data_json["date_2"] = None
 
-    data_json["cession_id_list"] = []
+    data_json["cession_array"] = []
 
     if profit_check:
         try:
@@ -52,7 +52,7 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
         try:
             data_statistic = await get_statistic(data_json, session)
 
-            result = statistic_to_excel(data_statistic)
+            result = statistic_to_excel_organisation(data_statistic)
 
             return result
         except Exception as ex:
@@ -61,6 +61,7 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
                 "data": None,
                 "details": ex
             }
+
 
 # Получить отчеты для Инвестора
 router_report_for_investor = APIRouter(
@@ -76,8 +77,8 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
     statistic_check = data_json['statistic_check']
     lending_id: int = data_json['lending_id']
 
-    cession_id_query = await session.execute(select(cession.c.id).where(cession.c.lending_id == lending_id))
-    data_json["cession_id_list"] = cession_id_query.scalars().all()
+    cession_query = await session.execute(select(cession).where(cession.c.lending_id == lending_id))
+    data_json["cession_array"] = cession_query.mappings().all()
 
 
     if 'date_1' not in data_json:
@@ -96,6 +97,20 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
                 'data': None,
                 'details': f'Данная функция в разработке'
             }
+        except Exception as ex:
+            return {
+                "status": "error",
+                "data": None,
+                "details": ex
+            }
+
+    elif statistic_check:
+        try:
+            data_statistic = await get_statistic(data_json, session)
+
+            result = statistic_to_excel_investor(data_statistic)
+
+            return result
         except Exception as ex:
             return {
                 "status": "error",

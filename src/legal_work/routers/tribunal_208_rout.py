@@ -17,7 +17,7 @@ from src.references.models import ref_legal_docs, ref_result_statement, ref_trib
 
 
 
-# Получить/добавить СП
+# Получить/добавить 208
 router_tribunal_208 = APIRouter(
     prefix="/v1/Tribun208",
     tags=["LegalWork"]
@@ -79,17 +79,12 @@ async def get_tribunal_208(page: int, credit_id: int = None, cession_id: int = N
             legal_docs_id = None
             result_1 = ''
             result_1_id = None
-            summa_ed = None
-            summa_state_duty_result = None
-            summa_state_duty_claim = None
-            summa_result_2 = None
+            summa_claim = None
             date_session_1 = None
             date_result_1 = None
             date_incoming_ed = None
             date_entry_force = None
-            date_cancel_result = None
-            date_session_2 = None
-            date_result_2 = None
+            date_stop_case = None
             tribunal_1 = ''
             tribunal_1_id = None
             address_tribunal_1 = ''
@@ -125,14 +120,8 @@ async def get_tribunal_208(page: int, credit_id: int = None, cession_id: int = N
                 result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
                 result_1 = result_1_query.scalar()
 
-            if item.summa_ed is not None:
-                summa_ed = item.summa_ed / 100
-            if item.summa_state_duty_result is not None:
-                summa_state_duty_result = item.summa_state_duty_result / 100
-            if item.summa_state_duty_claim is not None:
-                summa_state_duty_claim = item.summa_state_duty_claim / 100
-            if item.summa_result_2 is not None:
-                summa_result_2 = item.summa_result_2 / 100
+            if item.summa_claim is not None:
+                summa_claim = item.summa_claim / 100
 
             if item.date_session_1 is not None:
                 date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
@@ -142,12 +131,8 @@ async def get_tribunal_208(page: int, credit_id: int = None, cession_id: int = N
                 date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
             if item.date_entry_force is not None:
                 date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_cancel_result is not None:
-                date_cancel_result = datetime.strptime(str(item.date_cancel_result), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_session_2 is not None:
-                date_session_2 = datetime.strptime(str(item.date_session_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_2 is not None:
-                date_result_2 = datetime.strptime(str(item.date_result_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_stop_case is not None:
+                date_stop_case = datetime.strptime(str(item.date_stop_case), '%Y-%m-%d').strftime("%d.%m.%Y")
 
             if item.tribunal_1_id is not None:
                 tribunal_1_id: int = item.tribunal_1_id
@@ -177,9 +162,7 @@ async def get_tribunal_208(page: int, credit_id: int = None, cession_id: int = N
                 "dateResult_1": date_result_1,
                 "result_1": result_1,
                 "result_1_id": result_1_id,
-                "summaED": summa_ed,
-                "summaStateDutyClaim": summa_state_duty_claim,
-                "summaStateDutyResult": summa_state_duty_result,
+                "summaClaim": summa_claim,
                 "dateIncomingED": date_incoming_ed,
                 "dateEntryIntoForce": date_entry_force,
                 "tribun_1": tribunal_1,
@@ -187,12 +170,8 @@ async def get_tribunal_208(page: int, credit_id: int = None, cession_id: int = N
                 "addressTribun_1": address_tribunal_1,
                 "emailTribun_1": email_tribunal_1,
                 "phoneTribun_1": phone_tribunal_1,
-                "dateCancelResult": date_cancel_result,
-                "dateSession_2": date_session_2,
-                "dateResult_2": date_result_2,
-                "summaResult_2": summa_result_2,
+                "dateStopCase": date_stop_case,
                 "comment": item.comment,
-                "tribun_2_id": None,
                 "gaspravosudie": gaspravosudie,
             })
 
@@ -218,42 +197,26 @@ async def add_tribunal_208(data: dict, session: AsyncSession = Depends(get_async
             "data": None,
             "details": f"Не выбран Должник и № Кредитного договора"
         }
+    date_session_1 = None
     date_result_1 = None
     date_entry_force = None
     date_incoming_ed = None
-    date_cancel_result = None
-    date_session_2 = None
-    date_result_2 = None
-    summa_ed = None
-    summa_state_duty_claim = None
-    summa_result_2 = None
+    date_stop_case = None
+    summa_claim = 0
 
+    if data['dateSession_1'] is not None:
+        date_session_1 = datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date()
     if data['dateResult_1'] is not None:
         date_result_1 = datetime.strptime(data['dateResult_1'], '%Y-%m-%d').date()
-
     if data['dateEntryIntoForce'] is not None:
         date_entry_force = datetime.strptime(data['dateEntryIntoForce'], '%Y-%m-%d').date()
-
     if data['dateIncomingED'] is not None:
         date_incoming_ed = datetime.strptime(data['dateIncomingED'], '%Y-%m-%d').date()
+    if data['dateStopCase'] is not None:
+        date_stop_case = datetime.strptime(data['dateStopCase'], '%Y-%m-%d').date()
 
-    if data['dateCancelResult'] is not None:
-        date_cancel_result = datetime.strptime(data['dateCancelResult'], '%Y-%m-%d').date()
-
-    if data['dateSession_2'] is not None:
-        date_session_2 = datetime.strptime(data['dateSession_2'], '%Y-%m-%d').date()
-
-    if data['dateResult_2'] is not None:
-        date_result_2 = datetime.strptime(data['dateResult_2'], '%Y-%m-%d').date()
-
-    if data['summaED'] is not None:
-        summa_ed = round(float(data['summaED']) * 100)
-
-    if data['summaStateDutyClaim'] is not None:
-        summa_state_duty_claim = round(float(data['summaStateDutyClaim']) * 100)
-
-    if data['summaResult_2'] is not None:
-        summa_result_2 = round(float(data['summaResult_2']) * 100)
+    if data['summaClaim'] is not None:
+        summa_claim = round(float(data['summaClaim']) * 100)
 
 
     case_id = data['id']
@@ -264,18 +227,14 @@ async def add_tribunal_208(data: dict, session: AsyncSession = Depends(get_async
                      "legal_section_id": data['legalSection_id'],
                      "number_case_1": data['numberCase_1'],
                      "legal_docs_id": data['legalDocs_id'],
-                     # "date_session_1": datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date(),
+                     "date_session_1": date_session_1,
                      "date_result_1": date_result_1,
                      "result_1_id": data['result_1_id'],
                      "date_entry_force": date_entry_force,
                      "tribunal_1_id": data['tribun_1_id'],
-                     "summa_ed": summa_ed,
-                     "summa_state_duty_claim": summa_state_duty_claim,
+                     "summa_claim": summa_claim,
                      "date_incoming_ed": date_incoming_ed,
-                     "date_cancel_result": date_cancel_result,
-                     "date_session_2": date_session_2,
-                     "date_result_2": date_result_2,
-                     "summa_result_2": summa_result_2,
+                     "date_stop_case": date_stop_case,
                      "comment": data['comment'],
                      "credit_id": data['credit_id'],
                      }

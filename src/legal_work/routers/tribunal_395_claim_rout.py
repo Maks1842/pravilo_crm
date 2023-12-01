@@ -17,15 +17,15 @@ from src.references.models import ref_legal_docs, ref_result_statement, ref_trib
 
 
 
-# Получить/добавить Иск
-router_claim = APIRouter(
-    prefix="/v1/Claim",
+# Получить/добавить 395 (Иск)
+router_tribun395_claim = APIRouter(
+    prefix="/v1/Tribun395Claim",
     tags=["LegalWork"]
 )
 
 
-@router_claim.get("/")
-async def get_claim(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+@router_tribun395_claim.get("/")
+async def get_tribun395_claim(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
 
@@ -197,8 +197,8 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
         }
 
 
-@router_claim.post("/")
-async def add_claim(data: dict, session: AsyncSession = Depends(get_async_session)):
+@router_tribun395_claim.post("/")
+async def add_tribun395_claim(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     if data['credit_id'] == None:
         return {

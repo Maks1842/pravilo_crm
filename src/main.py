@@ -19,6 +19,9 @@ from src.legal_work.routers.succession_rout import router_succession
 from src.legal_work.routers.appeal_rout import router_appeal
 from src.legal_work.routers.claim_rout import router_claim
 from src.legal_work.routers.tribunal_208_rout import router_tribunal_208
+from src.legal_work.routers.add_legal_claim_rout import router_add_legal_claim
+from src.legal_work.routers.tribunal_395_claim_rout import router_tribun395_claim
+from src.legal_work.routers.tribunal_395_write_rout import router_tribun395_write
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
 from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
 
@@ -47,7 +50,7 @@ from src.routers_helper.rout_admin.helper_helper import router_helper
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
 from src.finance.routers.reports_rout import router_report_parent_organisation, router_report_for_investor
-from src.finance.routers.taxes_rout import router_calculator_taxes, router_save_taxes
+from src.finance.routers.taxes_rout import router_calculator_taxes, router_save_taxes, router_save_agent_pay, router_save_loan_repay
 
 from src.payments.routers.payments import router_payment, router_post_payment_list
 from src.payments.routers.extract_payments import router_extract_payments
@@ -130,6 +133,9 @@ app.include_router(router_succession)
 app.include_router(router_appeal)
 app.include_router(router_claim)
 app.include_router(router_tribunal_208)
+app.include_router(router_add_legal_claim)
+app.include_router(router_tribun395_claim)
+app.include_router(router_tribun395_write)
 app.include_router(router_duty_legal_calculation)
 app.include_router(router_calculation_debt)
 app.include_router(router_calculation_annuity_payment)
@@ -182,6 +188,8 @@ app.include_router(router_report_parent_organisation)
 app.include_router(router_report_for_investor)
 app.include_router(router_calculator_taxes)
 app.include_router(router_save_taxes)
+app.include_router(router_save_agent_pay)
+app.include_router(router_save_loan_repay)
 
 # Для payment
 app.include_router(router_payment)

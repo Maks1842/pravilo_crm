@@ -17,15 +17,15 @@ from src.references.models import ref_legal_docs, ref_result_statement, ref_trib
 
 
 
-# Получить/добавить Иск
-router_claim = APIRouter(
-    prefix="/v1/Claim",
+# Получить/добавить Довзыскание (Иск)
+router_add_legal_claim = APIRouter(
+    prefix="/v1/AddLegalClaim",
     tags=["LegalWork"]
 )
 
 
-@router_claim.get("/")
-async def get_claim(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+@router_add_legal_claim.get("/")
+async def get_add_legal_claim(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
     per_page = 20
 
@@ -180,7 +180,6 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
                 "emailTribun_1": email_tribunal_1,
                 "phoneTribun_1": phone_tribunal_1,
                 "comment": item.comment,
-                "tribun_2_id": None,
                 "gaspravosudie": gaspravosudie,
             })
 
@@ -197,8 +196,8 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
         }
 
 
-@router_claim.post("/")
-async def add_claim(data: dict, session: AsyncSession = Depends(get_async_session)):
+@router_add_legal_claim.post("/")
+async def add_legal_claim(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     if data['credit_id'] == None:
         return {

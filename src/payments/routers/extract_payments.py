@@ -1,10 +1,7 @@
 import re
 import openpyxl
 import pandas as pd
-from fastapi import APIRouter, Depends, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.database import get_async_session
+from fastapi import APIRouter, UploadFile
 from src.config import path_main
 from src.payments.routers.re_pattern_pay import RePattern
 
@@ -18,7 +15,6 @@ router_extract_payments = APIRouter(
 )
 
 
-
 @router_extract_payments.post("/")
 async def extract_payments(file_object: UploadFile):
 
@@ -28,20 +24,19 @@ async def extract_payments(file_object: UploadFile):
 
     path_file = f'{path_main}/src/media/data/bank_records_file.xlsx'
 
-    extract_payments = payment_reader_xlsx(path_file)
+    extract_payments_list = payment_reader_xlsx(path_file)
 
     data_payment = []
     summa_pay = 0
     count_pay = 0
 
-    for pay in extract_payments:
+    for pay in extract_payments_list:
         credit_id = None
         credit_num = 'Отсутствует'
         count_pay += 1
         summa_pay += pay['payment']
 
         fio_split = pay['fio'].split()
-
 
         data_payment.append({
             "credit_id": credit_id,
@@ -55,13 +50,11 @@ async def extract_payments(file_object: UploadFile):
             "departmentPay": pay['department'],
         })
 
-
     result = {'data_payment': data_payment,
               'summa_all': summa_pay / 100,
               'count_all': count_pay}
 
     return result
-
 
 
 def payment_reader_xlsx(path_file):
@@ -75,7 +68,6 @@ def payment_reader_xlsx(path_file):
                 result = refund_payments_from_cedent(sheet)
 
                 return result
-
 
 
 def refund_payments_from_cedent(sheet):

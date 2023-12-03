@@ -24,6 +24,7 @@ from src.legal_work.routers.tribunal_395_claim_rout import router_tribun395_clai
 from src.legal_work.routers.tribunal_395_write_rout import router_tribun395_write
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
 from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
+from src.legal_work.routers.helper_legal_work import router_get_legal_number
 
 from src.tasks.router import router_task, router_task_all
 
@@ -37,6 +38,8 @@ from src.directory_docs.router import router_dir_cession, router_docs_cession, r
 
 from src.mail.routers.incoming_mail import router_incoming_mail
 from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
+
+from src.reader.routers.extract_tribunal_writ import router_extract_tribunal_writ
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_creating_docs.generator_txt import router_generator_txt
@@ -139,6 +142,7 @@ app.include_router(router_tribun395_write)
 app.include_router(router_duty_legal_calculation)
 app.include_router(router_calculation_debt)
 app.include_router(router_calculation_annuity_payment)
+app.include_router(router_get_legal_number)
 
 # Для routers_task
 app.include_router(router_task)
@@ -168,6 +172,9 @@ app.include_router(router_rename_file)
 app.include_router(router_incoming_mail)
 app.include_router(router_outgoing_mail)
 app.include_router(router_mail_to_excel)
+
+# Для reader
+app.include_router(router_extract_tribunal_writ)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

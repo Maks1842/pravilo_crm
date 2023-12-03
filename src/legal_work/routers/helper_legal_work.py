@@ -1,5 +1,33 @@
-from sqlalchemy import select, insert, update, desc
+from fastapi import APIRouter, Depends
+from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.database import get_async_session
 from src.legal_work.models import legal_work
+
+
+# Получить уникальные номера судебных кейсов
+router_get_legal_number = APIRouter(
+    prefix="/v1/GetLegalNumbers",
+    tags=["LegalWork"]
+)
+
+
+@router_get_legal_number.get("/")
+async def get_legal_number(credit_id: int = None, legal_section_id: int = None, session: AsyncSession = Depends(get_async_session)):
+
+    legal_numbers = []
+    if credit_id:
+        legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
+
+        for item in legal_query.mappings().all():
+            legal_numbers.append(item.legal_number)
+    else:
+        legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
+
+        for item in legal_query.mappings().all():
+            legal_numbers.append(item.legal_number)
+
+    return legal_numbers
 
 
 async def number_case_legal(data, session):

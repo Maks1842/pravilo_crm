@@ -7,7 +7,7 @@ from src.debts.models import credit
 from src.payments.models import payment
 from src.finance.models import expenses
 from src.finance.routers.expenses_rout import save_expenses
-from src.store_id import taxes_percent, tax_exp_category_id, agent_exp_category_id, loan_repay_exp_category_id
+from src.store_value import taxes_percent, tax_exp_category_id, agent_exp_category_id, loan_repay_exp_category_id
 
 from datetime import datetime
 

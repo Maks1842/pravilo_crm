@@ -15,3 +15,5 @@ section_card_id_cd = 2
 section_card_id_tribun = 3
 section_card_id_realty = 4
 section_card_id_pass = 5
+
+test = 1

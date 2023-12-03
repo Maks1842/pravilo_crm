@@ -166,6 +166,8 @@ async def get_expenses_cession(data,  session):
 '''
 Функция расчета Чистой прибыли по cession_id
 '''
+
+
 async def get_profit_cession(data,  session):
 
     revenue_cession = await get_revenue(data,  session)
@@ -198,6 +200,8 @@ async def get_profit_cession(data,  session):
 '''
 Основная функция Статистика в разрезе Портфелей(Цессий)
 '''
+
+
 async def get_statistic(data,  session):
 
     date_1 = data['date_1']
@@ -281,7 +285,7 @@ async def get_statistic(data,  session):
         credits_id_list = credits_id_query.scalars().all()
 
         if len(credits_id_list) > 0:
-            if date_1 == None:
+            if date_1 is None:
                 summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
             else:
                 summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= date_1, payment.c.date <= date_2, payment.c.credit_id.in_(credits_id_list))))
@@ -290,7 +294,7 @@ async def get_statistic(data,  session):
             if summa_pay:
                 summa_pay_cess = round(summa_pay / 100, 2)
 
-            if date_1 == None:
+            if date_1 is None:
                 summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.cession_id == cession_id))
             else:
                 summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.cession_id == cession_id)))
@@ -316,10 +320,10 @@ async def get_statistic(data,  session):
         category_id: int = item_cat.id
         category = item_cat.name
 
-        if date_1 == None:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.expenses_category_id == category_id))
+        if date_1 is None:
+            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.expenses_category_id == category_id, expenses.c.cession_id == cession_id))
         else:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.expenses_category_id == category_id)))
+            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.expenses_category_id == category_id, expenses.c.cession_id == cession_id)))
         category_summa_expenses = category_summa_expenses_query.scalar()
         if category_summa_expenses:
             category_summa = round(category_summa_expenses / 100, 2)

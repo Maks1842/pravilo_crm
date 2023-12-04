@@ -621,6 +621,7 @@ async def get_credit_debtor(fragment: str, session: AsyncSession = Depends(get_a
 
             value_id = {"credit_id": credit_item.id,
                         "debtor_id": debtor_item.id,
+                        "number_cd": number,
                         "item_id": debtor_item.id,
                         "model": 'credit',
                         "field": 'debtor_id'}

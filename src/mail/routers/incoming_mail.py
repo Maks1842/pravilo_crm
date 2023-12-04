@@ -140,81 +140,82 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
 
 
 @router_incoming_mail.post("/")
-async def add_incoming_mail(new_mail: dict, session: AsyncSession = Depends(get_async_session)):
+async def add_incoming_mail(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    result = await save_incoming_mail(new_mail, session)
+    mail_list = data_json['data_json']
+
+    result = await save_incoming_mail(mail_list, session)
 
     return result
 
 
-async def save_incoming_mail(reg_data, session):
+async def save_incoming_mail(list_data, session):
 
-    data = reg_data['new_mail']
+    for data in list_data:
+        if data['addresser'] is None:
+            return {
+                "status": "error",
+                "data": None,
+                "details": f"Не указано От кого"
+            }
 
-    if data['addresser'] == None:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Не указано От кого"
-        }
+        if data['legal_docs_id'] is None:
+            return {
+                "status": "error",
+                "data": None,
+                "details": f"Не указано наименование документа"
+            }
 
-    if data['legal_docs_id'] == None:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Не указано наименование документа"
-        }
-
-    if data['date'] == None:
-        current_date = date.today()
-    else:
-        current_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-
-    if data['sequence_num'] == None:
-        sequence_num = 1
-        barcode = '01' + '00000001'
-        try:
-            mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.sequence_num)))
-            mail_set = mail_query.mappings().fetchone()
-            sequence_num = mail_set.sequence_num + 1
-
-            if len(mail_set['barcode']) > 0:
-                barcode_split = mail_set['barcode'][2:]
-                barcode_body = str(int(barcode_split) + 1).zfill(8)
-                barcode = f'01{barcode_body}'
-        except:
-            pass
-    else:
-        sequence_num = data['sequence_num']
-        barcode = data['barcode']
-
-    try:
-        data_mail = {
-                "sequence_num": sequence_num,
-                "case_number": data['case_number'],
-                "credit_id": data['credit_id'],
-                "barcode": barcode,
-                "date": current_date,
-                "addresser": data['addresser'],
-                "name_doc_id": data['legal_docs_id'],
-                "resolution_id": data['resolution_id'],
-                "comment": data['comment'],
-                }
-
-        if data["id"]:
-            mail_id: int = data["id"]
-            post_data = update(mail_in).where(mail_in.c.id == mail_id).values(data_mail)
+        if data['date'] is None:
+            current_date = date.today()
         else:
-            post_data = insert(mail_in).values(data_mail)
+            current_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
 
-        await session.execute(post_data)
-        await session.commit()
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении Входящей почты. {ex}"
-        }
+        if data['sequence_num'] is None:
+            sequence_num = 1
+            barcode = '01' + '00000001'
+            try:
+                mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.sequence_num)))
+                mail_set = mail_query.mappings().fetchone()
+                sequence_num = mail_set.sequence_num + 1
+
+                if len(mail_set['barcode']) > 0:
+                    barcode_split = mail_set['barcode'][2:]
+                    barcode_body = str(int(barcode_split) + 1).zfill(8)
+                    barcode = f'01{barcode_body}'
+            except:
+                pass
+        else:
+            sequence_num = data['sequence_num']
+            barcode = data['barcode']
+
+        try:
+            data_mail = {
+                    "sequence_num": sequence_num,
+                    "case_number": data['case_number'],
+                    "credit_id": data['credit_id'],
+                    "barcode": barcode,
+                    "date": current_date,
+                    "addresser": data['addresser'],
+                    "name_doc_id": data['legal_docs_id'],
+                    "resolution_id": data['resolution_id'],
+                    "comment": data['comment'],
+                    }
+
+            if data["id"]:
+                mail_id: int = data["id"]
+                post_data = update(mail_in).where(mail_in.c.id == mail_id).values(data_mail)
+            else:
+                post_data = insert(mail_in).values(data_mail)
+
+            await session.execute(post_data)
+            await session.commit()
+        except Exception as ex:
+            return {
+                "status": "error",
+                "data": None,
+                "details": f"Ошибка при добавлении/изменении Входящей почты. {ex}"
+            }
 
     return {
         'status': 'success',

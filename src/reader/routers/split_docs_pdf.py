@@ -28,16 +28,16 @@ def numbers_page(file, re_pattern):
     return numbers_page
 
 
-def split_into_pages(type_doc, path_file, re_pattern):
-    path_result = f'{path_main}/src/media/reader/result'
+def split_into_pages(type_doc, path_file, re_pattern, directory_result):
+    # path_result = f'{path_main}/src/media/reader/result'
     list_page = numbers_page(path_file, re_pattern)
 
     if len(list_page) == 0:
         return 'Error'
 
     current_date = datetime.now() + timedelta(hours=3)
-    directory_result = f'{path_result}/{type_doc}_{current_date.strftime("%d.%m.%Y_%H.%M.%S")}'
-    os.mkdir(directory_result)
+    # directory_result = f'{path_result}/{type_doc}_{current_date.strftime("%d.%m.%Y_%H.%M.%S")}'
+    # os.mkdir(directory_result)
 
     count = 0
     count_doc = 0
@@ -61,7 +61,7 @@ def split_into_pages(type_doc, path_file, re_pattern):
         # garbage=2 - удаляет мусор из .pdf. Читать доку https://pymupdf.readthedocs.io/en/latest/document.html#Document.save
         doc_pdf.save(f'{directory_result}/{str(count_doc)}_{current_date.strftime("%d.%m.%Y")}.pdf', garbage=2)
 
-    return directory_result
+    return
 
 # split_into_pages()
 # numbers_page()

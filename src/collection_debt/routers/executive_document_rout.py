@@ -21,7 +21,7 @@ router_ed_debtor = APIRouter(
 @router_ed_debtor.get("/")
 async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_async_session)):
     try:
-        query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id))
+        query = await session.execute(select(executive_document).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
 
         result = []
         for item in query.mappings().all():
@@ -130,75 +130,78 @@ async def get_ed_debtor(credit_id: int, session: AsyncSession = Depends(get_asyn
 @router_ed_debtor.post("/")
 async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
-    date_ed = None
-    date_of_receipt_ed = None
-    date_decision = None
-    succession = None
-    date_entry_force = None
-    summa_debt_decision = None
-    state_duty = None
+    list_ed = data_json['data_json']
 
-    credit_id = data_json["credit_id"]
-    ed_id = data_json["id"]
+    for item in list_ed:
+        date_ed = None
+        date_of_receipt_ed = None
+        date_decision = None
+        succession = None
+        date_entry_force = None
+        summa_debt_decision = None
+        state_duty = None
 
-    if data_json['summa_debt_decision'] is not None:
-        summa_debt_decision = int(float(data_json["summa_debt_decision"]) * 100)
-    if data_json['state_duty'] is not None:
-        state_duty = int(float(data_json["state_duty"]) * 100)
+        credit_id = item["credit_id"]
+        ed_id = item["id"]
 
-    if data_json['date_decision'] is not None:
-        date_ed = datetime.strptime(data_json['date_decision'], '%Y-%m-%d').date()
-    if data_json['date_of_receipt_ed'] is not None:
-        date_of_receipt_ed = datetime.strptime(data_json['date_of_receipt_ed'], '%Y-%m-%d').date()
-    if data_json['date_decision'] is not None:
-        date_decision = datetime.strptime(data_json['date_decision'], '%Y-%m-%d').date()
-    if data_json['succession'] is not None:
-        succession = datetime.strptime(data_json['succession'], '%Y-%m-%d').date()
-    if data_json['date_entry_force'] is not None:
-        date_entry_force = datetime.strptime(data_json['date_entry_force'], '%Y-%m-%d').date()
+        if item['summa_debt_decision'] is not None:
+            summa_debt_decision = int(float(item["summa_debt_decision"]) * 100)
+        if item['state_duty'] is not None:
+            state_duty = int(float(item["state_duty"]) * 100)
 
-    try:
-        data = {
-            "number": data_json["number"],
-            "date": date_ed,
-            "case_number": data_json["case_number"],
-            "date_of_receipt_ed": date_of_receipt_ed,
-            "date_decision": date_decision,
-            "type_ed_id": data_json["type_ed_id"],
-            "status_ed_id": data_json['status_ed_id'],
-            "credit_id": credit_id,
-            "user_id": data_json["user_id"],
-            "summa_debt_decision": summa_debt_decision,
-            "state_duty": state_duty,
-            "succession": succession,
-            "date_entry_force": date_entry_force,
-            "claimer_ed_id": data_json['claimer_ed_id'],
-            "tribunal_id": data_json["tribunal_id"],
-            "comment": data_json["comment"],
-        }
+        if item['date_decision'] is not None:
+            date_ed = datetime.strptime(item['date_decision'], '%Y-%m-%d').date()
+        if item['date_of_receipt_ed'] is not None:
+            date_of_receipt_ed = datetime.strptime(item['date_of_receipt_ed'], '%Y-%m-%d').date()
+        if item['date_decision'] is not None:
+            date_decision = datetime.strptime(item['date_decision'], '%Y-%m-%d').date()
+        if item['succession'] is not None:
+            succession = datetime.strptime(item['succession'], '%Y-%m-%d').date()
+        if item['date_entry_force'] is not None:
+            date_entry_force = datetime.strptime(item['date_entry_force'], '%Y-%m-%d').date()
 
-        if ed_id:
-            post_data = update(executive_document).where(executive_document.c.id == int(ed_id)).values(data)
-        else:
-            post_data = insert(executive_document).values(data)
+        try:
+            data = {
+                "number": item["number"],
+                "date": date_ed,
+                "case_number": item["case_number"],
+                "date_of_receipt_ed": date_of_receipt_ed,
+                "date_decision": date_decision,
+                "type_ed_id": item["type_ed_id"],
+                "status_ed_id": item['status_ed_id'],
+                "credit_id": credit_id,
+                "user_id": item["user_id"],
+                "summa_debt_decision": summa_debt_decision,
+                "state_duty": state_duty,
+                "succession": succession,
+                "date_entry_force": date_entry_force,
+                "claimer_ed_id": item['claimer_ed_id'],
+                "tribunal_id": item["tribunal_id"],
+                "comment": item["comment"],
+            }
 
-        await session.execute(post_data)
-        await session.commit()
+            if ed_id:
+                post_data = update(executive_document).where(executive_document.c.id == int(ed_id)).values(data)
+            else:
+                post_data = insert(executive_document).values(data)
 
-        await calculate_and_post_balance(credit_id, session)
+            await session.execute(post_data)
+            await session.commit()
 
-        return {
-            'status': 'success',
-            'data': data,
-            'details': 'Исполнительный документ успешно сохранен'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
+            await calculate_and_post_balance(credit_id, session)
 
+        except Exception as ex:
+            return {
+                "status": "error",
+                "data": None,
+                "details": f"Ошибка при добавлении/изменении данных. {ex}"
+            }
+
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Исполнительный документ успешно сохранен'
+    }
 
 
 # Получить номера ИД

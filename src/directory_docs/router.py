@@ -351,9 +351,7 @@ router_rename_file = APIRouter(
 
 
 @router_rename_file.post("/")
-async def rename_file(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    data = data_json['data_json']
+async def rename_file(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     id_file: int = data["id"]
     dir_credit_id: int = data["dir_credit_id"]

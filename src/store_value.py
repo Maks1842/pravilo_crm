@@ -16,4 +16,9 @@ section_card_id_tribun = 3
 section_card_id_realty = 4
 section_card_id_pass = 5
 
-test = 1
+# Для type_ed
+type_ed_id_ilb = 2
+type_ed_id_ile = 3
+type_ed_id_sp = 4
+type_ed_id_nn = 5
+type_ed_id_sogl = 6

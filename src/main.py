@@ -40,6 +40,8 @@ from src.mail.routers.incoming_mail import router_incoming_mail
 from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
 
 from src.reader.routers.extract_tribunal_writ import router_extract_tribunal_writ
+from src.reader.routers.rename_file_reader import router_rename_file_read
+from src.reader.routers.reader_save_to_db import router_reader_save_incoming_mail, router_reader_save_ed
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_creating_docs.generator_txt import router_generator_txt
@@ -175,6 +177,9 @@ app.include_router(router_mail_to_excel)
 
 # Для reader
 app.include_router(router_extract_tribunal_writ)
+app.include_router(router_rename_file_read)
+app.include_router(router_reader_save_incoming_mail)
+app.include_router(router_reader_save_ed)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

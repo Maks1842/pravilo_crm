@@ -5,11 +5,14 @@ from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
 from src.debts.router import router_lending, router_cession, router_credits, router_debtor, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name, router_get_lending_name, router_debtor_name
-from src.references.router import router_ref_status_credit, router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
-    router_ref_status_ed, router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
+from src.references.router import router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
+    router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
     router_ref_region, router_ref_rosp, router_ref_bank, router_ref_pfr, router_ref_reason_end_ep, router_ref_type_statement, \
-    router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, router_ref_legal_docs, \
+    router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, \
     router_ref_result_statement, router_ref_type_filters
+from src.references.routers.ref_status_cd_api import router_ref_status_credit, router_delete_status_cd
+from src.references.routers.ref_status_ed_api import router_ref_status_ed, router_delete_status_ed
+from src.references.routers.ref_legal_docs_api import router_ref_legal_docs, router_delete_ref_legal_docs
 
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
 from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number
@@ -26,7 +29,7 @@ from src.legal_work.routers.state_duty_calculation import router_duty_legal_calc
 from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
 from src.legal_work.routers.helper_legal_work import router_get_legal_number
 
-from src.tasks.router import router_task, router_task_all
+from src.tasks.router import router_task, router_task_all, router_delete_task
 
 from src.registries.router import router_registry_headers, router_registry_structures, router_registry_structur_json, \
     router_registry_filters
@@ -123,6 +126,9 @@ app.include_router(router_ref_legal_docs)
 app.include_router(router_ref_legal_section)
 app.include_router(router_ref_result_statement)
 app.include_router(router_ref_type_filters)
+app.include_router(router_delete_status_cd)
+app.include_router(router_delete_status_ed)
+app.include_router(router_delete_ref_legal_docs)
 
 # Для collection_debt
 app.include_router(router_ed_debtor)
@@ -149,6 +155,7 @@ app.include_router(router_get_legal_number)
 # Для routers_task
 app.include_router(router_task)
 app.include_router(router_task_all)
+app.include_router(router_delete_task)
 
 # Для routers_registries
 app.include_router(router_registry_headers)

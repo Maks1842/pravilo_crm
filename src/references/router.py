@@ -9,69 +9,6 @@ from src.references.schemas import *
 from src.routers_helper.rout_scraping.gaspravosudie_tribunals import parse_sudrf_index, parse_ej_sudrf
 from src.routers_helper.rout_scraping.rosp_helper import extract_rosp_excel
 
-# Получить/добавить статус КД
-router_ref_status_credit = APIRouter(
-    prefix="/v1/RefStatusCredit",
-    tags=["References"]
-)
-
-
-@router_ref_status_credit.get("/")
-async def get_status_cd(session: AsyncSession = Depends(get_async_session)):
-
-    try:
-        query = await session.execute(select(ref_status_credit))
-
-        result = []
-        for item in query.mappings().all():
-
-            result.append({
-                "status_cd": item.name,
-                "value": {"item_id": item.id,
-                          "model": 'credit',
-                          "field": 'status_cd_id'}
-            })
-
-        return result
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": ex
-        }
-
-
-@router_ref_status_credit.post("/")
-async def add_status_cd(new_status_credit: RefStatusCreditCreate, session: AsyncSession = Depends(get_async_session)):
-
-    req_data = new_status_credit.model_dump()
-
-    try:
-        data = {
-            "name": req_data["name"],
-        }
-
-        if req_data["id"]:
-            status_cd_id = int(req_data["id"])
-            post_data = update(ref_status_credit).where(ref_status_credit.c.id == status_cd_id).values(data)
-        else:
-            post_data = insert(ref_status_credit).values(data)
-
-        await session.execute(post_data)
-        await session.commit()
-
-        return {
-            'status': 'success',
-            'data': None,
-            'details': 'Статус КД успешно сохранен'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
-
 
 # Получить/добавить взыскателей по ИД
 router_ref_claimer_ed = APIRouter(
@@ -122,38 +59,6 @@ async def get_type_ed(session: AsyncSession = Depends(get_async_session)):
             result.append({
                 "type_ed": item.name,
                 "value": {"type_ed_id": item.id},
-            })
-
-        return result
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": ex
-        }
-
-
-# Получить/добавить статус ИД
-router_ref_status_ed = APIRouter(
-    prefix="/v1/RefStatusED",
-    tags=["References"]
-)
-
-
-@router_ref_status_ed.get("/")
-async def get_status_ed(session: AsyncSession = Depends(get_async_session)):
-
-    try:
-        query = await session.execute(select(ref_status_ed))
-
-        result = []
-        for item in query.mappings().all():
-
-            result.append({
-                "status_ed": item.name,
-                "value": {"item_id": item.id,
-                          "model": 'executive_document',
-                          "field": 'status_ed_id'}
             })
 
         return result
@@ -880,82 +785,7 @@ async def get_type_templates(session: AsyncSession = Depends(get_async_session))
         }
 
 
-# Получить/добавить Наименование юридических документов
-router_ref_legal_docs = APIRouter(
-    prefix="/v1/RefLegalDocs",
-    tags=["References"]
-)
 
-
-@router_ref_legal_docs.get("/")
-async def get_legal_docs(section_card_id: int = None, legal_section_id: int = None, session: AsyncSession = Depends(get_async_session)):
-
-    try:
-        if section_card_id:
-            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.section_card_id.in_([section_card_id, 1]),
-                                                                           ref_legal_docs.c.section_card_id == None)))
-        elif legal_section_id:
-            query = await session.execute(select(ref_legal_docs).where(or_(ref_legal_docs.c.legal_section_id.in_([legal_section_id, 1]),
-                                                                           ref_legal_docs.c.legal_section_id == None)))
-        else:
-            query = await session.execute(select(ref_legal_docs))
-
-        result = []
-        for item in query.mappings().all():
-
-            result.append({
-                "legal_docs": item.name,
-                "value": {
-                    "legal_docs_id": item.id,
-                    "section_card_id": item.section_card_id,
-                    "legal_section_id": item.legal_section_id,
-                    "type_statement_id": item.type_statement_id,
-                    "result_statement_id": item.type_statement_id,
-                },
-            })
-
-        return result
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": ex
-        }
-
-
-@router_ref_legal_docs.post("/")
-async def add_legal_docs(data_json: dict, session: AsyncSession = Depends(get_async_session)):
-
-    req_data = data_json['data_json']
-
-    try:
-        data = {
-            "name": req_data['name'],
-            "section_card_id": req_data['section_card_id'],
-            "legal_section_id": req_data['legal_section_id'],
-            "type_statement_id": req_data['type_statement_id'],
-            "result_statement_id": req_data['result_statement_id'],
-        }
-        if req_data["id"]:
-            legal_docs_id = int(req_data["id"])
-            post_data = update(ref_legal_docs).where(ref_legal_docs.c.id == legal_docs_id).values(data)
-        else:
-            post_data = insert(ref_legal_docs).values(data)
-
-        await session.execute(post_data)
-        await session.commit()
-
-        return {
-            'status': 'success',
-            'data': None,
-            'details': 'Наименование документа успешно сохранено'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
 
 
 # Получить/добавить Варианты результатов/резолюций по обращениям

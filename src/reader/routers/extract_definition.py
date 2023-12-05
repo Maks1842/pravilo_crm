@@ -15,25 +15,24 @@ from src.config import path_main
 from src.reader.routers.re_pattern import RePattern
 from src.reader.routers.split_docs_pdf import split_into_pages
 from src.references.models import ref_legal_section, ref_legal_docs
-from src.store_value import type_ed_id_sp
 
 '''
-Метод извлечения Судебных приказов
+Метод извлечения Определения
 !!! Импортированный файл должен быть формата .pdf, с возможностью редактирования
 '''
 
 
-router_extract_tribunal_writ = APIRouter(
-    prefix="/v1/TribunalWritExtractPDF",
+router_extract_definition = APIRouter(
+    prefix="/v1/DefinitionExtractPDF",
     tags=["Reader"]
 )
 
 
-@router_extract_tribunal_writ.post("/")
-async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: AsyncSession = Depends(get_async_session)):
+@router_extract_definition.post("/")
+async def extract_definition(files: List[UploadFile] = File(...), session: AsyncSession = Depends(get_async_session)):
 
-    type_doc = 'СП'
-    re_pattern = RePattern.heading_sp
+    type_doc = 'ОПР'
+    re_pattern = RePattern.heading_opr
 
     path_result = f'{path_main}/src/media/reader/result'
     current_date = datetime.now() + timedelta(hours=3)
@@ -107,26 +106,20 @@ async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: As
                 legal_section_name = legal_section_answ.name
 
         data_items.append({
-            "type_ed_id": int(type_ed_id_sp),
             "credit_id": credit_id,
             "creditNum": f'{fio}, {credit_num}',
             "legal_section_id": legal_section_id,
             "legal_section": legal_section_name,
             "legal_docs_id": legal_docs_id,
             "legal_docs": item['type_doc'],
-            "dublED": item['type_doc_dubl'],
             "dateED": date_doc,
             "numCase": item['num_doc'],
             "tribunalName": item['tribunal'],
             "debtorName": item['name_debtor'],
-            "debtorBirthday": item['birthday'],
-            "creditor": item['name_creditor'],
             "numCredit": item['num_kd'],
-            "summaDebt": item['summa_debt'],
-            "stateDuty": item['summa_duty'],
+            "resultStatement": item['resolution'],
             "file_name": item['file_name'],
             "path": item['directory_result'],
-            "date_entry_force": None,
             "tribunal_id": None,
         })
 
@@ -156,7 +149,6 @@ def data_executing_doc(type_doc_file, directory_result):
 
     result = []
     for file in filelist:
-        name_file_dubl = ''
         count_doc += 1
 
         # Исходный и обработанный текст, весь
@@ -165,23 +157,10 @@ def data_executing_doc(type_doc_file, directory_result):
         page_count = result_convert[1].page_count
 
         text_type = re.search(RePattern.text_type, str(text)).group()
-        text_tribun = re.search(RePattern.text_tribun, str(text)).group()
         try:
-            text_debtor = re.search(RePattern.text_debt_sp, str(text)).group()
+            text_resolution = re.search(RePattern.text_verdict_opr, str(text)).group()
         except:
-            text_debtor = ''
-        try:
-            text_creditor = re.search(RePattern.text_credit, str(text)).group()
-        except:
-            text_creditor = ''
-        try:
-            text_debt = re.search(RePattern.text_debt1, str(text)).group()
-        except:
-            text_debt = ''
-        try:
-            text_duty = re.search(RePattern.text_duty1, str(text_creditor)).group()
-        except:
-            text_duty = ''
+            text_resolution = text
 
         current_date = date.today()
         date_today = current_date.strftime("%d.%m.%Y")
@@ -190,16 +169,7 @@ def data_executing_doc(type_doc_file, directory_result):
                   'июля': '07', 'августа': '08', 'сентября': '09', 'октября': '10', 'ноября': '11', 'декабря': '12'}
 
         # Тип документа
-        type_doc = 'Судебный приказ'
-
-        # Определяю "Дубликат" или нет
-        try:
-            type_doc_dubl = re.search(RePattern.heading_dubl, str(text)).group()
-            if re.findall(r'(?i)(д\s*у\s*б\s*л\s*и\s*к\s*а\s*т)', re.search(RePattern.heading_dubl, str(text)).group()):
-                name_file_dubl = 'Д'
-        except:
-            type_doc_dubl = ''
-            name_file_dubl = ''
+        type_doc = 'Определение'
 
         # Дата документа. Дополнительный фильтр на возраст документа
         try:
@@ -223,52 +193,39 @@ def data_executing_doc(type_doc_file, directory_result):
         except:
             date_doc = 'ОШИБКА'
 
-        # Номер документа
-        try:
-            num_doc = re.sub(r'(?i)[а-я\s]+', '', re.search(RePattern.num_doc1, str(text_type)).group())
-        except:
-            num_doc = 'ОШИБКА'
-
         # Суд выдавший документ
         try:
-            tribunal = re.search(RePattern.tribun3, str(text_tribun)).group()
+            tribunal = re.search(RePattern.tribun3, str(text_type)).group()
             if len(tribunal) > 200:
                 tribunal = tribunal[:200]
         except:
-            try:
-                tribunal = re.search(RePattern.tribun2, str(text_tribun)).group()
-            except:
-                tribunal = 'ОШИБКА'
+            tribunal = 'ОШИБКА'
 
         # Имя должника
         try:
-            name_debt = re.search(RePattern.name_debt_res, str(text_debtor)).group()
+            name_debt = re.search(RePattern.name_debt_opr, str(text)).group()
         except:
             name_debt = 'ОШИБКА'
         name_list_debt = re.findall(r'\w+', name_debt)
 
-        # Дата рождения должника
+        # Тип заявления
         try:
-            if re.findall(r'[а-я]', re.search(RePattern.birthday1, str(text)).group()):
-                birthday_date = re.search(RePattern.birthday1, str(text)).group()
-                text_date = re.sub(r'[\s»]+', '', birthday_date)
-                month = re.search(r'\D+', text_date).group()
-                birthday = re.sub(r'\D+', '.' + months[month] + '.', text_date)
-            else:
-                birthday = re.search(RePattern.birthday1, str(text)).group()
+            statement_type = re.search(RePattern.statement_type, str(text)).group()
         except:
-            birthday = 'ОШИБКА'
+            statement_type = 'ОШИБКА'
 
-        # Имя кредитора
+        # Номер гражданского дела
         try:
-            name_cred = re.search(RePattern.name_cred, str(text_creditor)).group()
+            num_case_text = re.sub(r'(?i)[а-яё№:\s]+', '', re.search(RePattern.num_doc2, str(text)).group())
+            num_case = (num_case_text)
+            name_file_num_case = (re.sub(r'[\/]+', '-', str(num_case_text)))
         except:
-            name_cred = 'ОШИБКА'
-        name_list_creditor = re.findall(r'\w+', name_cred)
+            num_case = 'ОШИБКА'
+            name_file_num_case = 'ОШИБКА'
 
         # Номер КД
         try:
-            num_kd = re.sub(r'[\s№]+', '', re.search(RePattern.num_kd2, str(text_creditor)).group())
+            num_kd = re.sub(r'(?i)[№:\s]+', '', re.search(RePattern.num_kd2, str(text)).group())
             name_file_num_kd = re.sub(r'[\/\\\<\>\*\:\?\|]+', '_', num_kd)
             if num_kd == '':
                 num_kd = 'ОШИБКА'
@@ -277,27 +234,11 @@ def data_executing_doc(type_doc_file, directory_result):
             num_kd = 'ОШИБКА'
             name_file_num_kd = f'ОШИБКА_файла_{count_doc}'
 
-        # Сумма долга
+        # Резолюция
         try:
-            summa_debt_re = re.sub(r'\s+', '', re.search(RePattern.summa_rub, str(text_debt)).group())
-            summa_debt = re.sub(r',', '.', summa_debt_re)
+            resolution = re.search(RePattern.resolution, str(text_resolution)).group()
         except:
-            try:
-                summa_debt_re = re.sub(r'\s+', '', re.sub(r'\s*\([\D\s]*|\s*руб\.\s*|\s*рубля\s*', ',', re.search(RePattern.summa_rub2, str(text_debt)).group()))
-                summa_debt = re.sub(r',', '.', summa_debt_re)
-            except:
-                summa_debt = 'ОШИБКА'
-
-        # Сумма пошлины
-        try:
-            summa_duty_re = re.sub(r'\s+', '', re.search(RePattern.summ_duty1, str(text_duty)).group())
-            summa_duty = re.sub(r',', '.', summa_duty_re)
-        except:
-            try:
-                summa_duty_re = re.sub(r'\s+', '', re.sub(r'\s*\([\D\s]*|\s*руб\.\s*|\s*руб\s*|\s*рубля\s*', ',', re.search(RePattern.summ_duty2, str(text_duty)).group()))
-                summa_duty = re.sub(r',', '.', summa_duty_re)
-            except:
-                summa_duty = 'ОШИБКА'
+            resolution = 'ОШИБКА'
 
         # Меняю окончание ФИО должника
         try:
@@ -316,9 +257,10 @@ def data_executing_doc(type_doc_file, directory_result):
                     count += 1
                 else:
                     name_db.append(name1)
-
             name_debtor1 = 'None'
-
+            name_debtor2 = name_db[0] + ' ' + str(re.sub(r'(?<=\w)\w+', '.', name_db[1])) + ' ' + str(
+                re.sub(r'(?<=\w)\w+', '.', name_db[2]))
+            name_file_debtor = (name_debtor2)
             count = 0
             for i in name_db:
                 count += 1
@@ -329,48 +271,26 @@ def data_executing_doc(type_doc_file, directory_result):
             name_debtor = (name_debtor1)
         except:
             name_debtor = 'ОШИБКА'
-
-        # Меняю окончание ФИО взыскателя
-        try:
-            name_cd = []
-            for name1 in name_list_creditor:
-                if re.findall(r'(а)$', name1) == list('а'):
-                    name_cd.append(''.join(re.sub(r'(а)$', '', name1)))
-                else:
-                    name_cd.append(name1)
-            name_creditor1 = 'None'
-            count = 0
-            for i in name_cd:
-                count += 1
-                if count == 1:
-                    name_creditor1 = str(i)
-                elif count > 1:
-                    name_creditor1 = str(name_creditor1) + ' ' + str(i)
-            name_creditor = (name_creditor1)
-        except:
-            name_creditor = 'ОШИБКА'
+            name_file_debtor = 'ОШИБКА'
 
         # Обработанный файл переименовывается в соответствии с извлеченной информацией
         result_convert[1].close()
         file_oldname = os.path.join(f'{directory_result}/{file}')
 
-        file_newname = os.path.join(f'{directory_result}/', f'{type_doc_file}_{name_file_dubl}_{name_file_num_kd}_{page_count}.pdf')
+        file_newname = os.path.join(f'{directory_result}/', f'{type_doc_file}_{name_file_num_kd}_{statement_type} от {date_doc}_{name_file_debtor}_{page_count}.pdf')
 
         os.rename(file_oldname, file_newname)
         base_name = os.path.basename(file_newname)
 
         result.append({
             'type_doc': type_doc,
-            'type_doc_dubl': type_doc_dubl,
             'date_doc': date_doc,
-            'num_doc': num_doc,
             'tribunal': tribunal,
             'name_debtor': name_debtor,
-            'birthday': birthday,
-            'name_creditor': name_creditor,
+            'statement_type': statement_type,
+            'num_case': num_case,
             'num_kd': num_kd,
-            'summa_debt': summa_debt,
-            'summa_duty': summa_duty,
+            'resolution': resolution,
             'file_name': base_name,
             'directory_result': directory_result,
         })

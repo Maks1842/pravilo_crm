@@ -2,7 +2,7 @@ import math
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -302,6 +302,33 @@ async def get_task_all(page: int, user_id: int = None, name_task_id: int = None,
         result = {'data_tasks': data_tasks, 'num_page_all': num_page_all}
 
         return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Удалить задачу
+router_delete_task = APIRouter(
+    prefix="/v1/DeleteTask",
+    tags=["Tasks"]
+)
+
+
+@router_delete_task.delete("/")
+async def delete_task(task_id: int, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        await session.execute(delete(task).where(task.c.id == task_id))
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': None,
+            'details': 'Задача успешно удалена'
+        }
     except Exception as ex:
         return {
             "status": "error",

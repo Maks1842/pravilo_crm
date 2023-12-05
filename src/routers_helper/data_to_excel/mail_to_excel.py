@@ -1,3 +1,4 @@
+from operator import itemgetter
 from openpyxl import load_workbook
 from datetime import datetime
 
@@ -8,7 +9,7 @@ def mail_out_to_excel(data_json):
 
     style = style_excel()
 
-    book_template = load_workbook(filename=f'{path_main}/src/media/mail/templates_mail_all.xlsx')
+    book_template = load_workbook(filename=f'{path_main}/src/media/mail/data/templates_mail_all.xlsx')
 
     # Первый (активный) Лист книги
     sheet = book_template.active
@@ -16,10 +17,12 @@ def mail_out_to_excel(data_json):
     # Изменить имя Листа книги
     sheet.title = "Реестр"
 
+    list_mail = sorted(data_json['data_json'], key=itemgetter('id'), reverse=True)
+
     count = 0
     number_col = 1
     number_row = 2
-    for data in data_json['data_json']:
+    for data in list_mail:
         count += 1
 
         number_col += 1

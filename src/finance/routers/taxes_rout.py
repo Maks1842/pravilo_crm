@@ -49,7 +49,7 @@ async def get_calculator_taxes(data_json: dict, session: AsyncSession = Depends(
         summa_total = round(summa / 100, 2)
 
     if data_json['checkboxTax'] and summa:
-        summa_taxes = round(summa * taxes_percent / 100 / 100, 2)
+        summa_taxes = round(summa * float(taxes_percent) / 100 / 100, 2)
 
     if data_json['checkboxAgent'] and summa:
         summa_agency = round(summa * float(agency_rate) / 100 / 100, 2)

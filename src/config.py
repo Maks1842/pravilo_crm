@@ -10,8 +10,8 @@ DB_PASS = os.environ.get('DB_PASS')
 DB_HOST = os.environ.get('DB_HOST')
 DB_PORT = os.environ.get('DB_PORT')
 
-SECRET_KEY_auth = os.environ.get('SECRET_KEY_auth')
-SECRET_KEY_register = os.environ.get('SECRET_KEY_register')
+SECRET_KEY_auth = os.environ.get('SECRET_KEY_AUTH')
+SECRET_KEY_register = os.environ.get('SECRET_KEY_REGISTER')
 
 path_main = pathlib.Path().resolve()
 
@@ -21,4 +21,4 @@ generator_docs_path = f'{path_main}/src/media/generator_docs'
 generator_txt_path = f'{path_main}/src/media/generator_txt'
 
 
-printer_user = os.environ.get('printer_user')
+printer_user = os.environ.get('PRINTER_USER')

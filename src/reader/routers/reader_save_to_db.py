@@ -80,8 +80,6 @@ async def add_reader_ed(data_json: dict, session: AsyncSession = Depends(get_asy
 
     data = data_json['data_json']
 
-    print(f'{data=}')
-
     list_ed = []
     for item in data:
         if item['credit_id']:
@@ -97,7 +95,7 @@ async def add_reader_ed(data_json: dict, session: AsyncSession = Depends(get_asy
                 "credit_id": item['credit_id'],
                 "user_id": None,
                 "summa_debt_decision": item['summaDebt'],
-                "state_duty": None,
+                "state_duty": item['stateDuty'],
                 "succession": None,
                 "date_entry_force": item['date_entry_force'],
                 "claimer_ed_id": None,

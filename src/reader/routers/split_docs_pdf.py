@@ -2,11 +2,10 @@
 ДЛЯ деления общего файла PDF отдельные документы
 Скрипт находит указанный текст в документе pdf и указывает номер страницы
 """
-import os
 import fitz
 import re
 from datetime import datetime, timedelta
-from src.config import path_main
+
 
 # Определяю номера страниц по наличию заданного текста
 def numbers_page(file, re_pattern):
@@ -28,19 +27,20 @@ def numbers_page(file, re_pattern):
     return numbers_page
 
 
-def split_into_pages(type_doc, path_file, re_pattern, directory_result):
-    # path_result = f'{path_main}/src/media/reader/result'
+def split_into_pages(path_file, re_pattern, directory_result, count_doc):
     list_page = numbers_page(path_file, re_pattern)
 
     if len(list_page) == 0:
         return 'Error'
 
     current_date = datetime.now() + timedelta(hours=3)
-    # directory_result = f'{path_result}/{type_doc}_{current_date.strftime("%d.%m.%Y_%H.%M.%S")}'
-    # os.mkdir(directory_result)
+
+    if count_doc > 1:
+        count_doc = count_doc
+    else:
+        count_doc = 0
 
     count = 0
-    count_doc = 0
     for page in list_page:
         with open(path_file, 'rb') as f:
             doc_pdf = (fitz.Document(f))

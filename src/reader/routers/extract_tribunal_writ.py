@@ -4,7 +4,7 @@ from os import listdir
 import fitz
 from datetime import datetime, date, timedelta
 
-from typing import  List
+from typing import List
 from fastapi import APIRouter, UploadFile, Depends, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,8 +32,6 @@ router_extract_tribunal_writ = APIRouter(
 @router_extract_tribunal_writ.post("/")
 async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: AsyncSession = Depends(get_async_session)):
 
-    print(f'{len(files)}')
-
     type_doc = 'СП'
     re_pattern = RePattern.heading_sp
 
@@ -46,10 +44,7 @@ async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: As
     data_items = []
     count_items = 0
 
-
-
     for item_file in files:
-
 
         with open(f'{path_main}/src/media/reader/tribunal_writ_scan_{count}.pdf', 'wb+') as f:
             for chunk in item_file.file:
@@ -57,83 +52,83 @@ async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: As
 
         path_file = f'{path_main}/src/media/reader/tribunal_writ_scan_{count}.pdf'
 
-        extract_items = data_executing_doc(type_doc, path_file, re_pattern, directory_result)
+        split_into_pages(path_file, re_pattern, directory_result, count)
 
-        # data_items = []
-        # count_items = 0
         count += 1
 
-        for item in extract_items:
-            credit_id = None
-            credit_num = ''
-            legal_section_name = None
-            legal_docs_id = None
-            legal_section_id = None
-            fio = 'Не определен'
-            count_items += 1
+    extract_items = data_executing_doc(type_doc, directory_result)
 
-            credits_query = await session.execute(select(credit).where(credit.c.number == item['num_kd']))
-            credit_set = credits_query.mappings().fetchone()
+    for item in extract_items:
+        credit_id = None
+        credit_num = ''
+        legal_section_name = None
+        legal_docs_id = None
+        legal_section_id = None
+        fio = 'Не определен'
+        count_items += 1
 
-            if credit_set:
-                credit_id = credit_set.id
-                credit_num = credit_set.number
-                debtor_id: int = credit_set.debtor_id
+        credits_query = await session.execute(select(credit).where(credit.c.number == item['num_kd']))
+        credit_set = credits_query.mappings().fetchone()
 
-                debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
-                debtor_item = debtor_query.mappings().one()
+        if credit_set:
+            credit_id = credit_set.id
+            credit_num = credit_set.number
+            debtor_id: int = credit_set.debtor_id
 
-                if debtor_item.last_name_2 is not None:
-                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
-                                 f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
-                else:
-                    fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
+            debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
+            debtor_item = debtor_query.mappings().one()
 
-            if re.findall(r'\d{2}\.\d{2}\.\d{4}', item['date_doc']):
-                try:
-                    date_doc = datetime.strptime(item['date_doc'], '%d.%m.%Y').strftime("%Y-%m-%d")
-                except:
-                    date_doc = None
+            if debtor_item.last_name_2 is not None:
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                             f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
-                date_doc = item['date_doc']
+                fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            legal_docs_query = await session.execute(select(ref_legal_docs).where(ref_legal_docs.c.name == item['type_doc']))
-            legal_docs_answ = legal_docs_query.mappings().fetchone()
+        if re.findall(r'\d{2}\.\d{2}\.\d{4}', item['date_doc']):
+            try:
+                date_doc = datetime.strptime(item['date_doc'], '%d.%m.%Y').strftime("%Y-%m-%d")
+            except:
+                date_doc = None
+        else:
+            date_doc = item['date_doc']
 
-            if legal_docs_answ:
-                legal_docs_id = legal_docs_answ.id
-                legal_section_id = legal_docs_answ.legal_section_id
+        legal_docs_query = await session.execute(select(ref_legal_docs).where(ref_legal_docs.c.name == item['type_doc']))
+        legal_docs_answ = legal_docs_query.mappings().fetchone()
 
-            if legal_section_id:
-                legal_section_query = await session.execute(select(ref_legal_section.c.name).where(ref_legal_section.c.id == int(legal_section_id)))
-                legal_section_answ = legal_section_query.mappings().fetchone()
+        if legal_docs_answ:
+            legal_docs_id = legal_docs_answ.id
+            legal_section_id = legal_docs_answ.legal_section_id
 
-                if legal_section_answ:
-                    legal_section_name = legal_section_answ.name
+        if legal_section_id:
+            legal_section_query = await session.execute(select(ref_legal_section.c.name).where(ref_legal_section.c.id == int(legal_section_id)))
+            legal_section_answ = legal_section_query.mappings().fetchone()
 
-            data_items.append({
-                "section_card_id": section_card_id_tribun,
-                "credit_id": credit_id,
-                "creditNum": f'{fio}, {credit_num}',
-                "legal_section_id": legal_section_id,
-                "legal_section": legal_section_name,
-                "legal_docs_id": legal_docs_id,
-                "legal_docs": item['type_doc'],
-                "dublED": item['type_doc_dubl'],
-                "dateED": date_doc,
-                "numCase": item['num_doc'],
-                "tribunalName": item['tribunal'],
-                "debtorName": item['name_debtor'],
-                "debtorBirthday": item['birthday'],
-                "creditor": item['name_creditor'],
-                "numCredit": item['num_kd'],
-                "summaDebt": item['summa_debt'],
-                "stateDuty": item['summa_duty'],
-                "file_name": item['file_name'],
-                "path": item['directory_result'],
-                "date_entry_force": None,
-                "tribunal_id": None,
-            })
+            if legal_section_answ:
+                legal_section_name = legal_section_answ.name
+
+        data_items.append({
+            "section_card_id": section_card_id_tribun,
+            "credit_id": credit_id,
+            "creditNum": f'{fio}, {credit_num}',
+            "legal_section_id": legal_section_id,
+            "legal_section": legal_section_name,
+            "legal_docs_id": legal_docs_id,
+            "legal_docs": item['type_doc'],
+            "dublED": item['type_doc_dubl'],
+            "dateED": date_doc,
+            "numCase": item['num_doc'],
+            "tribunalName": item['tribunal'],
+            "debtorName": item['name_debtor'],
+            "debtorBirthday": item['birthday'],
+            "creditor": item['name_creditor'],
+            "numCredit": item['num_kd'],
+            "summaDebt": item['summa_debt'],
+            "stateDuty": item['summa_duty'],
+            "file_name": item['file_name'],
+            "path": item['directory_result'],
+            "date_entry_force": None,
+            "tribunal_id": None,
+        })
 
     result = {'data_items': data_items,
               'count_all': count_items}
@@ -154,14 +149,11 @@ def convert_pdf_to_string(file, directory_result):
 
 
 # 1 шаг Перебираю все файлы из папки для проверки
-def data_executing_doc(type_doc_file, path_file, re_pattern, directory_result):
-
-    split_into_pages(type_doc_file, path_file, re_pattern, directory_result)
-    # if directory_result == 'Error':
-    #     return
+def data_executing_doc(type_doc_file, directory_result):
 
     count_doc = 0
     filelist = listdir(directory_result)
+
     result = []
     for file in filelist:
         name_file_dubl = ''
@@ -234,10 +226,8 @@ def data_executing_doc(type_doc_file, path_file, re_pattern, directory_result):
         # Номер документа
         try:
             num_doc = re.sub(r'(?i)[а-я\s]+', '', re.search(RePattern.num_doc1, str(text_type)).group())
-            name_file_num_case = re.sub(r'[\/\\\<\>\*\:\?\|]+', '_', num_doc)
         except:
             num_doc = 'ОШИБКА'
-            name_file_num_case = 'ОШИБКА'
 
         # Суд выдавший документ
         try:
@@ -278,8 +268,11 @@ def data_executing_doc(type_doc_file, path_file, re_pattern, directory_result):
 
         # Номер КД
         try:
-            num_kd = re.sub(r'[\s]+', '', re.search(RePattern.num_kd1, str(text_creditor)).group())
+            num_kd = re.sub(r'[\s№]+', '', re.search(RePattern.num_kd2, str(text_creditor)).group())
             name_file_num_kd = re.sub(r'[\/\\\<\>\*\:\?\|]+', '_', num_kd)
+            if num_kd == '':
+                num_kd = 'ОШИБКА'
+                name_file_num_kd = f'ОШИБКА_файла_{count_doc}'
         except:
             num_kd = 'ОШИБКА'
             name_file_num_kd = f'ОШИБКА_файла_{count_doc}'
@@ -361,11 +354,9 @@ def data_executing_doc(type_doc_file, path_file, re_pattern, directory_result):
         result_convert[1].close()
         file_oldname = os.path.join(f'{directory_result}/{file}')
 
-        # file_newname = os.path.join(f'{directory_result}/', f'{count_doc}_{type_doc_file}_{name_file_dubl}_{name_file_num_case} от {date_doc}_{page_count}.pdf')
         file_newname = os.path.join(f'{directory_result}/', f'{type_doc_file}_{name_file_dubl}_{name_file_num_kd}_{page_count}.pdf')
 
         os.rename(file_oldname, file_newname)
-
         base_name = os.path.basename(file_newname)
 
         result.append({

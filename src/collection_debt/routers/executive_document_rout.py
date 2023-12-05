@@ -1,4 +1,4 @@
-import math
+import re
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
@@ -144,10 +144,16 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
         credit_id = item["credit_id"]
         ed_id = item["id"]
 
-        if item['summa_debt_decision'] is not None:
-            summa_debt_decision = int(float(item["summa_debt_decision"]) * 100)
-        if item['state_duty'] is not None:
-            state_duty = int(float(item["state_duty"]) * 100)
+        try:
+            if item['summa_debt_decision'] is not None:
+                summa_debt_decision = int(float(item["summa_debt_decision"]) * 100)
+        except:
+            summa_debt_decision = None
+        try:
+            if item['state_duty'] is not None:
+                state_duty = int(float(item["state_duty"]) * 100)
+        except:
+            state_duty = None
 
         if item['date_decision'] is not None:
             date_ed = datetime.strptime(item['date_decision'], '%Y-%m-%d').date()

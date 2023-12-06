@@ -7,6 +7,9 @@ import os
 
 load_dotenv()
 
+# Для Реестров
+per_page_store = os.environ.get('PER_PAGE')
+
 # Для taxes_rout.py
 taxes_percent = os.environ.get('TAXES_PERCENT')   # Налоговая ставка Организации
 tax_exp_category_id = os.environ.get('TAX_EXP_CATEGORY_ID')
@@ -26,3 +29,18 @@ type_ed_id_ile = os.environ.get('TYPE_ED_ID_ILE')
 type_ed_id_sp = os.environ.get('TYPE_ED_ID_SP')
 type_ed_id_nn = os.environ.get('TYPE_ED_ID_NN')
 type_ed_id_sogl = os.environ.get('TYPE_ED_ID_SOGL')
+
+# Для status_cd
+status_cd_none = os.environ.get('STATUS_CD_NONE')
+status_cd_isp = os.environ.get('STATUS_CD_ISP')
+status_cd_rab = os.environ.get('STATUS_CD_RAB')
+status_cd_otm = os.environ.get('STATUS_CD_OTM')
+status_cd_sogl = os.environ.get('STATUS_CD_SOGL')
+status_cd_pgsh = os.environ.get('STATUS_CD_PGSH')
+
+# Для status_ed
+status_ed_none = os.environ.get('STATUS_ED_NONE')
+status_ed_mov_8 = os.environ.get('STATUS_ED_MOV_8')
+status_ed_mov_9 = os.environ.get('STATUS_ED_MOV_9')
+status_ed_mov_ifns = os.environ.get('STATUS_ED_MOV_IFNS')
+status_ed_mov_sud = os.environ.get('STATUS_ED_MOV_SUD')

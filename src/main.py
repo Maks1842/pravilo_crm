@@ -15,7 +15,7 @@ from src.references.routers.ref_status_ed_api import router_ref_status_ed, route
 from src.references.routers.ref_legal_docs_api import router_ref_legal_docs, router_delete_ref_legal_docs
 
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
-from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number
+from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number, router_tribunal_ed
 from src.collection_debt.routers.executive_productions_rout import router_ep_debtor, router_ep_number
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
@@ -134,6 +134,7 @@ app.include_router(router_delete_ref_legal_docs)
 app.include_router(router_ed_debtor)
 app.include_router(router_collection_debt)
 app.include_router(router_ed_number)
+app.include_router(router_tribunal_ed)
 app.include_router(router_department_presentation)
 app.include_router(router_ep_debtor)
 app.include_router(router_ep_number)

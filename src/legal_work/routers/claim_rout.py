@@ -2,7 +2,7 @@ import math
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, or_, and_
+from sqlalchemy import select, func, distinct, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -10,11 +10,11 @@ from src.debts.models import cession, credit, debtor
 from src.legal_work.models import legal_work
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
 from src.references.models import ref_legal_docs, ref_result_statement, ref_tribunal
+from src.store_value import per_page_store
 
 '''
 Метод для судебной работы
 '''
-
 
 
 # Получить/добавить Иск
@@ -27,7 +27,7 @@ router_claim = APIRouter(
 @router_claim.get("/")
 async def get_claim(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    per_page = int(per_page_store)
 
     if dates2 is None:
         dates2 = dates1
@@ -235,6 +235,7 @@ async def add_claim(data: dict, session: AsyncSession = Depends(get_async_sessio
 
 
     case_id = data['id']
+    user_id = data['user_id']
 
     legal_num = await number_case_legal(data, session)
 
@@ -256,6 +257,6 @@ async def add_claim(data: dict, session: AsyncSession = Depends(get_async_sessio
                      "credit_id": data['credit_id'],
                      }
 
-    save_case = await save_case_legal(case_id, legal_data, session)
+    save_case = await save_case_legal(case_id, user_id, legal_data, session)
 
     return save_case

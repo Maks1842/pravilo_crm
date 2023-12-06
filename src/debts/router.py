@@ -385,9 +385,9 @@ async def get_credits(credit_id: int = None, debtor_id: int = None, session: Asy
 
 
 @router_credits.post("/")
-async def add_credits(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+async def add_credits(req_data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    req_data = data_json['data_json']
+    credit_id = req_data["id"]
 
     summa = int(float(req_data["summa"]) * 100)
     summa_by_cession = int(float(req_data["summa_by_cession"]) * 100)
@@ -398,51 +398,31 @@ async def add_credits(data_json: dict, session: AsyncSession = Depends(get_async
     gov_toll = int(float(req_data["gov_toll"]) * 100)
     balance_debt = int(float(req_data["balance_debt"]) * 100)
 
-    try:
-        data = {
-            "creditor": req_data["creditor"],
-            "number": req_data["number"],
-            "date_start": datetime.strptime(req_data["date_start"], '%Y-%m-%d').date(),
-            "date_end": req_data["date_end"],
-            "summa_by_cession": summa_by_cession,
-            "summa": summa,
-            "interest_rate": req_data['interest_rate'],
-            "overdue_od": overdue_od,
-            "overdue_percent": overdue_percent,
-            "penalty": penalty,
-            "percent_of_od": percent_of_od,
-            "gov_toll": gov_toll,
-            "balance_debt": balance_debt,
-            "debtor_id": req_data["debtor_id"],
-            "cession_id": req_data["cession_id"],
-            "status_cd_id": req_data["status_cd_id"],
-            "comment": req_data["comment"],
-            "credits_old": req_data["credits_old"],
-            "parent_id": req_data["parent_id"],
-        }
+    data = {
+        "creditor": req_data["creditor"],
+        "number": req_data["number"],
+        "date_start": datetime.strptime(req_data["date_start"], '%Y-%m-%d').date(),
+        "date_end": req_data["date_end"],
+        "summa_by_cession": summa_by_cession,
+        "summa": summa,
+        "interest_rate": req_data['interest_rate'],
+        "overdue_od": overdue_od,
+        "overdue_percent": overdue_percent,
+        "penalty": penalty,
+        "percent_of_od": percent_of_od,
+        "gov_toll": gov_toll,
+        "balance_debt": balance_debt,
+        "debtor_id": req_data["debtor_id"],
+        "cession_id": req_data["cession_id"],
+        "status_cd_id": req_data["status_cd_id"],
+        "comment": req_data["comment"],
+        "credits_old": req_data["credits_old"],
+        "parent_id": req_data["parent_id"],
+    }
 
-        if req_data["id"]:
-            credit_id = int(req_data["id"])
+    result = await func_save_credit(credit_id, data, session)
 
-            # Не срабатывает исключение, если нет указанного id в БД
-            post_data = update(credit).where(credit.c.id == credit_id).values(data)
-        else:
-            post_data = insert(credit).values(data)
-
-        await session.execute(post_data)
-        await session.commit()
-
-        return {
-            'status': 'success',
-            'data': data,
-            'details': 'Кредит успешно сохранен'
-        }
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": f"Ошибка при добавлении/изменении данных. {ex}"
-        }
+    return result
 
 
 # Получить/добавить должника
@@ -454,8 +434,6 @@ router_debtor = APIRouter(
 
 @router_debtor.get("/")
 async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
-
-
 
     try:
         query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
@@ -526,39 +504,73 @@ async def get_debtor(debtor_id: int = None, session: AsyncSession = Depends(get_
 @router_debtor.post("/")
 async def add_debtor(debtor_data: dict, session: AsyncSession = Depends(get_async_session)):
 
+    debtor_id = debtor_data["id"]
+
+    passport_date = None
+    if debtor_data["passport_date"]:
+        passport_date = datetime.strptime(debtor_data["passport_date"], '%Y-%m-%d').date()
+
+    data = {
+        "last_name_1": debtor_data["last_name_1"],
+        "first_name_1": debtor_data["first_name_1"],
+        "second_name_1": debtor_data["second_name_1"],
+        "last_name_2": debtor_data["last_name_2"],
+        "first_name_2": debtor_data["first_name_2"],
+        "second_name_2": debtor_data["second_name_2"],
+        "pol": debtor_data["pol"],
+        "birthday": datetime.strptime(debtor_data["birthday"], '%Y-%m-%d').date(),
+        "pensioner": debtor_data["pensioner"],
+        "place_of_birth": debtor_data["place_of_birth"],
+        "passport_series": debtor_data["passport_series"],
+        "passport_num": debtor_data["passport_num"],
+        "passport_date": passport_date,
+        "passport_department": debtor_data["passport_department"],
+        "inn": debtor_data["inn"],
+        "snils": debtor_data["snils"],
+        "address_1": debtor_data["address_1"],
+        "address_2": debtor_data["address_2"],
+        "index_add_1": debtor_data["index_add_1"],
+        "index_add_2": debtor_data["index_add_2"],
+        "phone": debtor_data["phone"],
+        "email": debtor_data["email"],
+        "tribunal_id": debtor_data["tribunal_id"],
+        "comment": debtor_data["comment"],
+    }
+
+    result = await func_save_debtor(debtor_id, data, session)
+
+    return result
+
+
+async def func_save_credit(credit_id, data, session):
+
     try:
-        data = {
-            "last_name_1": debtor_data["last_name_1"],
-            "first_name_1": debtor_data["first_name_1"],
-            "second_name_1": debtor_data["second_name_1"],
-            "last_name_2": debtor_data["last_name_2"],
-            "first_name_2": debtor_data["first_name_2"],
-            "second_name_2": debtor_data["second_name_2"],
-            "pol": debtor_data["pol"],
-            "birthday": datetime.strptime(debtor_data["birthday"], '%Y-%m-%d').date(),
-            "pensioner": debtor_data["pensioner"],
-            "place_of_birth": debtor_data["place_of_birth"],
-            "passport_series": debtor_data["passport_series"],
-            "passport_num": debtor_data["passport_num"],
-            "passport_date": datetime.strptime(debtor_data["passport_date"], '%Y-%m-%d').date(),
-            "passport_department": debtor_data["passport_department"],
-            "inn": debtor_data["inn"],
-            "snils": debtor_data["snils"],
-            "address_1": debtor_data["address_1"],
-            "address_2": debtor_data["address_2"],
-            "index_add_1": debtor_data["index_add_1"],
-            "index_add_2": debtor_data["index_add_2"],
-            "phone": debtor_data["phone"],
-            "email": debtor_data["email"],
-            "tribunal_id": debtor_data["tribunal_id"],
-            "comment": debtor_data["comment"],
+        if credit_id:
+            post_data = update(credit).where(credit.c.id == int(credit_id)).values(data)
+        else:
+            post_data = insert(credit).values(data)
+
+        await session.execute(post_data)
+        await session.commit()
+
+        return {
+            'status': 'success',
+            'data': data,
+            'details': 'Кредит успешно сохранен'
+        }
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
 
-        if debtor_data["id"]:
-            debtor_id = int(debtor_data["id"])
 
-            # Не срабатывает исключение, если нет указанного id в БД
-            post_data = update(debtor).where(debtor.c.id == debtor_id).values(data)
+async def func_save_debtor(debtor_id, data, session):
+
+    try:
+        if debtor_id:
+            post_data = update(debtor).where(debtor.c.id == int(debtor_id)).values(data)
         else:
             post_data = insert(debtor).values(data)
 
@@ -567,7 +579,7 @@ async def add_debtor(debtor_data: dict, session: AsyncSession = Depends(get_asyn
 
         return {
             'status': 'success',
-            'data': data,
+            'data': None,
             'details': 'Должник успешно сохранен'
         }
     except Exception as ex:

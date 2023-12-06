@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.collection_debt.models import *
 from src.payments.routers.payments import calculate_and_post_balance
-
+from src.debts.router import func_save_debtor
 
 
 router_ed_debtor = APIRouter(
@@ -141,8 +141,11 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
         summa_debt_decision = None
         state_duty = None
 
-        credit_id = item["credit_id"]
+        credit_id: int = item["credit_id"]
         ed_id = item["id"]
+
+        query = await session.execute(select(credit.c.debtor_id).where(credit.c.id == credit_id))
+        debtor_id = query.scalar()
 
         try:
             if item['summa_debt_decision'] is not None:
@@ -196,6 +199,9 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
 
             await calculate_and_post_balance(credit_id, session)
 
+            data_tribun = {"tribunal_id": item["tribunal_id"]}
+            await func_save_debtor(debtor_id, data_tribun, session)
+
         except Exception as ex:
             return {
                 "status": "error",
@@ -234,6 +240,43 @@ async def get_ed_number(credit_id: int = None, fragment: str = None, session: As
                           "model": 'executive_document',
                           "field": 'id'}
             })
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
+# Получить Суд из ИД по credit_id
+router_tribunal_ed = APIRouter(
+    prefix="/v1/GetTribunalED",
+    tags=["Collection_debt"]
+)
+
+
+@router_tribunal_ed.get("/")
+async def get_tribunal_ed(credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
+    try:
+        tribunal_id_query = await session.execute(select(executive_document.c.tribunal_id).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
+        tribunal_item = tribunal_id_query.mappings().all()
+
+        tribunal_id = None
+        if len(tribunal_item) > 0:
+            tribunal_id = tribunal_item[0].tribunal_id
+
+        if tribunal_id:
+
+            tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(tribunal_id)))
+            tribunal_item = tribunal_query.mappings().one()
+
+            result = {"tribunal": tribunal_item.name,
+                      "value": {"tribunal_id": tribunal_item.id}}
+        else:
+            result = {"tribunal": None,
+                      "value": {"tribunal_id": None}}
+
         return result
     except Exception as ex:
         return {

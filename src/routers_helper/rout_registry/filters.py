@@ -1,7 +1,7 @@
-from datetime import date, timedelta
-
-# import logging
-# logger_cons = logging.getLogger('console_views_api')
+from fastapi import APIRouter, Depends
+from sqlalchemy import select, delete, insert, and_, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.debts.models import cession, credit
 
 '''
 Боевые:
@@ -9,8 +9,27 @@ from datetime import date, timedelta
 '''
 
 
-def control_section8(period, cession_id):
-    credit_id_list = [1, 2, 3, 4]
+# Функция фильтра для статусов КД
+async def filter_status_credit(filter_components, session):
+
+    list_cession = filter_components['cession_id_list']
+    list_status = filter_components['status_cd_id_list']
+    if len(list_cession) == 0 and len(list_status) > 0:
+        credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.status_cd_id.in_(list_status))))
+    elif len(list_cession) > 0 and len(list_status) == 0:
+        credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession))))
+    else:
+        credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession), credit.c.status_cd_id.in_(list_status))))
+
+    result = []
+    for item in credit_query.mappings().all():
+        result.append(item.id)
+
+    return result
+
+
+async def control_section8(filter_components, session):
+    credit_id_list = [123, 130, 126, 131, 125]
 
     # queryset = Executive_Documents.objects.filter(status_ed=2).values()
     #
@@ -52,7 +71,7 @@ def control_section8(period, cession_id):
     return credit_id_list
 
 
-def control_return_section8(period, cession_id):
+def control_return_section8(filter_components):
     pass
 
     # queryset = Executive_Documents.objects.filter(status_ed=2).values()
@@ -78,7 +97,7 @@ def control_return_section8(period, cession_id):
     # return credit_id_list
 
 
-def control_not_excitement_ep(period, cession_id):
+def control_not_excitement_ep(filter_components):
     pass
 
     # queryset = Collection_Debt.objects.filter(type_department=1).values()
@@ -112,7 +131,7 @@ def control_not_excitement_ep(period, cession_id):
     # return credit_id_list
 
 
-def control_not_return_ed(period, cession_id):
+def control_not_return_ed(filter_components):
     pass
 
     # date_end_set = Executive_Productions.objects.filter(date_end__isnull=False).values()

@@ -3,12 +3,13 @@ import shutil
 import re
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, delete, insert
+from sqlalchemy import select, delete, insert, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.collection_debt.models import executive_document, executive_productions
 from src.directory_docs.models import dir_credit, docs_folder
+from src.debts.models import cession, credit
 
 
 # Роутер для запуска разных функций, вспомогательные вычисления
@@ -27,6 +28,8 @@ async def helper_helper(function, session: AsyncSession = Depends(get_async_sess
         result = await add_docs_dossier(session)
     elif function == 'save_path_docs_folder':
         result = await save_path_docs_folder(session)
+    elif function == 'filter_credit_status':
+        result = await filter_credit_status(session)
 
     return result
 
@@ -138,4 +141,28 @@ async def save_path_docs_folder(session):
             count += 1
 
     result = f'Успешно записана инфа о {count} документах.'
+    return result
+
+
+# Тестовая функция сложного фильтра для статусов
+async def filter_credit_status(session):
+
+    list_cession = [9, 31, 32]
+    list_status = [2, 11]
+    credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession), credit.c.status_cd_id.in_(list_status))))
+    list_credit_id = credit_query.mappings().all()
+
+    # for item in list_ed_id:
+    #     ed_id: int = item.id
+    #
+    #     ep_query = await session.execute(select(executive_productions).where(executive_productions.c.executive_document_id == ed_id))
+    #     ep_set = ep_query.fetchone()
+    #
+    #     if ep_set is None:
+    #
+    #         await session.execute(delete(executive_document).where(executive_document.c.id == ed_id))
+    #         await session.commit()
+    #         print(f'{ed_id=}')
+
+    result = list_credit_id
     return result

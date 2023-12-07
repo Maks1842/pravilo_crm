@@ -13,6 +13,7 @@ from src.collection_debt.models import *
 from src.references.models import ref_status_credit, ref_result_statement
 from src.legal_work.models import legal_work
 from src.payments.models import payment
+from src.store_value import per_page_store
 
 import src.routers_helper.rout_registry.filters as control_filters
 from inspect import getmembers, isfunction
@@ -45,10 +46,17 @@ router_data_registry = APIRouter(
 )
 
 
-@router_data_registry.get("/")
-async def get_data_registry(page: int, filter_id: int = None, model: str = None, field: str = None, values_filter: str = None, period: str = None, cession_id: int = None, session: AsyncSession = Depends(get_async_session)):
+@router_data_registry.post("/")
+async def get_data_registry(data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    page: int = data['page']
+    filter_id: int = data['filter_id']
+    model: str = data['model']
+    field: str = data['field']
+    values_filter: str = data['values_filter']
+    filter_components = data['filter_components']
+
+    per_page = int(per_page_store)
     legal_number = None
 
     if filter_id is None:
@@ -128,12 +136,12 @@ async def get_data_registry(page: int, filter_id: int = None, model: str = None,
                           'balance_summa': balance_summa}
         else:
             functions_control = getattr(control_filters, f'{filter_set.function_name}')
-            credit_id_list = functions_control(period, cession_id)
+            credit_id_list = await functions_control(filter_components, session)
 
             credits_query = await session.execute(select(credit).where(credit.c.id.in_(credit_id_list)).order_by(credit.c.id).
                                                   limit(per_page).offset((page - 1) * per_page))
 
-            total_credits_query = await session.execute(select(func.count(distinct(credit.c.id.in_(credit_id_list)))))
+            total_credits_query = await session.execute(select(func.count(distinct(credit.c.number)).filter(credit.c.id.in_(credit_id_list))))
             total_credits = total_credits_query.scalar()
             num_page_all = int(math.ceil(total_credits / per_page))
 

@@ -5,13 +5,14 @@ from src.auth.schemas import UserRead, UserCreate, UserUpdate
 
 from src.debts.router import router_lending, router_cession, router_credits, router_debtor, router_credit_debtor, router_debtor_inn, \
     router_debt_information, router_get_cession_name, router_get_lending_name, router_debtor_name
-from src.references.router import router_ref_claimer_ed, router_ref_type_ed, router_ref_type_templates, \
+from src.references.router import router_ref_claimer_ed, router_ref_type_templates, \
     router_ref_reason_cansel_ed, router_ref_tribunal,  router_ref_financial_manager, router_ref_type_department, \
     router_ref_region, router_ref_rosp, router_ref_bank, router_ref_pfr, router_ref_reason_end_ep, router_ref_type_statement, \
     router_ref_type_state_duty, router_ref_section_card_debtor, router_ref_legal_section, \
     router_ref_result_statement, router_ref_type_filters
 from src.references.routers.ref_status_cd_api import router_ref_status_credit, router_delete_status_cd
 from src.references.routers.ref_status_ed_api import router_ref_status_ed, router_delete_status_ed
+from src.references.routers.ref_type_ed_api import router_ref_type_ed
 from src.references.routers.ref_legal_docs_api import router_ref_legal_docs, router_delete_ref_legal_docs
 
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
@@ -55,7 +56,7 @@ from src.routers_helper.rout_debt_import.upload_to_database import router_post_d
 from src.routers_helper.rout_registry.get_data_for_registry import router_data_registry, router_func_filters
 from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_outgoing_mail
 from src.routers_helper.rout_admin.helper_helper import router_helper
-from src.routers_helper.welcome.welcome_rout import router_welcome
+from src.routers_helper.welcome.welcome_rout import router_welcome, router_export_variables
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
 from src.finance.routers.reports_rout import router_report_parent_organisation, router_report_for_investor
@@ -202,6 +203,7 @@ app.include_router(router_reg_outgoing_mail)
 app.include_router(router_helper)
 app.include_router(router_generator_txt)
 app.include_router(router_welcome)
+app.include_router(router_export_variables)
 
 # Для finance
 app.include_router(router_expenses_category)

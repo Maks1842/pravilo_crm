@@ -1,7 +1,7 @@
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.debts.models import cession, credit
-from src.collection_debt.models import executive_document
+from src.collection_debt.models import executive_document, executive_productions
 
 '''
 Боевые:
@@ -9,7 +9,7 @@ from src.collection_debt.models import executive_document
 '''
 
 
-# Функция фильтра для статусов КД
+# Функция фильтра для Статусов КД
 async def filter_status_credit(filter_components, session):
 
     list_cession = filter_components['cession_id_list']
@@ -28,7 +28,7 @@ async def filter_status_credit(filter_components, session):
     return result
 
 
-# Функция фильтра для статусов ИД
+# Функция фильтра для Статусов ИД
 async def filter_status_ed(filter_components, session):
 
     list_cession = filter_components['cession_id_list']
@@ -48,6 +48,55 @@ async def filter_status_ed(filter_components, session):
         result.append(item)
 
     return result
+
+
+# Функция фильтра для Типов ИД
+async def filter_type_ed(filter_components, session):
+
+    list_cession = filter_components['cession_id_list']
+    list_type = filter_components['type_ed_id_list']
+    if len(list_cession) > 0 and len(list_type) == 0:
+        credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
+    elif len(list_cession) == 0 and len(list_type) > 0:
+        credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.type_ed_id.in_(list_type)))
+    else:
+        credit_cession_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
+        list_credit = credit_cession_query.scalars().all()
+
+        credit_query = await session.execute(select(executive_document.c.credit_id).filter(and_(executive_document.c.type_ed_id.in_(list_type), executive_document.c.credit_id.in_(list_credit))))
+
+    result = []
+    for item in credit_query.scalars().all():
+        result.append(item)
+
+    return result
+
+
+# # Функция фильтра для ИП
+# async def filter_status_ep(filter_components, session):
+#
+#     # {text: 'Действующие', value: 1}, {text: 'Оконченные', value: 2}
+#
+#     list_cession = filter_components['cession_id_list']
+#     status_ep_id = filter_components['status_ep_id']
+#
+#     print(f'{status_ep_id=}')
+#     if len(list_cession) == 0 and status_ep_id == 1:
+#         credit_query = await session.execute(select(executive_productions.c.credit_id).where(and_(executive_productions.c.date_on.isnot(None), executive_productions.c.date_end.is_(None))))
+#     elif len(list_cession) == 0 and status_ep_id == 2:
+#         credit_query = await session.execute(select(executive_productions.c.credit_id).where(and_(executive_productions.c.date_on.isnot(None), executive_productions.c.date_end.isnot(None))))
+#     # elif len(list_cession) > 0 and status_ep_id == 1:
+#     #     credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.type_ed_id.in_(list_type)))
+#     # elif len(list_cession) > 0 and status_ep_id == 2:
+#     #     credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.type_ed_id.in_(list_type)))
+#     else:
+#         credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
+#
+#     result = []
+#     for item in credit_query.scalars().all():
+#         result.append(item)
+#
+#     return result
 
 
 async def control_section8(filter_components, session):

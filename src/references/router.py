@@ -40,35 +40,6 @@ async def get_claimer_ed(session: AsyncSession = Depends(get_async_session)):
         }
 
 
-# Получить/добавить тип ИД
-router_ref_type_ed = APIRouter(
-    prefix="/v1/RefTypeED",
-    tags=["References"]
-)
-
-
-@router_ref_type_ed.get("/")
-async def get_type_ed(session: AsyncSession = Depends(get_async_session)):
-
-    try:
-        query = await session.execute(select(ref_type_ed))
-
-        result = []
-        for item in query.mappings().all():
-
-            result.append({
-                "type_ed": item.name,
-                "value": {"type_ed_id": item.id},
-            })
-
-        return result
-    except Exception as ex:
-        return {
-            "status": "error",
-            "data": None,
-            "details": ex
-        }
-
 
 # Получить/добавить Причина отзыва ИД
 router_ref_reason_cansel_ed = APIRouter(

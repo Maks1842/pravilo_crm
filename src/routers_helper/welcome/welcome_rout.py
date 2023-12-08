@@ -1,6 +1,8 @@
 import random
 
 from fastapi import APIRouter
+from src.variables_for_front import welcome_list
+from src.variables_for_front import VariablesFront
 
 
 # Роутер для приветствия
@@ -8,7 +10,6 @@ router_welcome = APIRouter(
     prefix="/v1/GetWelcomeText",
     tags=["Admin"]
 )
-
 
 @router_welcome.get("/")
 async def get_welcome_text():
@@ -18,12 +19,15 @@ async def get_welcome_text():
     return result
 
 
-welcome_list = [
-    'Ты сегодня прекрасно выглядишь! ;))',
-    'Сегодня лучший день для достижения мечты! ВПЕРЕД!!!',
-    'Великолепного, прекрасного, плодотворного дня!!!',
-    'УЛЫБНИСЬ %)%)',
-    'Выигрывают те, у кого больше степеней свободы и вариантов. Мечтай, Думай, Совершай!!!',
-    'Если мы не управляем своими целями, то ими управляет кто-то другой.',
-    'Ты ЛУЧШАЯ(ий)!!!',
-]
+# Роутер для экспортирования переменных на Фронт
+router_export_variables = APIRouter(
+    prefix="/v1/GetExportVariables",
+    tags=["Admin"]
+)
+
+@router_export_variables.get("/")
+async def export_variables():
+
+    return VariablesFront.variables
+
+

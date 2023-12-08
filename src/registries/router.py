@@ -207,6 +207,7 @@ async def add_registry_filters(data_json: dict, session: AsyncSession = Depends(
             "name": data_json['name'],
             "function_name": data_json['function_name'],
             "registry_structure_id": data_json['reg_struct_id'],
+            "comment": data_json['comment'],
         }
 
         if data_json['id']:

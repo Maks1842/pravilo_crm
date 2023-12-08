@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select, delete, insert, and_, or_
+from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.debts.models import cession, credit
+from src.collection_debt.models import executive_document
 
 '''
 Боевые:
@@ -15,15 +15,37 @@ async def filter_status_credit(filter_components, session):
     list_cession = filter_components['cession_id_list']
     list_status = filter_components['status_cd_id_list']
     if len(list_cession) == 0 and len(list_status) > 0:
-        credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.status_cd_id.in_(list_status))))
+        credit_query = await session.execute(select(credit.c.id).where(credit.c.status_cd_id.in_(list_status)))
     elif len(list_cession) > 0 and len(list_status) == 0:
-        credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession))))
+        credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
     else:
         credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession), credit.c.status_cd_id.in_(list_status))))
 
     result = []
     for item in credit_query.mappings().all():
         result.append(item.id)
+
+    return result
+
+
+# Функция фильтра для статусов ИД
+async def filter_status_ed(filter_components, session):
+
+    list_cession = filter_components['cession_id_list']
+    list_status = filter_components['status_ed_id_list']
+    if len(list_cession) == 0 and len(list_status) > 0:
+        credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.status_ed_id.in_(list_status)))
+    elif len(list_cession) > 0 and len(list_status) == 0:
+        credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
+    else:
+        credit_cession_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
+        list_credit = credit_cession_query.scalars().all()
+
+        credit_query = await session.execute(select(executive_document.c.credit_id).where(and_(executive_document.c.status_ed_id.in_(list_status), executive_document.c.credit_id.in_(list_credit))))
+
+    result = []
+    for item in credit_query.scalars().all():
+        result.append(item)
 
     return result
 

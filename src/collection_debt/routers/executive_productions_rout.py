@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
@@ -5,8 +6,13 @@ from sqlalchemy import select, insert, update, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
+from src.debts.models import cession, credit
 from src.collection_debt.models import *
+from src.store_value import per_page_store
 
+from src.registries.models import registry_filters
+from src.collection_debt.routers.executive_prod_functions import get_execut_prod_all
+import src.collection_debt.routers.executive_prod_functions as control_filters
 
 
 router_ep_debtor = APIRouter(
@@ -16,24 +22,30 @@ router_ep_debtor = APIRouter(
 
 
 # Получить информацию об ИП
-@router_ep_debtor.get("/")
-async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: AsyncSession = Depends(get_async_session)):
+@router_ep_debtor.post("/")
+async def get_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_session)):
+
+    per_page = int(per_page_store)
+    filter_id: int = data['filter_id']
 
     try:
-        if credit_id:
-            query = await session.execute(select(executive_productions).where(executive_productions.c.credit_id == credit_id).
-                                          order_by(desc(executive_productions.c.date_on)))
-            ep_list = query.mappings().all()
+        if filter_id:
+            filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
+            filter_set = filter_query.mappings().fetchone()
+            functions_control = getattr(control_filters, f'{filter_set.function_name}')
+            ep_set = await functions_control(per_page, data, session)
+
         else:
-            query_credit_id = await session.execute(select(credit.c.id).where(credit.c.debtor_id == debtor_id))
-            credits_id_list = query_credit_id.scalars().all()
+            ep_set = await get_execut_prod_all(per_page, data, session)
 
-            query = await session.execute(select(executive_productions).where(executive_productions.c.credit_id.in_(credits_id_list)).
-                                          order_by(desc(executive_productions.c.date_on)))
-            ep_list = query.mappings().all()
+        total_ep_query = ep_set['total_ep_query']
+        ep_query = ep_set['ep_query']
 
-        result = []
-        for item in ep_list:
+        total_item = total_ep_query.scalar()
+        num_page_all = int(math.ceil(total_item / per_page))
+
+        data_ep = []
+        for item in ep_query.mappings().all():
 
             if len(item) > 0:
                 reason_end = ''
@@ -44,12 +56,33 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                 class_code = ''
                 ed_number = ''
                 ed_id = None
+                ed_type_id = None
+                ed_type_name = ''
                 curent_debt = 0
                 summa_debt = 0
                 gov_toll = 0
                 date_on = None
                 date_end = None
                 date_request = None
+
+                credit_id: int = item.credit_id
+                credits_query = await session.execute(select(credit).where(credit.c.id == credit_id))
+                credit_set = credits_query.mappings().one()
+                credit_number = credit_set.number
+                debtor_id: int = credit_set.debtor_id
+                cession_id: int = credit_set.cession_id
+
+                cession_query = await session.execute(select(cession.c.name).where(cession.c.id == cession_id))
+                cession_name = cession_query.scalar()
+
+                debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
+                debtor_item = debtor_query.mappings().one()
+
+                if debtor_item.last_name_2 is not None:
+                    debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
+                                 f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
+                else:
+                    debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
                 if item.curent_debt is not None:
                     curent_debt = item.curent_debt / 100
@@ -76,10 +109,16 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                     reason_end_id = item.reason_end_id
 
                 if item.executive_document_id is not None:
-                    ed_query = await session.execute(select(executive_document.c.number).where(executive_document.c.id == int(item.executive_document_id)))
+                    ed_query = await session.execute(select(executive_document).where(executive_document.c.id == int(item.executive_document_id)))
+                    ed_set = ed_query.mappings().one()
 
-                    ed_number = ed_query.scalar()
-                    ed_id = item.executive_document_id
+                    ed_id = ed_set.id
+                    ed_number = ed_set.number
+                    ed_type_id: int = ed_set.type_ed_id
+
+                    ed_type_query = await session.execute(select(ref_type_ed.c.name).where(ref_type_ed.c.id == ed_type_id))
+                    ed_type_name = ed_type_query.scalar()
+
 
                 if item.date_on is not None:
                     date_on = datetime.strptime(str(item.date_on), '%Y-%m-%d').strftime("%d.%m.%Y")
@@ -89,8 +128,13 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                     date_request = datetime.strptime(str(item.date_request), '%Y-%m-%d').strftime("%d.%m.%Y")
 
 
-                result.append({
+                data_ep.append({
                     "id": item.id,
+                    "credit": credit_number,
+                    "credit_id": credit_id,
+                    "cession": cession_name,
+                    "cession_id": cession_id,
+                    "debtorName": debtor_fio,
                     "number": item.number,
                     "summary_case": item.summary_case,
                     "date_on": date_on,
@@ -110,10 +154,17 @@ async def get_ep_debtor(credit_id: int = None, debtor_id: int = None, session: A
                     "object_ep": item.object_ep,
                     "executive_document": ed_number,
                     "executive_document_id": ed_id,
-                    "credit_id": item.credit_id,
+                    "ed_type": ed_type_name,
+                    "ed_type_id": ed_type_id,
+
                     "claimer": item.claimer,
                     "comment": item.comment,
                 })
+
+        result = {'data_ep': data_ep,
+                  'count_all': total_item,
+                  'num_page_all': num_page_all}
+
         return result
     except Exception as ex:
         return {

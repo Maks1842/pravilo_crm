@@ -9,7 +9,7 @@ from src.database import get_async_session
 from src.collection_debt.models import *
 from src.references.models import ref_rosp, ref_bank, ref_pfr, ref_type_department
 from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all, get_collection_debt_1, get_collection_debt_2, get_collection_debt_3
-
+from src.store_value import per_page_store
 
 
 # Получить департаменты предъявления ИД
@@ -52,21 +52,11 @@ router_collection_debt = APIRouter(
 )
 
 
-@router_collection_debt.get("/")
-async def get_collection_debt(page: int, filter_id: int = None, credit_id: int = None, type_department_id: int = None,
-                              department_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+@router_collection_debt.post("/")
+async def get_collection_debt(data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
-
-    data = {
-        'page': page,
-        'per_page': per_page,
-        'credit_id': credit_id,
-        'type_department_id': type_department_id,
-        'department_id': department_id,
-        'dates1': dates1,
-        'dates2': dates2
-    }
+    per_page = int(per_page_store)
+    filter_id: int = data['filter_id']
 
     try:
         if filter_id == 1:
@@ -76,7 +66,7 @@ async def get_collection_debt(page: int, filter_id: int = None, credit_id: int =
         elif filter_id == 3:
             coll_deb_set = await get_collection_debt_3(data, session)
         else:
-            coll_deb_set = await get_collection_debt_all(data, session)
+            coll_deb_set = await get_collection_debt_all(per_page, data, session)
 
         total_collect_query = coll_deb_set['total_collect_query']
         collect_query = coll_deb_set['collect_query']

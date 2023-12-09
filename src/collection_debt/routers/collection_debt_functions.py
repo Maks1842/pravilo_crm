@@ -1,19 +1,13 @@
-import math
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends
 from sqlalchemy import select, insert, func, distinct, update, desc, and_
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import get_async_session
 from src.collection_debt.models import *
-from src.references.models import ref_rosp, ref_bank, ref_pfr, ref_type_department
 
 
-async def get_collection_debt_all(data, session):
+async def get_collection_debt_all(per_page: int, data, session):
 
     page = data['page']
-    per_page = data['per_page']
     credit_id: int = data['credit_id']
     type_department_id: int = data['type_department_id']
     department_id: int = data['department_id']

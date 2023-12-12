@@ -17,7 +17,7 @@ from src.references.routers.ref_legal_docs_api import router_ref_legal_docs, rou
 
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
 from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number, router_tribunal_ed
-from src.collection_debt.routers.executive_productions_rout import router_ep_debtor, router_ep_number
+from src.collection_debt.routers.executive_productions_rout import router_get_ep_debtor, router_save_ep_debtor, router_ep_number
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
 from src.legal_work.routers.appeal_rout import router_appeal
@@ -138,7 +138,8 @@ app.include_router(router_collection_debt)
 app.include_router(router_ed_number)
 app.include_router(router_tribunal_ed)
 app.include_router(router_department_presentation)
-app.include_router(router_ep_debtor)
+app.include_router(router_get_ep_debtor)
+app.include_router(router_save_ep_debtor)
 app.include_router(router_ep_number)
 
 # Для legal_work

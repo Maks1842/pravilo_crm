@@ -18,8 +18,10 @@ async def filter_status_credit(filter_components, session):
         credit_query = await session.execute(select(credit.c.id).where(credit.c.status_cd_id.in_(list_status)))
     elif len(list_cession) > 0 and len(list_status) == 0:
         credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
-    else:
+    elif len(list_cession) > 0 and len(list_status) > 0:
         credit_query = await session.execute(select(credit.c.id).where(and_(credit.c.cession_id.in_(list_cession), credit.c.status_cd_id.in_(list_status))))
+    else:
+        credit_query = await session.execute(select(credit.c.id))
 
     result = []
     for item in credit_query.mappings().all():
@@ -37,11 +39,13 @@ async def filter_status_ed(filter_components, session):
         credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.status_ed_id.in_(list_status)))
     elif len(list_cession) > 0 and len(list_status) == 0:
         credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
-    else:
+    elif len(list_cession) > 0 and len(list_status) > 0:
         credit_cession_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
         list_credit = credit_cession_query.scalars().all()
 
         credit_query = await session.execute(select(executive_document.c.credit_id).where(and_(executive_document.c.status_ed_id.in_(list_status), executive_document.c.credit_id.in_(list_credit))))
+    else:
+        credit_query = await session.execute(select(credit.c.id))
 
     result = []
     for item in credit_query.scalars().all():
@@ -59,11 +63,13 @@ async def filter_type_ed(filter_components, session):
         credit_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
     elif len(list_cession) == 0 and len(list_type) > 0:
         credit_query = await session.execute(select(executive_document.c.credit_id).where(executive_document.c.type_ed_id.in_(list_type)))
-    else:
+    elif len(list_cession) > 0 and len(list_type) > 0:
         credit_cession_query = await session.execute(select(credit.c.id).where(credit.c.cession_id.in_(list_cession)))
         list_credit = credit_cession_query.scalars().all()
 
         credit_query = await session.execute(select(executive_document.c.credit_id).filter(and_(executive_document.c.type_ed_id.in_(list_type), executive_document.c.credit_id.in_(list_credit))))
+    else:
+        credit_query = await session.execute(select(credit.c.id))
 
     result = []
     for item in credit_query.scalars().all():

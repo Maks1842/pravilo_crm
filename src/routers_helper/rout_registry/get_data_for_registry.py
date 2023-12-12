@@ -185,6 +185,8 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
         overdue_od = 0
         percent_of_od = 0
         balance_debt = 0
+        penalty_cd = 0
+        gov_toll_cd = 0
         credit_date_start = ''
         summa_tribun = 0
         summa_pay = 0
@@ -273,6 +275,10 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
             percent_of_od = credit_item['percent_of_od'] / 100
         if credit_item['balance_debt'] is not None:
             balance_debt = credit_item['balance_debt'] / 100
+        if credit_item['penalty'] is not None:
+            penalty_cd = credit_item['penalty'] / 100
+        if credit_item['gov_toll'] is not None:
+            gov_toll_cd = credit_item['gov_toll'] / 100
         if credit_item['date_start'] is not None:
             try:
                 credit_date_start = datetime.strptime(str(credit_item['date_start']), '%Y-%m-%d').strftime("%d.%m.%Y")
@@ -404,6 +410,10 @@ async def calculation_of_filters(list_headers, credits_list, legal_number, sessi
                     data_items[item['headers_key']] = percent_of_od
                 elif item['headers_key'] == 'balance_debt':
                     data_items[item['headers_key']] = balance_debt
+                elif item['headers_key'] == 'penalty_cd':
+                    data_items[item['headers_key']] = penalty_cd
+                elif item['headers_key'] == 'gov_toll_cd':
+                    data_items[item['headers_key']] = gov_toll_cd
                 elif item['headers_key'] == 'date_start_cd':
                     data_items[item['headers_key']] = credit_date_start
                 else:

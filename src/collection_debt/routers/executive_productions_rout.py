@@ -15,14 +15,14 @@ from src.collection_debt.routers.executive_prod_functions import get_execut_prod
 import src.collection_debt.routers.executive_prod_functions as control_filters
 
 
-router_ep_debtor = APIRouter(
-    prefix="/v1/ExecutiveProductions",
+router_get_ep_debtor = APIRouter(
+    prefix="/v1/GetExecutiveProductions",
     tags=["Collection_debt"]
 )
 
 
 # Получить информацию об ИП
-@router_ep_debtor.post("/")
+@router_get_ep_debtor.post("/")
 async def get_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     per_page = int(per_page_store)
@@ -174,8 +174,14 @@ async def get_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_se
         }
 
 
+router_save_ep_debtor = APIRouter(
+    prefix="/v1/SaveExecutiveProductions",
+    tags=["Collection_debt"]
+)
+
+
 # Изменить данные об ИП
-@router_ep_debtor.post("/")
+@router_save_ep_debtor.post("/")
 async def add_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     date_on = None

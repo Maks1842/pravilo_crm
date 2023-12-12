@@ -1,8 +1,8 @@
 import random
 
 from fastapi import APIRouter
-from src.variables_for_front import welcome_list
-from src.variables_for_front import VariablesFront
+from variables_for_front import welcome_list
+from variables_for_front import VariablesFront
 
 
 # Роутер для приветствия

@@ -5,7 +5,7 @@ from src.database import get_async_session
 from src.legal_work.models import legal_work
 from src.debts.models import credit
 from src.tasks.models import task
-from src.store_value import status_cd_rab, status_cd_none, section_card_id_tribun
+from variables_for_backend import VarStatusCD, VarSectionCard
 from src.debts.router import func_save_credit
 from src.tasks.router import func_save_task
 
@@ -66,8 +66,8 @@ async def save_case_legal(case_id, user_id, legal_data, session):
         credit_query = await session.execute(select(credit.c.status_cd_id).where(credit.c.id == credit_id))
         status_cd_id = credit_query.scalar()
 
-        if status_cd_id == int(status_cd_none):
-            data_cd = {"status_cd_id": int(status_cd_rab)}
+        if status_cd_id == VarStatusCD.status_cd_none:
+            data_cd = {"status_cd_id": VarStatusCD.status_cd_rab}
             await func_save_credit(credit_id, data_cd, session)
 
     try:
@@ -88,7 +88,7 @@ async def save_case_legal(case_id, user_id, legal_data, session):
     x = legal_data["legal_docs_id"]
 
     task_query = await session.execute(select(task.c.id).where(and_(task.c.user_id == int(user_id),
-                                                                    task.c.section_card_debtor_id == int(section_card_id_tribun),
+                                                                    task.c.section_card_debtor_id == VarSectionCard.section_card_id_tribun,
                                                                     task.c.credit_id == credit_id,
                                                                     task.c.name_id == int(legal_data['legal_docs_id']),
                                                                     task.c.date_statement.is_(None),
@@ -100,7 +100,7 @@ async def save_case_legal(case_id, user_id, legal_data, session):
         try:
             task_data = {
                   "name_id": legal_data['legal_docs_id'],
-                  "section_card_debtor_id": int(section_card_id_tribun),
+                  "section_card_debtor_id": VarSectionCard.section_card_id_tribun,
                   "type_statement_id": None,
                   "date_task": date.today(),
                   "timeframe": None,

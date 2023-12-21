@@ -9,6 +9,7 @@ from src.database import get_async_session
 from src.debts.models import cession, credit, debtor
 from src.payments.models import payment
 from src.collection_debt.models import executive_document
+from variables_for_backend import VarStatusCD, per_page_mov
 
 
 # Получить по credit_id/добавить платежи
@@ -21,7 +22,7 @@ router_payment = APIRouter(
 @router_payment.get("/")
 async def get_payment(page: int, credit_id: int = None, cession_id: int = None, department_pay: str = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    per_page = per_page_mov
 
     if dates2 is None:
         dates2 = dates1
@@ -293,7 +294,7 @@ async def calculate_and_post_balance(credit_id: int, session):
         balance_debt = balance
 
     if balance_debt <= 0:
-        status_cd = 7
+        status_cd = VarStatusCD.status_cd_pgsh
 
     try:
         data_cd = {

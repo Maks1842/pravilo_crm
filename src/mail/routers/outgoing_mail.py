@@ -11,6 +11,7 @@ from src.debts.models import credit, debtor
 from src.mail.models import mail_out
 from src.auth.models import user
 from src.routers_helper.data_to_excel.mail_to_excel import mail_out_to_excel
+from variables_for_backend import per_page_mov
 
 '''
 OutgoingMail - извлекаю и добавляю исходящую корреспонденцию.
@@ -34,7 +35,7 @@ router_outgoing_mail = APIRouter(
 @router_outgoing_mail.get("/")
 async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: str = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    per_page = int(per_page_mov)
 
     if dates2 is None:
         dates2 = dates1

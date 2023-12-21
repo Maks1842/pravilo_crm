@@ -14,5 +14,6 @@ agreement = Table(
     Column("date", DATE, doc='Дата соглашения'),
     Column("summa", Integer, doc='Сумма соглашения'),
     Column("payment_schedule", JSON, nullable=False, doc='График платежей JSON'),
+    Column("control", String(100), doc='Контроль платежей'),
     Column("comment", String(200), doc='Комментарий'),
 )

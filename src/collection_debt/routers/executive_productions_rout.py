@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.debts.models import cession, credit
 from src.collection_debt.models import *
-from src.store_value import per_page_store
+from variables_for_backend import per_page_reg
 
 from src.registries.models import registry_filters
 from src.collection_debt.routers.executive_prod_functions import get_execut_prod_all
@@ -25,7 +25,7 @@ router_get_ep_debtor = APIRouter(
 @router_get_ep_debtor.post("/")
 async def get_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_store)
+    per_page = int(per_page_reg)
     filter_id: int = data['filter_id']
 
     try:

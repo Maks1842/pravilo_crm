@@ -7,7 +7,7 @@ from src.debts.models import credit
 from src.payments.models import payment
 from src.finance.models import expenses
 from src.finance.routers.expenses_rout import save_expenses
-from src.store_value import taxes_percent, tax_exp_category_id, agent_exp_category_id, loan_repay_exp_category_id
+from variables_for_backend import VarReportOrg
 
 from datetime import datetime
 
@@ -49,7 +49,7 @@ async def get_calculator_taxes(data_json: dict, session: AsyncSession = Depends(
         summa_total = round(summa / 100, 2)
 
     if data_json['checkboxTax'] and summa:
-        summa_taxes = round(summa * float(taxes_percent) / 100 / 100, 2)
+        summa_taxes = round(summa * float(VarReportOrg.taxes_percent) / 100 / 100, 2)
 
     if data_json['checkboxAgent'] and summa:
         summa_agency = round(summa * float(agency_rate) / 100 / 100, 2)
@@ -96,7 +96,7 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
         date_tax = datetime.strptime(str(date_join), '%Y-%m-%d').date()
 
         if reg_data['summaTax'] > 0:
-            expenses_tax_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == int(tax_exp_category_id),
+            expenses_tax_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.tax_exp_category_id,
                                                                                         expenses.c.cession_id == cession_id,
                                                                                         expenses.c.date == date_tax)))
             expenses_tax_item = expenses_tax_query.mappings().fetchone()
@@ -111,7 +111,7 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
                         "id": None,
                         "date": date_join,
                         "summa": reg_data['summaTax'],
-                        "expenses_category_id": tax_exp_category_id,
+                        "expenses_category_id": VarReportOrg.tax_exp_category_id,
                         "payment_purpose": f'Подоходный налог за {reg_data["month"]} {reg_data["year"]} г.',
                         "cession_id": reg_data['cession_id'],
                         }
@@ -151,7 +151,7 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
         date_tax = datetime.strptime(str(date_join), '%Y-%m-%d').date()
 
         if reg_data['summaAgent'] > 0:
-            expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == int(agent_exp_category_id),
+            expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.agent_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
                                                                                           expenses.c.date == date_tax)))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
@@ -167,7 +167,7 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
                     "id": None,
                     "date": date_join,
                     "summa": reg_data['summaAgent'],
-                    "expenses_category_id": agent_exp_category_id,
+                    "expenses_category_id": VarReportOrg.agent_exp_category_id,
                     "payment_purpose": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
                 }
@@ -209,7 +209,7 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
         date_tax = datetime.strptime(str(date_join), '%Y-%m-%d').date()
 
         if reg_data['summaLoanRepay'] > 0:
-            expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == int(loan_repay_exp_category_id),
+            expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.loan_repay_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
                                                                                           expenses.c.date == date_tax)))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
@@ -225,7 +225,7 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
                     "id": None,
                     "date": date_join,
                     "summa": reg_data['summaLoanRepay'],
-                    "expenses_category_id": loan_repay_exp_category_id,
+                    "expenses_category_id": VarReportOrg.loan_repay_exp_category_id,
                     "payment_purpose": f'Возврат займа {reg_data["loan_repay_rate"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
                 }

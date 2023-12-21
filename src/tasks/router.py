@@ -10,7 +10,7 @@ from src.debts.models import cession, credit, debtor
 from src.tasks.models import task
 from src.references.models import ref_legal_docs, ref_section_card_debtor, ref_type_statement, ref_result_statement
 from src.auth.models import user
-from src.store_value import per_page_store
+from variables_for_backend import per_page_mov
 
 
 # Получить по credit_id/добавить задачи
@@ -177,7 +177,7 @@ router_task_all = APIRouter(
 @router_task_all.get("/")
 async def get_task_all(page: int, user_id: int = None, name_task_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_store)
+    per_page = per_page_mov
 
     try:
         if user_id and name_task_id == None:

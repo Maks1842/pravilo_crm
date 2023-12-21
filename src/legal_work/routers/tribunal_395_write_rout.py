@@ -10,7 +10,7 @@ from src.debts.models import cession, credit, debtor
 from src.legal_work.models import legal_work
 from src.legal_work.routers.helper_legal_work import number_case_legal, save_case_legal
 from src.references.models import ref_legal_docs, ref_result_statement, ref_tribunal
-from src.store_value import per_page_store
+from variables_for_backend import per_page_legal
 
 '''
 Метод для судебной работы
@@ -27,7 +27,7 @@ router_tribun395_write = APIRouter(
 @router_tribun395_write.get("/")
 async def get_tribun395_write(page: int, credit_id: int = None, cession_id: int = None, legal_section_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_store)
+    per_page = int(per_page_legal)
 
     if dates2 is None:
         dates2 = dates1

@@ -13,7 +13,7 @@ from src.collection_debt.models import *
 from src.references.models import ref_status_credit, ref_result_statement
 from src.legal_work.models import legal_work
 from src.payments.models import payment
-from src.store_value import per_page_store
+from variables_for_backend import per_page_reg
 
 import src.routers_helper.rout_registry.filters as control_filters
 from inspect import getmembers, isfunction
@@ -56,7 +56,7 @@ async def get_data_registry(data: dict, session: AsyncSession = Depends(get_asyn
     values_filter: str = data['values_filter']
     filter_components = data['filter_components']
 
-    per_page = int(per_page_store)
+    per_page = per_page_reg
     legal_number = None
 
     if filter_id is None:

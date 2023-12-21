@@ -2,59 +2,70 @@ import math
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, and_
+from sqlalchemy import select, insert, func, distinct, update, and_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import credit, debtor
 from src.agreement.models import agreement
+from src.payments.models import payment
+from variables_for_backend import per_page_mov
 
 
-# Получить по credit_id/добавить соглашение
+# Получить по credit_id соглашение
 router_agreement = APIRouter(
-    prefix="/v1/Agreement",
+    prefix="/v1/GetAgreement",
     tags=["Agreements"]
 )
 
 
-@router_agreement.get("/")
-async def get_agreement(page: int, credit_id: int = None, cession_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+@router_agreement.post("/")
+async def get_agreement(data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    per_page: int = 20
+    page = data['page']
+    d_credit_id = data['credit_id']
+    cession_id = data['cession_id']
+    dates = data['dates']
+    check_control = data['checkControl']
 
-    if dates2 is None:
-        dates2 = dates1
+    per_page = per_page_mov
 
-    if dates1 is not None:
-        dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
-        dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
+    if len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = date_1
+    elif len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     credits_id_list = []
     if cession_id:
-        credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == cession_id))
+        credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == int(cession_id)))
         credits_id_list = credits_id_query.scalars().all()
 
     try:
-        if credit_id:
-            agreement_query = await session.execute(select(agreement).where(agreement.c.credit_id == credit_id).
+        if d_credit_id:
+            agreement_query = await session.execute(select(agreement).where(agreement.c.credit_id == int(d_credit_id)).
                                                   limit(per_page).offset((page - 1) * per_page))
 
-            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(agreement.c.credit_id == credit_id)))
-        elif credit_id == None and cession_id and dates1 == None:
+            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(agreement.c.credit_id == int(d_credit_id))))
+        elif d_credit_id == None and cession_id and date_1 == None:
             agreement_query = await session.execute(select(agreement).where(agreement.c.credit_id.in_(credits_id_list)).
                                                   limit(per_page).offset((page - 1) * per_page))
 
             total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(agreement.c.credit_id.in_(credits_id_list))))
-        elif credit_id == None and cession_id and dates1:
-            agreement_query = await session.execute(select(agreement).where(and_(agreement.c.date >= dates1, agreement.c.date <= dates2, agreement.c.credit_id.in_(credits_id_list))).
+        elif d_credit_id == None and cession_id and date_1:
+            agreement_query = await session.execute(select(agreement).where(and_(agreement.c.date >= date_1, agreement.c.date <= date_2, agreement.c.credit_id.in_(credits_id_list))).
                                                   limit(per_page).offset((page - 1) * per_page))
 
-            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(and_(agreement.c.date >= dates1, agreement.c.date <= dates2, agreement.c.credit_id.in_(credits_id_list)))))
-        elif credit_id == None and cession_id == None and dates1:
-            agreement_query = await session.execute(select(agreement).where(and_(agreement.c.date >= dates1, agreement.c.date <= dates2)).
+            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(and_(agreement.c.date >= date_1, agreement.c.date <= date_2, agreement.c.credit_id.in_(credits_id_list)))))
+        elif d_credit_id == None and cession_id == None and date_1:
+            agreement_query = await session.execute(select(agreement).where(and_(agreement.c.date >= date_1, agreement.c.date <= date_2)).
                                                   limit(per_page).offset((page - 1) * per_page))
 
-            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(and_(agreement.c.date >= dates1, agreement.c.date <= dates2))))
+            total_agrm_query = await session.execute(select(func.count(distinct(agreement.c.id)).filter(and_(agreement.c.date >= date_1, agreement.c.date <= date_2))))
         else:
             agreement_query = await session.execute(select(agreement).
                                                   limit(per_page).offset((page - 1) * per_page))
@@ -74,6 +85,15 @@ async def get_agreement(page: int, credit_id: int = None, cession_id: int = None
 
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
+
+            payment_query = await session.execute(select(payment).where(payment.c.credit_id == credit_id).order_by(desc(payment.c.date)))
+            payment_set = payment_query.mappings().first()
+            if payment_set:
+                date_pay = datetime.strptime(str(payment_set['date']), '%Y-%m-%d').strftime("%d.%m.%Y")
+                summa_pay = payment_set['summa'] / 100
+            else:
+                date_pay = None
+                summa_pay = None
 
             if debtor_item.last_name_2 is not None:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
@@ -98,6 +118,9 @@ async def get_agreement(page: int, credit_id: int = None, cession_id: int = None
                 "summa_agreement": item.summa / 100,
                 "text_payment_schedule": text_payment_schedule,
                 "payment_schedule": item.payment_schedule,
+                "date_pay": date_pay,
+                "summa_pay": summa_pay,
+                "control": item.control,
                 "comment": item.comment,
             })
 
@@ -114,7 +137,14 @@ async def get_agreement(page: int, credit_id: int = None, cession_id: int = None
         }
 
 
-@router_agreement.post("/")
+# Добавить соглашение
+router_save_agreement = APIRouter(
+    prefix="/v1/SaveAgreement",
+    tags=["Agreements"]
+)
+
+
+@router_save_agreement.post("/")
 async def add_agreement(data: dict, session: AsyncSession = Depends(get_async_session)):
 
     if data['credit_id'] == None:

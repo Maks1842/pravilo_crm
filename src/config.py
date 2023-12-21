@@ -1,17 +1,14 @@
-from dotenv import load_dotenv
-import os
 import pathlib
+from variables_for_backend import SettingsApp
 
-load_dotenv()
+DB_NAME = SettingsApp.db_name
+DB_USER = SettingsApp.db_user
+DB_PASS = SettingsApp.db_pass
+DB_HOST = SettingsApp.db_host
+DB_PORT = SettingsApp.db_port
 
-DB_NAME = os.environ.get('DB_NAME')
-DB_USER = os.environ.get('DB_USER')
-DB_PASS = os.environ.get('DB_PASS')
-DB_HOST = os.environ.get('DB_HOST')
-DB_PORT = os.environ.get('DB_PORT')
-
-SECRET_KEY_auth = os.environ.get('SECRET_KEY_AUTH')
-SECRET_KEY_register = os.environ.get('SECRET_KEY_REGISTER')
+SECRET_KEY_auth = SettingsApp.secret_key_auth
+SECRET_KEY_register = SettingsApp.secret_key_register
 
 path_main = pathlib.Path().resolve()
 
@@ -21,4 +18,4 @@ generator_docs_path = f'{path_main}/src/media/generator_docs'
 generator_txt_path = f'{path_main}/src/media/generator_txt'
 
 
-printer_user = os.environ.get('PRINTER_USER')
+printer_user = SettingsApp.printer_user

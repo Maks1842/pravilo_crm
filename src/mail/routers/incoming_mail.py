@@ -9,6 +9,7 @@ from src.database import get_async_session
 from src.debts.models import credit, debtor
 from src.mail.models import mail_in
 from src.references.models import ref_legal_docs, ref_result_statement
+from variables_for_backend import per_page_mov
 
 '''
 IncomingMail - извлекаю и добавляю входящую корреспонденцию.
@@ -31,7 +32,7 @@ router_incoming_mail = APIRouter(
 @router_incoming_mail.get("/")
 async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    per_page = int(per_page_mov)
 
     if dates2 is None:
         dates2 = dates1

@@ -15,7 +15,7 @@ from src.config import path_main
 from src.reader.routers.re_pattern import RePattern
 from src.reader.routers.split_docs_pdf import split_into_pages
 from src.references.models import ref_legal_section, ref_legal_docs
-from src.store_value import type_ed_id_sp
+from variables_for_backend import VarTypeED
 
 '''
 Метод извлечения Судебных приказов
@@ -107,7 +107,7 @@ async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: As
                 legal_section_name = legal_section_answ.name
 
         data_items.append({
-            "type_ed_id": int(type_ed_id_sp),
+            "type_ed_id": VarTypeED.type_ed_id_sp,
             "credit_id": credit_id,
             "creditNum": f'{fio}, {credit_num}',
             "legal_section_id": legal_section_id,

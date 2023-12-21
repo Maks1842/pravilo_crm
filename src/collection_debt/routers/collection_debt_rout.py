@@ -9,7 +9,7 @@ from src.database import get_async_session
 from src.collection_debt.models import *
 from src.references.models import ref_rosp, ref_bank, ref_pfr, ref_type_department
 from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all, get_collection_debt_1, get_collection_debt_2, get_collection_debt_3
-from variables_for_backend import per_page_store, VarTypeDep
+from variables_for_backend import per_page_reg, VarTypeDep
 
 
 # Получить департаменты предъявления ИД
@@ -55,7 +55,7 @@ router_collection_debt = APIRouter(
 @router_collection_debt.post("/")
 async def get_collection_debt(data: dict, session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_store)
+    per_page = per_page_reg
     filter_id: int = data['filter_id']
 
     try:

@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.collection_debt.models import *
 from src.references.models import ref_rosp, ref_bank, ref_pfr, ref_type_department
-from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all, get_collection_debt_1, get_collection_debt_2, get_collection_debt_3
+from src.registries.models import registry_filters
+from src.collection_debt.routers.collection_debt_functions import get_collection_debt_all
+import src.collection_debt.routers.collection_debt_functions as collection_functions
 from variables_for_backend import per_page_reg, VarTypeDep
 
 
@@ -55,16 +57,18 @@ router_collection_debt = APIRouter(
 @router_collection_debt.post("/")
 async def get_collection_debt(data: dict, session: AsyncSession = Depends(get_async_session)):
 
+    print(f'main {data}')
+
     per_page = per_page_reg
     filter_id: int = data['filter_id']
 
+
     try:
-        if filter_id == 1:
-            coll_deb_set = await get_collection_debt_1(data, session)
-        elif filter_id == 2:
-            coll_deb_set = await get_collection_debt_2(data, session)
-        elif filter_id == 3:
-            coll_deb_set = await get_collection_debt_3(data, session)
+        if filter_id:
+            filter_query = await session.execute(select(registry_filters).where(registry_filters.c.id == filter_id))
+            filter_set = filter_query.mappings().fetchone()
+            functions_control = getattr(collection_functions, f'{filter_set.function_name}')
+            coll_deb_set = await functions_control(per_page, data, session)
         else:
             coll_deb_set = await get_collection_debt_all(per_page, data, session)
 

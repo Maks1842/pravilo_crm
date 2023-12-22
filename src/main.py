@@ -56,7 +56,7 @@ from src.routers_helper.rout_debt_import.upload_to_database import router_post_d
 from src.routers_helper.rout_registry.get_data_for_registry import router_data_registry, router_func_filters
 from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_outgoing_mail
 from src.routers_helper.rout_admin.helper_helper import router_helper
-from src.start_srm.routers.welcome_rout import router_welcome, router_export_variables
+from src.start_srm.routers.welcome_rout import router_welcome, router_export_variables, router_start_functions
 
 from src.finance.routers.expenses_rout import router_expenses_category, router_expenses
 from src.finance.routers.reports_rout import router_report_parent_organisation, router_report_for_investor
@@ -66,6 +66,8 @@ from src.payments.routers.payments import router_payment, router_post_payment_li
 from src.payments.routers.extract_payments import router_extract_payments
 
 from src.agreement.routers.agreements import router_agreement, router_save_agreement
+
+from variables_for_backend import SettingsApp
 
 
 app = FastAPI(
@@ -203,8 +205,6 @@ app.include_router(router_func_filters)
 app.include_router(router_reg_outgoing_mail)
 app.include_router(router_helper)
 app.include_router(router_generator_txt)
-app.include_router(router_welcome)
-app.include_router(router_export_variables)
 
 # Для finance
 app.include_router(router_expenses_category)
@@ -225,20 +225,15 @@ app.include_router(router_extract_payments)
 app.include_router(router_agreement)
 app.include_router(router_save_agreement)
 
+# Для start_crm
+app.include_router(router_welcome)
+app.include_router(router_export_variables)
+app.include_router(router_start_functions)
 
-origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
-    "http://localhost",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:8080/",
-    "*"
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=SettingsApp.origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PATCH", "PUT"],
     allow_headers=["Content-Type", "Set-Cookie", "Access-Control-Allow-Headers", "Access-Control-Allow-Origin",

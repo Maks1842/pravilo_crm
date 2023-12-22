@@ -34,7 +34,6 @@ async def get_ep_debtor(data: dict, session: AsyncSession = Depends(get_async_se
             filter_set = filter_query.mappings().fetchone()
             functions_control = getattr(control_filters, f'{filter_set.function_name}')
             ep_set = await functions_control(per_page, data, session)
-
         else:
             ep_set = await get_execut_prod_all(per_page, data, session)
 
@@ -257,6 +256,7 @@ router_ep_number = APIRouter(
 
 @router_ep_number.get("/")
 async def get_ep_number(credit_id: int = None, fragment: str = None, session: AsyncSession = Depends(get_async_session)):
+
     try:
         if credit_id:
             query = await session.execute(select(executive_productions).where(executive_productions.c.credit_id == credit_id))

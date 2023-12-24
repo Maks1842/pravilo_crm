@@ -113,7 +113,7 @@ async def extract_definition(files: List[UploadFile] = File(...), session: Async
             "legal_docs_id": legal_docs_id,
             "legal_docs": item['type_doc'],
             "dateED": date_doc,
-            "numCase": item['num_doc'],
+            "numCase": item['num_case'],
             "tribunalName": item['tribunal'],
             "debtorName": item['name_debtor'],
             "numCredit": item['num_kd'],

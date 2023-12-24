@@ -1,14 +1,18 @@
 import math
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends
+from typing import List
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, insert, func, distinct, update, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
 from src.debts.models import credit, debtor
+from src.collection_debt.models import executive_document
+from src.legal_work.routers.helper_legal_work import save_case_legal
 from src.mail.models import mail_in
 from src.references.models import ref_legal_docs, ref_result_statement
+from src.collection_debt.routers.executive_document_rout import save_ed
 from variables_for_backend import per_page_mov
 
 '''
@@ -28,38 +32,42 @@ router_incoming_mail = APIRouter(
     tags=["Mail"]
 )
 
-
+# date_1: str = None, date_2: str = None,
 @router_incoming_mail.get("/")
-async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+async def get_incoming_mail(page: int, debtor_id: int = None, dates: List[str] = Query(None, alias="dates[]"),  session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_mov)
+    per_page = per_page_mov
 
-    if dates2 is None:
-        dates2 = dates1
-
-    if dates1 is not None:
-        dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
-        dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
+    try:
+        if len(dates) == 1:
+            date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+            date_2 = date_1
+        else:
+            date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+            date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    except:
+        date_1 = None
+        date_2 = None
 
     credits_id_query = await session.execute(select(credit.c.id).where(credit.c.debtor_id == debtor_id))
     credits_id_list = credits_id_query.scalars().all()
 
     try:
-        if debtor_id == None and dates1:
-            mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.date >= dates1, mail_in.c.date <= dates2)).
+        if debtor_id == None and date_1:
+            mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.date >= date_1, mail_in.c.date <= date_2)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
-            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.date >= dates1, mail_in.c.date <= dates2)))
-        elif debtor_id and dates1 == None:
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.date >= date_1, mail_in.c.date <= date_2)))
+        elif debtor_id and date_1 == None:
             mail_query = await session.execute(select(mail_in).where(mail_in.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
             total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(mail_in.c.credit_id.in_(credits_id_list)))
-        elif debtor_id and dates1:
-            mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= dates1, mail_in.c.date <= dates2).
+        elif debtor_id and date_1:
+            mail_query = await session.execute(select(mail_in).where(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= date_1, mail_in.c.date <= date_2).
                                                                      order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page)))
-            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= dates1, mail_in.c.date <= dates2)))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_in.c.id))).filter(and_(mail_in.c.credit_id.in_(credits_id_list), mail_in.c.date >= date_1, mail_in.c.date <= date_2)))
         else:
             mail_query = await session.execute(select(mail_in).order_by(desc(mail_in.c.date)).order_by(desc(mail_in.c.id)).
                                                 limit(per_page).offset((page - 1) * per_page))
@@ -71,13 +79,14 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
         data_mail = []
         for item in mail_query.mappings().all():
 
-            name_doc_id = None
-            resolution_id = None
-
             debtor_fio = ''
             credit_number = ''
             name_doc = ''
             resolution = ''
+            date_succession = None
+            date_entry_force = None
+            name_doc_id = None
+            resolution_id = None
 
             if item.credit_id is not None:
                 credit_id: int = item.credit_id
@@ -94,6 +103,14 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
                           f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
                 else:
                     debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
+
+                ed_query = await session.execute(select(executive_document.c.succession, executive_document.c.date_entry_force).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
+                ed_set = ed_query.mappings().first()
+
+                if ed_set.succession:
+                    date_succession = datetime.strptime(str(ed_set.succession), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if ed_set.date_entry_force:
+                    date_entry_force = datetime.strptime(str(ed_set.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
 
             if item.name_doc_id is not None:
                 name_doc_id: int = item.name_doc_id
@@ -122,9 +139,14 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates1: str = None
                 "resolution_id": resolution_id,
                 "barcode": item.barcode,
                 "comment": item.comment,
-                "docDate": '',
-                "dateEntryForce": '',
+                "docDate": None,
+                "dateSessionTribunal": None,
+                "dateSuccession": date_succession,
+                "dateEntryForce": date_entry_force,
                 "dateStop": '',
+                "user_id": None,
+                "ed_id": None,
+                "tribunal_id": None,
             })
 
         result = {'data_mail': data_mail,
@@ -190,6 +212,9 @@ async def save_incoming_mail(list_data, session):
             sequence_num = data['sequence_num']
             barcode = data['barcode']
 
+
+
+
         try:
             data_mail = {
                     "sequence_num": sequence_num,
@@ -217,6 +242,20 @@ async def save_incoming_mail(list_data, session):
                 "data": None,
                 "details": f"Ошибка при добавлении/изменении Входящей почты. {ex}"
             }
+
+        if data['legalCase_id']:
+            legal_data = {"date_session_1": datetime.strptime(data['dateSessionTribunal'], '%Y-%m-%d').date(),
+                          "credit_id": data['credit_id'],
+                          "legal_docs_id": data['legal_docs_id'],}
+            await save_case_legal(data['legalCase_id'], data['user_id'], legal_data, session)
+
+        if data['dateSuccession']:
+            data_ed = {"succession": datetime.strptime(data['dateSuccession'], '%Y-%m-%d').date()}
+            await save_ed(data['ed_id'], data_ed, session)
+
+        if data['dateEntryForce']:
+            data_ed = {"date_entry_force": datetime.strptime(data['dateEntryForce'], '%Y-%m-%d').date()}
+            await save_ed(data['ed_id'], data_ed, session)
 
     return {
         'status': 'success',

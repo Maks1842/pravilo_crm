@@ -189,13 +189,7 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
                 "comment": item["comment"],
             }
 
-            if ed_id:
-                post_data = update(executive_document).where(executive_document.c.id == int(ed_id)).values(data)
-            else:
-                post_data = insert(executive_document).values(data)
-
-            await session.execute(post_data)
-            await session.commit()
+            await save_ed(ed_id, data, session)
 
             await calculate_and_post_balance(credit_id, session)
 
@@ -259,23 +253,22 @@ router_tribunal_ed = APIRouter(
 @router_tribunal_ed.get("/")
 async def get_tribunal_ed(credit_id: int = None, session: AsyncSession = Depends(get_async_session)):
     try:
-        tribunal_id_query = await session.execute(select(executive_document.c.tribunal_id).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
-        tribunal_item = tribunal_id_query.mappings().all()
+        tribunal_name = None
 
-        tribunal_id = None
-        if len(tribunal_item) > 0:
-            tribunal_id = tribunal_item[0].tribunal_id
+        ed_query = await session.execute(select(executive_document.c.id, executive_document.c.tribunal_id).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
+        ed_set = ed_query.mappings().first()
+
+        tribunal_id = ed_set.tribunal_id
 
         if tribunal_id:
-
             tribunal_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == int(tribunal_id)))
             tribunal_item = tribunal_query.mappings().one()
 
-            result = {"tribunal": tribunal_item.name,
-                      "value": {"tribunal_id": tribunal_item.id}}
-        else:
-            result = {"tribunal": None,
-                      "value": {"tribunal_id": None}}
+            tribunal_name = tribunal_item.name
+
+        result = {"tribunal": tribunal_name,
+                  "value": {"ed_id": ed_set.id,
+                            "tribunal_id": tribunal_id}}
 
         return result
     except Exception as ex:
@@ -284,3 +277,13 @@ async def get_tribunal_ed(credit_id: int = None, session: AsyncSession = Depends
             "data": None,
             "details": ex
         }
+
+
+async def save_ed(ed_id, data, session):
+    if ed_id:
+        post_data = update(executive_document).where(executive_document.c.id == int(ed_id)).values(data)
+    else:
+        post_data = insert(executive_document).values(data)
+
+    await session.execute(post_data)
+    await session.commit()

@@ -18,6 +18,7 @@ from src.references.routers.ref_legal_docs_api import router_ref_legal_docs, rou
 from src.collection_debt.routers.collection_debt_rout import router_collection_debt, router_department_presentation
 from src.collection_debt.routers.executive_document_rout import router_ed_debtor, router_ed_number, router_tribunal_ed
 from src.collection_debt.routers.executive_productions_rout import router_get_ep_debtor, router_save_ep_debtor, router_ep_number
+
 from src.legal_work.routers.tribunal_write_rout import router_tribunal_write
 from src.legal_work.routers.succession_rout import router_succession
 from src.legal_work.routers.appeal_rout import router_appeal
@@ -29,6 +30,7 @@ from src.legal_work.routers.tribunal_395_write_rout import router_tribun395_writ
 from src.legal_work.routers.state_duty_calculation import router_duty_legal_calculation
 from src.legal_work.routers.calculation_debt_for_tribunal import router_calculation_debt, router_calculation_annuity_payment
 from src.legal_work.routers.helper_legal_work import router_get_legal_number
+from src.legal_work.routers.get_data_legal_work import router_data_legal
 
 from src.tasks.router import router_task, router_task_all, router_delete_task
 
@@ -44,6 +46,7 @@ from src.mail.routers.incoming_mail import router_incoming_mail
 from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
 
 from src.reader.routers.extract_tribunal_writ import router_extract_tribunal_writ
+from src.reader.routers.extract_definition import router_extract_definition
 from src.reader.routers.rename_file_reader import router_rename_file_read
 from src.reader.routers.reader_save_to_db import router_reader_save_incoming_mail, router_reader_save_ed
 
@@ -157,6 +160,7 @@ app.include_router(router_duty_legal_calculation)
 app.include_router(router_calculation_debt)
 app.include_router(router_calculation_annuity_payment)
 app.include_router(router_get_legal_number)
+app.include_router(router_data_legal)
 
 # Для routers_task
 app.include_router(router_task)
@@ -190,6 +194,7 @@ app.include_router(router_mail_to_excel)
 
 # Для reader
 app.include_router(router_extract_tribunal_writ)
+app.include_router(router_extract_definition)
 app.include_router(router_rename_file_read)
 app.include_router(router_reader_save_incoming_mail)
 app.include_router(router_reader_save_ed)

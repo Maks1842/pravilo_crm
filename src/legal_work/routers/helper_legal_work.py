@@ -22,19 +22,19 @@ router_get_legal_number = APIRouter(
 @router_get_legal_number.get("/")
 async def get_legal_number(credit_id: int = None, legal_section_id: int = None, session: AsyncSession = Depends(get_async_session)):
 
-    legal_numbers = []
+    result = []
     if credit_id:
-        legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
+        legal_query = await session.execute(select(legal_work.c.id, legal_work.c.legal_number).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
 
         for item in legal_query.mappings().all():
-            legal_numbers.append(item.legal_number)
+            result.append({"legal_id": item.id, "legal_number": item.legal_number})
     else:
-        legal_query = await session.execute(select(legal_work).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
+        legal_query = await session.execute(select(legal_work.c.id, legal_work.c.legal_number).where(and_(legal_work.c.legal_section_id == legal_section_id, legal_work.c.credit_id == credit_id)))
 
         for item in legal_query.mappings().all():
-            legal_numbers.append(item.legal_number)
+            result.append({"legal_id": item.id, "legal_number": item.legal_number})
 
-    return legal_numbers
+    return result
 
 
 async def number_case_legal(data, session):
@@ -85,9 +85,7 @@ async def save_case_legal(case_id, user_id, legal_data, session):
             "details": f"Ошибка при добавлении/изменении судебного кейса. {ex}"
         }
 
-    x = legal_data["legal_docs_id"]
-
-    task_query = await session.execute(select(task.c.id).where(and_(task.c.user_id == int(user_id),
+    task_query = await session.execute(select(task.c.id).where(and_(task.c.user_id == user_id,
                                                                     task.c.section_card_debtor_id == VarSectionCard.section_card_id_tribun,
                                                                     task.c.credit_id == credit_id,
                                                                     task.c.name_id == int(legal_data['legal_docs_id']),

@@ -83,8 +83,10 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates: List[str] =
             credit_number = ''
             name_doc = ''
             resolution = ''
+            ed_id = None
             date_succession = None
             date_entry_force = None
+            tribunal_id = None
             name_doc_id = None
             resolution_id = None
 
@@ -104,13 +106,19 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates: List[str] =
                 else:
                     debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-                ed_query = await session.execute(select(executive_document.c.succession, executive_document.c.date_entry_force).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
+                ed_query = await session.execute(select(executive_document.c.id,
+                                                        executive_document.c.succession,
+                                                        executive_document.c.date_entry_force,
+                                                        executive_document.c.tribunal_id).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
                 ed_set = ed_query.mappings().first()
 
+                ed_id = ed_set.id
                 if ed_set.succession:
                     date_succession = datetime.strptime(str(ed_set.succession), '%Y-%m-%d').strftime("%d.%m.%Y")
                 if ed_set.date_entry_force:
                     date_entry_force = datetime.strptime(str(ed_set.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
+                if ed_set.tribunal_id:
+                    tribunal_id = ed_set.tribunal_id
 
             if item.name_doc_id is not None:
                 name_doc_id: int = item.name_doc_id
@@ -136,17 +144,17 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates: List[str] =
                 "legal_doc_name": name_doc,
                 "legal_docs_id": name_doc_id,
                 "resolution": resolution,
-                "resolution_id": resolution_id,
+                "resultStatement_id": resolution_id,
                 "barcode": item.barcode,
                 "comment": item.comment,
                 "docDate": None,
                 "dateSessionTribunal": None,
                 "dateSuccession": date_succession,
-                "dateEntryForce": date_entry_force,
+                "date_entry_force": date_entry_force,
                 "dateStop": '',
                 "user_id": None,
-                "ed_id": None,
-                "tribunal_id": None,
+                "ed_id": ed_id,
+                "tribunal_id": tribunal_id,
             })
 
         result = {'data_mail': data_mail,
@@ -173,6 +181,8 @@ async def add_incoming_mail(data_json: dict, session: AsyncSession = Depends(get
 
 
 async def save_incoming_mail(list_data, session):
+
+    print(f'{list_data=}')
 
     for data in list_data:
         if data['addresser'] is None:
@@ -212,9 +222,6 @@ async def save_incoming_mail(list_data, session):
             sequence_num = data['sequence_num']
             barcode = data['barcode']
 
-
-
-
         try:
             data_mail = {
                     "sequence_num": sequence_num,
@@ -224,7 +231,7 @@ async def save_incoming_mail(list_data, session):
                     "date": current_date,
                     "addresser": data['addresser'],
                     "name_doc_id": data['legal_docs_id'],
-                    "resolution_id": data['resolution_id'],
+                    "resolution_id": data['resultStatement_id'],
                     "comment": data['comment'],
                     }
 
@@ -243,18 +250,18 @@ async def save_incoming_mail(list_data, session):
                 "details": f"Ошибка при добавлении/изменении Входящей почты. {ex}"
             }
 
-        if data['legalCase_id']:
+        if data['legalCase_id'] and data['legalCase_id']:
             legal_data = {"date_session_1": datetime.strptime(data['dateSessionTribunal'], '%Y-%m-%d').date(),
                           "credit_id": data['credit_id'],
                           "legal_docs_id": data['legal_docs_id'],}
             await save_case_legal(data['legalCase_id'], data['user_id'], legal_data, session)
 
-        if data['dateSuccession']:
+        if data['dateSuccession'] and data['ed_id']:
             data_ed = {"succession": datetime.strptime(data['dateSuccession'], '%Y-%m-%d').date()}
             await save_ed(data['ed_id'], data_ed, session)
 
-        if data['dateEntryForce']:
-            data_ed = {"date_entry_force": datetime.strptime(data['dateEntryForce'], '%Y-%m-%d').date()}
+        if data['date_entry_force'] and data['ed_id']:
+            data_ed = {"date_entry_force": datetime.strptime(data['date_entry_force'], '%Y-%m-%d').date()}
             await save_ed(data['ed_id'], data_ed, session)
 
     return {

@@ -147,6 +147,12 @@ async def add_ed_debtor(data_json: dict, session: AsyncSession = Depends(get_asy
         query = await session.execute(select(credit.c.debtor_id).where(credit.c.id == credit_id))
         debtor_id = query.scalar()
 
+        ed_query = await session.execute(select(executive_document.c.id).where(executive_document.c.credit_id == credit_id).order_by(desc(executive_document.c.id)))
+        ed_set = ed_query.mappings().first()
+
+        if ed_set and ed_id is None:
+            ed_id = ed_set.id
+
         try:
             if item['summa_debt_decision'] is not None:
                 summa_debt_decision = int(float(item["summa_debt_decision"]) * 100)

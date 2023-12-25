@@ -118,9 +118,13 @@ async def extract_definition(files: List[UploadFile] = File(...), session: Async
             "debtorName": item['name_debtor'],
             "numCredit": item['num_kd'],
             "resultStatement": item['resolution'],
+            "resultStatement_id": None,
             "file_name": item['file_name'],
             "path": item['directory_result'],
+            "date_entry_force": None,
             "tribunal_id": None,
+            "legalCase_id": None,
+            "dateSuccession": None,
         })
 
     result = {'data_items': data_items,

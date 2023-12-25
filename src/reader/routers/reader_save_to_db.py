@@ -47,7 +47,7 @@ async def add_reader_incoming_mail(data_json: dict, session: AsyncSession = Depe
                 date_session = None
 
             try:
-                result_statement_id = item['result_statement_id']
+                result_statement_id = item['resultStatement_id']
             except:
                 result_statement_id = None
 
@@ -61,8 +61,13 @@ async def add_reader_incoming_mail(data_json: dict, session: AsyncSession = Depe
                 'addresser': tribunal_name,
                 'docDate': date_ED,
                 "legal_docs_id": legal_docs_id,
-                "resolution_id": result_statement_id,
+                "resultStatement_id": result_statement_id,
                 'user_id': None,
+                "date_entry_force": None,
+                "tribunal_id": None,
+                "legalCase_id": None,
+                "ed_id": None,
+                "dateSuccession": None,
                 'comment': '',
             })
         else:

@@ -128,6 +128,10 @@ async def extract_tribunal_writ(files: List[UploadFile] = File(...), session: As
             "path": item['directory_result'],
             "date_entry_force": None,
             "tribunal_id": None,
+            "legalCase_id": None,
+            "dateSuccession": None,
+            "resultStatement": None,
+            "resultStatement_id": None,
         })
 
     result = {'data_items': data_items,

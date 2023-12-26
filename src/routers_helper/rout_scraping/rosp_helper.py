@@ -40,7 +40,7 @@ async def extract_rosp_excel(session):
             try:
                 address = re.search(RePattern.address_re, item['address']).group().strip()
                 if len(address) > 200:
-                    address = address[-200:]
+                    address = address[:200]
             except:
                 address = None
         data = {

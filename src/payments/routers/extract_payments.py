@@ -1,7 +1,8 @@
 import re
 import openpyxl
-import pandas as pd
-from fastapi import APIRouter, UploadFile
+
+from typing import List
+from fastapi import APIRouter, UploadFile, Form
 from src.config import path_main
 from src.payments.routers.re_pattern_pay import RePattern
 
@@ -16,7 +17,7 @@ router_extract_payments = APIRouter(
 
 
 @router_extract_payments.post("/")
-async def extract_payments(file_object: UploadFile):
+async def extract_payments(file_object: UploadFile, checkFunction: str = Form(...)):
 
     with open(f'{path_main}/src/media/data/bank_records_file.xlsx', 'wb+') as f:
         for chunk in file_object.file:
@@ -24,7 +25,10 @@ async def extract_payments(file_object: UploadFile):
 
     path_file = f'{path_main}/src/media/data/bank_records_file.xlsx'
 
-    extract_payments_list = payment_reader_xlsx(path_file)
+    if checkFunction == '1':
+        extract_payments_list = payment_from_bank(path_file)
+    else:
+        extract_payments_list = refund_payments_from_cedent(path_file)
 
     data_payment = []
     summa_pay = 0
@@ -36,48 +40,137 @@ async def extract_payments(file_object: UploadFile):
         count_pay += 1
         summa_pay += pay['payment']
 
-        fio_split = pay['fio'].split()
-
         data_payment.append({
             "credit_id": credit_id,
             "creditNum": credit_num,
             "debtorName": pay['fio'],
             "numEP": pay['ep'],
             "numED": pay['ed'],
-            "summa": pay['payment'] / 100,
+            "summa": pay['payment'],
             "date": pay['date'],
             "numPayDoc": pay['num_pay'],
-            "departmentPay": pay['department'],
+            "purposePay": pay['purpose_pay'],
         })
 
     result = {'data_payment': data_payment,
-              'summa_all': summa_pay / 100,
+              'summa_all': summa_pay,
               'count_all': count_pay}
 
     return result
 
 
-def payment_reader_xlsx(path_file):
+def payment_from_bank(path_file):
 
     book = openpyxl.load_workbook(path_file)
     sheet = book.active
 
+    payments = []
+
+    col_date_payment = 0
+    col_credit = 0
+    col_num_doc = 0
+    col_purpose = 0
     for row in range(1, sheet.max_row):
         for cell in range(0, sheet.max_column):
-            if re.findall(r'(?i)турбозайм', str(sheet[row][cell].value)):
-                result = refund_payments_from_cedent(sheet)
+            if re.findall(r'^Дата$', str(sheet[row][cell].value)):
+                col_date_payment = cell
+                # print(f'{col_date_payment=}')
+            if re.findall(r'^Номер\s+документа$', str(sheet[row][cell].value)):
+                col_num_doc = cell
+                # print(f'{col_num_doc=}')
+            if re.findall(r'^Кредит$', str(sheet[row][cell].value)):
+                col_credit = cell
+                # print(f'{col_credit=}')
+            if re.findall(r'^Назначение\s+платежа$', str(sheet[row + 1][cell].value)):
+                col_purpose = cell
 
-                return result
+
+        # Если столбец "Поступление" содержит данные, то парсинг строки
+        if re.findall(RePattern.payment, str(sheet[row][col_credit].value)):
+            payment_in = sheet[row][col_credit].value
+            purpose_payment = sheet[row][col_purpose].value
+            num_payment = sheet[row][col_num_doc].value
+            # print(num_payment)
+            if re.findall(r'\d{2}\.\d{2}\.\d{4}', str(sheet[row][col_date_payment].value)):
+                date_payment = re.sub(r'\n', '', sheet[row][col_date_payment].value)
+                # print(date_payment)
+            else:
+                date_format = sheet[row][col_date_payment].value
+                # print(date_format)
+                date_payment = date_format.strftime("%d.%m.%Y")
+
+            if re.findall(r'(?i)(УФК)', purpose_payment):
+                try:
+                    fio_debtor = re.search(RePattern.pay_fio_ufk, purpose_payment).group()
+                except:
+                    fio_debtor = 'ФИО-ОШИБКА_УФК'
+            elif re.findall(r'(?i)(ОСФР)', purpose_payment):
+                try:
+                    fio_debtor = re.search(RePattern.pay_fio_osfr, purpose_payment).group()
+                except:
+                    fio_debtor = 'ФИО-ОШИБКА_ОСФР'
+            else:
+                try:
+                    fio_debtor = re.search(RePattern.pay_fio, purpose_payment).group()
+                except:
+                    fio_debtor = 'ФИО-ОШИБКА'
+
+            purpose_pay = purpose_payment
+
+            # if re.findall(r'(?i)\(', purpose_payment):
+            #     try:
+            #         department = re.search(RePattern.department_ufk, purpose_payment).group()
+            #     except:
+            #         department = 'Департамент_ОШИБКА'
+            # elif re.findall(r'(?i)(Банк)', purpose_payment):
+            #     try:
+            #         department = re.search(RePattern.department_bank, purpose_payment).group()
+            #     except:
+            #         department = purpose_payment
+            # else:
+            #     try:
+            #         department = re.search(RePattern.pay_fio_bank, purpose_payment).group()
+            #     except:
+            #         department = purpose_payment
+
+            try:
+                executive_production = re.search(RePattern.number_case, purpose_payment).group()
+            except:
+                executive_production = ''
+
+            try:
+                executive_document = re.search(RePattern.executive_document, purpose_payment).group()
+            except:
+                executive_document = ''
+
+            try:
+                ispol_list = re.search(RePattern.ispol_list, purpose_payment).group()
+            except:
+                ispol_list = ''
+
+            payments.append({"fio": fio_debtor,
+                             "ep": executive_production,
+                             "ed": executive_document,
+                             "il": ispol_list,
+                             "date": date_payment,
+                             "payment": payment_in,
+                             "num_pay": num_payment,
+                             "purpose_pay": purpose_pay})
+
+    return payments
 
 
-def refund_payments_from_cedent(sheet):
+def refund_payments_from_cedent(path_file):
+    book = openpyxl.load_workbook(path_file)
+    sheet = book.active
+
     payments = []
 
     col_result = 0
     col_debit = 0
     col_summa = 0
     date_pay = None
-    department = 'Возврат платежей от Цедента'
+    purpose_pay = 'Возврат платежей от Цедента'
     for row in range(1, sheet.max_row):
         for cell in range(0, sheet.max_column):
 
@@ -100,7 +193,7 @@ def refund_payments_from_cedent(sheet):
                 payment_format = re.sub(r'-', '.', payment_text)
             except:
                 payment_format = payment_text
-            payment = int(float(payment_format) * 100)
+            payment = float(payment_format)
 
             debtor = re.search(RePattern.pay_fio_memori, str(sheet[row][col_debit].value)).group()
 
@@ -111,6 +204,6 @@ def refund_payments_from_cedent(sheet):
                              "date": date_pay,
                              "payment": payment,
                              "num_pay": None,
-                             "department": department})
+                             "purpose_pay": purpose_pay})
 
     return payments

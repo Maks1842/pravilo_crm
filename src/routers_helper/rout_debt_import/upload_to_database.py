@@ -760,7 +760,7 @@ def parsing_address(addr):
     try:
         address = re.search(RePattern.address_re, addr).group().strip()
         if len(address) > 200:
-            address = address[-200:]
+            address = address[:200]
     except:
         address = None
 

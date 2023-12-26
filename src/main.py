@@ -43,12 +43,13 @@ from src.directory_docs.router import router_dir_cession, router_docs_cession, r
     router_dir_credit, router_docs_credit, router_defolt_docs, router_download_file_credit, router_rename_file
 
 from src.mail.routers.incoming_mail import router_incoming_mail
-from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_to_excel
+from src.mail.routers.outgoing_mail import router_outgoing_mail, router_mail_number, router_mail_to_excel
 
 from src.reader.routers.extract_tribunal_writ import router_extract_tribunal_writ
 from src.reader.routers.extract_definition import router_extract_definition
 from src.reader.routers.rename_file_reader import router_rename_file_read
-from src.reader.routers.reader_save_to_db import router_reader_save_incoming_mail, router_reader_save_ed
+from src.reader.routers.reader_save_to_db import router_reader_save_incoming_mail, router_reader_save_ed, router_mail_barcode_save
+from src.reader.routers.extract_mail_barcode import router_extract_mail_barcode
 
 from src.routers_helper.rout_creating_docs.generator_docs import router_generator_docs
 from src.routers_helper.rout_creating_docs.generator_txt import router_generator_txt
@@ -190,6 +191,7 @@ app.include_router(router_rename_file)
 # Для mail
 app.include_router(router_incoming_mail)
 app.include_router(router_outgoing_mail)
+app.include_router(router_mail_number)
 app.include_router(router_mail_to_excel)
 
 # Для reader
@@ -198,6 +200,8 @@ app.include_router(router_extract_definition)
 app.include_router(router_rename_file_read)
 app.include_router(router_reader_save_incoming_mail)
 app.include_router(router_reader_save_ed)
+app.include_router(router_extract_mail_barcode)
+app.include_router(router_mail_barcode_save)
 
 # Для routers_helper
 app.include_router(router_calculating_pensioner)

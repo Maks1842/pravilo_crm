@@ -182,8 +182,6 @@ async def add_incoming_mail(data_json: dict, session: AsyncSession = Depends(get
 
 async def save_incoming_mail(list_data, session):
 
-    print(f'{list_data=}')
-
     for data in list_data:
         if data['addresser'] is None:
             return {

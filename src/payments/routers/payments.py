@@ -184,6 +184,9 @@ async def add_payment(data: dict, session: AsyncSession = Depends(get_async_sess
     if data['summa'] is not None:
         summa = int(float(data['summa']) * 100)
 
+    if len(data['departmentPay']) > 200:
+        data['departmentPay'] = data['departmentPay'][:200]
+
     try:
         pay_data = {
             "credit_id": data["credit_id"],
@@ -244,7 +247,7 @@ async def add_payment_list(data_list: dict, session: AsyncSession = Depends(get_
                     "date": date_pay,
                     "summa": summa,
                     "payment_doc_num": item['numPayDoc'],
-                    "comment": item['departmentPay']
+                    "comment": item['purposePay']
                 }
 
                 post_data = insert(payment).values(pay_data)

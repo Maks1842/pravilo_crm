@@ -101,10 +101,10 @@ async def get_agreement(data: dict, session: AsyncSession = Depends(get_async_se
             else:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            text_payment_schedule = ''
+            text_payment_schedule = '<hr>'
             for pay_item in item.payment_schedule:
                 if pay_item['datePay']:
-                    payment_schedule = f"{pay_item['datePay'] or ''} - {pay_item['summaPay'] or ''}, "
+                    payment_schedule = f"{pay_item['datePay'] or ''} - {pay_item['summaPay'] or ''}<br>"
                     text_payment_schedule = text_payment_schedule + payment_schedule
 
             data_agreement.append({

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_async_session
 from src.mail.routers.incoming_mail import save_incoming_mail
 from src.collection_debt.routers.executive_document_rout import add_ed_debtor
+from src.mail.routers.outgoing_mail import save_mail_out
 
 
 # Добавить входящую корреспонденцию из Reader
@@ -118,3 +119,37 @@ async def add_reader_ed(data_json: dict, session: AsyncSession = Depends(get_asy
     result = await add_ed_debtor({"data_json": list_ed}, session)
 
     return result
+
+
+# Добавить ШПИ в исходящую почту
+router_mail_barcode_save = APIRouter(
+    prefix="/v1/MailBarcodeSave",
+    tags=["Reader"]
+)
+
+
+@router_mail_barcode_save.post("/")
+async def add_mail_barcode(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    data = data_json['data_json']
+
+    for item in data:
+        if item['mail_out_id']:
+            try:
+                data_mail = {
+                    'trek': item['order_barcode'],
+                }
+                await save_mail_out(item['mail_out_id'], data_mail, session)
+
+            except Exception as ex:
+                return {
+                    "status": "error",
+                    "data": None,
+                    "details": f"Ошибка при сохранении ШПИ в исходящую почту. {ex}"
+                }
+
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'ШПИ успешно сохранен в исходящую почту.'
+    }

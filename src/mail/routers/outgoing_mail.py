@@ -3,7 +3,7 @@ from datetime import date, datetime
 import re
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, desc, and_
+from sqlalchemy import select, insert, func, distinct, update, desc, and_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -222,14 +222,8 @@ async def save_outgoing_mail(reg_data, session):
             "user_id": data['user_id'],
             "comment": data['comment'],
         }
-        if data["id"]:
-            mail_id: int = data["id"]
-            post_data = update(mail_out).where(mail_out.c.id == mail_id).values(data_mail)
-        else:
-            post_data = insert(mail_out).values(data_mail)
 
-        await session.execute(post_data)
-        await session.commit()
+        await save_mail_out(data["id"], data_mail, session)
 
     except Exception as ex:
         return {
@@ -243,6 +237,46 @@ async def save_outgoing_mail(reg_data, session):
         'data': None,
         'details': 'Исходящая почта успешно сохранена'
     }
+
+
+async def save_mail_out(mail_id, data, session):
+    if mail_id:
+        post_data = update(mail_out).where(mail_out.c.id == int(mail_id)).values(data)
+    else:
+        post_data = insert(mail_out).values(data)
+
+    await session.execute(post_data)
+    await session.commit()
+
+
+
+# Получить порядковый номер Mail_out
+router_mail_number = APIRouter(
+    prefix="/v1/GetMailNumber",
+    tags=["Mail"]
+)
+
+
+@router_mail_number.get("/")
+async def get_mail_number(fragment, session: AsyncSession = Depends(get_async_session)):
+
+    try:
+        query = await session.execute(select(mail_out).where(cast(mail_out.c.sequence_num, String).contains(str(fragment))))
+
+        result = []
+        for item in query.mappings().all():
+
+            result.append({
+                "mail_id": item['id'],
+                "mail_number": item['sequence_num'],
+            })
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
 
 
 

@@ -1,7 +1,6 @@
 import re
 import openpyxl
 
-from typing import List
 from fastapi import APIRouter, UploadFile, Form
 from src.config import path_main
 from src.payments.routers.re_pattern_pay import RePattern
@@ -70,7 +69,7 @@ def payment_from_bank(path_file):
     col_credit = 0
     col_num_doc = 0
     col_purpose = 0
-    for row in range(1, sheet.max_row):
+    for row in range(1, sheet.max_row + 1):
         for cell in range(0, sheet.max_column):
             if re.findall(r'^Дата$', str(sheet[row][cell].value)):
                 col_date_payment = cell
@@ -85,7 +84,7 @@ def payment_from_bank(path_file):
                 col_purpose = cell
 
 
-        # Если столбец "Поступление" содержит данные, то парсинг строки
+        # Если столбец "Кредит" содержит данные, то парсинг строки
         if re.findall(RePattern.payment, str(sheet[row][col_credit].value)):
             payment_in = sheet[row][col_credit].value
             purpose_payment = sheet[row][col_purpose].value

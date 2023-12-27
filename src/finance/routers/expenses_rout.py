@@ -184,11 +184,11 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
 
             data_expenses.append({
                 "id": item.id,
-                "date": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
-                "summa": summa_expenses,
+                "datePay": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "summaPay": summa_expenses,
                 "expenses_category_id": expenses_category_set.id,
                 "expenses_category": expenses_category_set.name,
-                "payment_purpose": item.payment_purpose,
+                "purposePay": item.payment_purpose,
                 "cession_id": cession_id,
                 "cession_name": cession_name,
 
@@ -212,80 +212,107 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
 async def add_expenses(data_json: dict, session: AsyncSession = Depends(get_async_session)):
 
     req_data = data_json['data_json']
-
-    if req_data['cession_id'] is None:
-        cession_query = await session.execute(select(cession.c.id))
-
-        for item in cession_query.mappings().all():
-            cession_id: int = item['id']
-
-            data_coefficient = await get_coefficient_cession(cession_id,  session)
-            coefficient_cession = data_coefficient['coefficient_cession']
-            summa = int(float(req_data['summa']) * coefficient_cession)
-
-            if summa > 0:
-
-                data = {
-                    "id": None,
-                    "date": req_data['date'],
-                    "summa": summa,
-                    "expenses_category_id": req_data['expenses_category_id'],
-                    "payment_purpose": req_data['payment_purpose'],
-                    "cession_id": cession_id,
-                }
-
-                answer = await save_expenses(data, session)
-                if answer['status'] == 'error':
-                    return answer
-
-        result = {
-            'status': 'success',
-            'data': None,
-            'details': 'Расход успешно распределен по Портфелям и сохранен'
-        }
-
-    else:
-        result = await save_expenses(req_data, session)
+    result = await calculation_expenses(req_data, session)
 
     return result
 
 
-async def save_expenses(req_data, session):
-    date_exp = date.today()
-    summa = 0
 
-    if req_data['date'] is not None:
-        date_exp = datetime.strptime(req_data['date'], '%Y-%m-%d').date()
+# Добавить расходы организации списком
+router_save_expenses_list = APIRouter(
+    prefix="/v1/SaveExpensesList",
+    tags=["Finance"]
+)
 
-    if req_data['summa'] is not None:
-        summa = int(float(req_data['summa']) * 100)
 
+@router_save_expenses_list.post("/")
+async def save_expenses_list(data_json: dict, session: AsyncSession = Depends(get_async_session)):
+
+    req_data = data_json['data']
+    result = await calculation_expenses(req_data, session)
+
+    return result
+
+
+async def calculation_expenses(req_data, session):
 
     try:
-        data = {
-            "date": date_exp,
-            "summa": summa,
-            "expenses_category_id": req_data['expenses_category_id'],
-            "payment_purpose": req_data['payment_purpose'],
-            "cession_id": req_data['cession_id'],
-        }
-        if req_data["id"]:
-            expenses_id: int = req_data["id"]
-            post_data = update(expenses).where(expenses.c.id == expenses_id).values(data)
-        else:
-            post_data = insert(expenses).values(data)
+        for data in req_data:
+            if data['expenses_category_id'] is None:
+                return {
+                    "status": "error",
+                    "data": None,
+                    "details": f"Не назначена категория платежа для суммы {data['summaPay']} от {data['datePay']}"
+                }
 
-        await session.execute(post_data)
-        await session.commit()
+            if data['cession_id'] is None:
+                cession_query = await session.execute(select(cession.c.id))
 
-        return {
-            'status': 'success',
-            'data': None,
-            'details': 'Расход успешно сохранен'
-        }
+                for item in cession_query.mappings().all():
+                    cession_id: int = item['id']
+
+                    data_coefficient = await get_coefficient_cession(cession_id,  session)
+                    coefficient_cession = data_coefficient['coefficient_cession']
+                    summa = int(float(data['summaPay']) * coefficient_cession)
+
+                    if summa > 0:
+
+                        data_pay = {
+                            "id": None,
+                            "datePay": data['datePay'],
+                            "summaPay": summa,
+                            "expenses_category_id": data['expenses_category_id'],
+                            "purposePay": data['purposePay'],
+                            "cession_id": cession_id,
+                        }
+                        await save_expenses(data_pay, session)
+
+            else:
+                await save_expenses(data, session)
     except Exception as ex:
         return {
             "status": "error",
             "data": None,
             "details": f"Ошибка при добавлении/изменении данных. {ex}"
         }
+
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Расход успешно сохранен'
+    }
+
+
+async def save_expenses(req_data, session):
+
+    date_exp = date.today()
+    summa = 0
+
+    if req_data['datePay'] is not None:
+        try:
+            date_exp = datetime.strptime(req_data['datePay'], '%Y-%m-%d').date()
+        except:
+            date_exp = datetime.strptime(req_data['datePay'], '%d.%m.%Y').date()
+
+    if req_data['summaPay'] is not None:
+        summa = int(float(req_data['summaPay']) * 100)
+
+    if len(req_data['purposePay']) > 150:
+        req_data['purposePay'] = req_data['purposePay'][:150]
+
+    data = {
+        "date": date_exp,
+        "summa": summa,
+        "expenses_category_id": req_data['expenses_category_id'],
+        "payment_purpose": req_data['purposePay'],
+        "cession_id": req_data['cession_id'],
+    }
+
+    expenses_id: int = req_data["id"]
+    if expenses_id:
+        post_data = update(expenses).where(expenses.c.id == expenses_id).values(data)
+    else:
+        post_data = insert(expenses).values(data)
+
+    await session.execute(post_data)
+    await session.commit()

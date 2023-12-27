@@ -241,6 +241,9 @@ async def add_payment_list(data_list: dict, session: AsyncSession = Depends(get_
             if item['summa'] is not None:
                 summa = int(float(item['summa']) * 100)
 
+            if len(item['purposePay']) > 200:
+                item['purposePay'] = item['purposePay'][:200]
+
             try:
                 pay_data = {
                     "credit_id": item["credit_id"],

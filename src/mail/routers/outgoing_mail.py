@@ -1,8 +1,8 @@
 import math
 from datetime import date, datetime
-import re
 
-from fastapi import APIRouter, Depends
+from typing import List
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, insert, func, distinct, update, desc, and_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,46 +33,49 @@ router_outgoing_mail = APIRouter(
 
 
 @router_outgoing_mail.get("/")
-async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: str = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+async def get_outgoing_mail(page: int, debtor_id: int = None, recipient: str = None, dates: List[str] = Query(None, alias="dates[]"), session: AsyncSession = Depends(get_async_session)):
 
-    per_page = int(per_page_mov)
+    per_page = per_page_mov
 
-    if dates2 is None:
-        dates2 = dates1
-
-    if dates1 is not None:
-        dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
-        dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
+    if dates and len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = date_1
+    elif dates and len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     credits_id_query = await session.execute(select(credit.c.id).where(credit.c.debtor_id == debtor_id))
     credits_id_list = credits_id_query.scalars().all()
 
     try:
-        if debtor_id == None and dates1:
-            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
+        if debtor_id == None and date_1:
+            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.date >= date_1, mail_out.c.date <= date_2)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
-            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
-        elif debtor_id and dates1 == None:
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.date >= date_1, mail_out.c.date <= date_2)))
+        elif debtor_id and date_1 == None:
             mail_query = await session.execute(select(mail_out).where(mail_out.c.credit_id.in_(credits_id_list)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
             total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(mail_out.c.credit_id.in_(credits_id_list)))
-        elif debtor_id and dates1:
-            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
+        elif debtor_id and date_1:
+            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= date_1, mail_out.c.date <= date_2)).
                                                                      order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                                      limit(per_page).offset((page - 1) * per_page))
-            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
-        elif recipient and dates1 == None:
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.credit_id.in_(credits_id_list), mail_out.c.date >= date_1, mail_out.c.date <= date_2)))
+        elif recipient and date_1 == None:
             mail_query = await session.execute(select(mail_out).where(mail_out.c.addresser.icontains(recipient)).
                                                order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))
             total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(mail_out.c.addresser.icontains(recipient)))
-        elif recipient and dates1:
-            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= dates1, mail_out.c.date <= dates2)).
+        elif recipient and date_1:
+            mail_query = await session.execute(select(mail_out).where(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= date_1, mail_out.c.date <= date_2)).
                                                                       order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                                       limit(per_page).offset((page - 1) * per_page))
-            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= dates1, mail_out.c.date <= dates2)))
+            total_mail_query = await session.execute(select(func.count(distinct(mail_out.c.id))).filter(and_(mail_out.c.addresser.icontains(recipient), mail_out.c.date >= date_1, mail_out.c.date <= date_2)))
         else:
             mail_query = await session.execute(select(mail_out).order_by(desc(mail_out.c.date)).order_by(desc(mail_out.c.id)).
                                                limit(per_page).offset((page - 1) * per_page))

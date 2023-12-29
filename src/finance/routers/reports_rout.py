@@ -24,11 +24,6 @@ async def report_parent_organisation(data_json: dict, session: AsyncSession = De
     profit_check = data_json['profit_check']
     statistic_check = data_json['statistic_check']
 
-    if 'date_1' not in data_json:
-        data_json["date_1"] = None
-    if 'date_2' not in data_json:
-        data_json["date_2"] = None
-
     data_json["cession_array"] = []
 
     if profit_check:
@@ -79,12 +74,6 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
 
     cession_query = await session.execute(select(cession).where(cession.c.lending_id == lending_id))
     data_json["cession_array"] = cession_query.mappings().all()
-
-
-    if 'date_1' not in data_json:
-        data_json["date_1"] = None
-    if 'date_2' not in data_json:
-        data_json["date_2"] = None
 
     if profit_check:
 

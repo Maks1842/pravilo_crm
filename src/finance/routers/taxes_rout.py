@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func, and_, extract
+from sqlalchemy import select, func, and_, extract, true, false
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -81,11 +81,6 @@ router_save_taxes = APIRouter(
 async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_session)):
 
     cession_id: int = reg_data["cession_id"]
-    result = {
-        "status": "error",
-        "data": None,
-        "details": f"Отсутствуют данные по налогам для добавления в Расходы"
-    }
 
     try:
         if reg_data["month_id"] < 10:
@@ -98,7 +93,8 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
         if reg_data['summaTax'] > 0:
             expenses_tax_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.tax_exp_category_id,
                                                                                         expenses.c.cession_id == cession_id,
-                                                                                        expenses.c.date == date_tax)))
+                                                                                        expenses.c.date_accrual == date_tax,
+                                                                                        expenses.c.status_pay == false())))
             expenses_tax_item = expenses_tax_query.mappings().fetchone()
             if expenses_tax_item:
                 return {
@@ -109,21 +105,27 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
             else:
                 data = {
                         "id": None,
-                        "date": date_join,
-                        "summa": reg_data['summaTax'],
+                        "datePay": None,
+                        "summaPay": reg_data['summaTax'],
                         "expenses_category_id": VarReportOrg.tax_exp_category_id,
-                        "payment_purpose": f'Подоходный налог за {reg_data["month"]} {reg_data["year"]} г.',
+                        "purposePay": f'Подоходный налог за {reg_data["month"]} {reg_data["year"]} г.',
                         "cession_id": reg_data['cession_id'],
+                        "dateAccrual": date_join,
+                        "statusPay": False,
                         }
-                result = await save_expenses(data, session)
+                await save_expenses(data, session)
     except Exception as ex:
-        result = {
+        return {
             "status": "error",
             "data": None,
             "details": f"Ошибка при добавлении данных по Налогу. {ex}"
         }
 
-    return result
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Начисленный расход успешно сохранен'
+    }
 
 
 # Сохранить агентские
@@ -136,11 +138,6 @@ router_save_agent_pay = APIRouter(
 async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_session)):
 
     cession_id: int = reg_data["cession_id"]
-    result = {
-        "status": "error",
-        "data": None,
-        "details": f"Отсутствуют данные по Агентским для добавления в Расходы"
-    }
 
     try:
         if reg_data["month_id"] < 10:
@@ -153,7 +150,8 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
         if reg_data['summaAgent'] > 0:
             expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.agent_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
-                                                                                          expenses.c.date == date_tax)))
+                                                                                          expenses.c.date_accrual == date_tax,
+                                                                                          expenses.c.status_pay == false())))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
 
             if expenses_agent_item:
@@ -165,22 +163,28 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
             else:
                 data = {
                     "id": None,
-                    "date": date_join,
-                    "summa": reg_data['summaAgent'],
+                    "datePay": None,
+                    "summaPay": reg_data['summaAgent'],
                     "expenses_category_id": VarReportOrg.agent_exp_category_id,
-                    "payment_purpose": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г.',
+                    "purposePay": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
+                    "dateAccrual": date_join,
+                    "statusPay": False,
                 }
 
-                result = await save_expenses(data, session)
+                await save_expenses(data, session)
     except Exception as ex:
-        result = {
+        return {
             "status": "error",
             "data": None,
-            "details": f"Ошибка при добавлении расходам по Агентским. {ex}"
+            "details": f"Ошибка при добавлении расходов по Агентскому. {ex}"
         }
 
-    return result
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Начисленное Агентское успешно сохранено'
+    }
 
 
 # Сохранить возврат займа
@@ -192,13 +196,7 @@ router_save_loan_repay = APIRouter(
 @router_save_loan_repay.post("/")
 async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_async_session)):
 
-
     cession_id: int = reg_data["cession_id"]
-    result = {
-        "status": "error",
-        "data": None,
-        "details": f"Отсутствуют данные по Возврату займа для добавления в Расходы"
-    }
 
     try:
         if reg_data["month_id"] < 10:
@@ -211,7 +209,8 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
         if reg_data['summaLoanRepay'] > 0:
             expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.loan_repay_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
-                                                                                          expenses.c.date == date_tax)))
+                                                                                          expenses.c.date_accrual == date_tax,
+                                                                                          expenses.c.status_pay == false())))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
 
             if expenses_agent_item:
@@ -223,19 +222,25 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
             else:
                 data = {
                     "id": None,
-                    "date": date_join,
-                    "summa": reg_data['summaLoanRepay'],
+                    "datePay": None,
+                    "summaPay": reg_data['summaLoanRepay'],
                     "expenses_category_id": VarReportOrg.loan_repay_exp_category_id,
-                    "payment_purpose": f'Возврат займа {reg_data["loan_repay_rate"]}% за {reg_data["month"]} {reg_data["year"]} г.',
+                    "purposePay": f'Возврат займа {reg_data["loan_repay_rate"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
+                    "dateAccrual": date_join,
+                    "statusPay": False,
                 }
 
-                result = await save_expenses(data, session)
+                await save_expenses(data, session)
     except Exception as ex:
-        result = {
+        return {
             "status": "error",
             "data": None,
-            "details": f"Ошибка при добавлении расходам по Агентским. {ex}"
+            "details": f"Ошибка при добавлении расхода по Возврату займа. {ex}"
         }
 
-    return result
+    return {
+        'status': 'success',
+        'data': None,
+        'details': 'Начисленный Возврат займа успешно сохранен'
+    }

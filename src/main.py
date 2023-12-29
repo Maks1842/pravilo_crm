@@ -62,7 +62,7 @@ from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_o
 from src.routers_helper.rout_admin.helper_helper import router_helper
 from src.start_srm.routers.welcome_rout import router_welcome, router_export_variables, router_start_functions
 
-from src.finance.routers.expenses_rout import router_expenses_category, router_expenses, router_save_expenses_list
+from src.finance.routers.expenses_rout import router_expenses_category, router_expenses, router_accrual_expenses, router_save_expenses_list
 from src.finance.routers.reports_rout import router_report_parent_organisation, router_report_for_investor
 from src.finance.routers.taxes_rout import router_calculator_taxes, router_save_taxes, router_save_agent_pay, router_save_loan_repay
 
@@ -226,6 +226,7 @@ app.include_router(router_calculator_taxes)
 app.include_router(router_save_taxes)
 app.include_router(router_save_agent_pay)
 app.include_router(router_save_loan_repay)
+app.include_router(router_accrual_expenses)
 
 # Для payment
 app.include_router(router_payment)

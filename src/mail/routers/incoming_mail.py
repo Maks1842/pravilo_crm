@@ -38,14 +38,13 @@ async def get_incoming_mail(page: int, debtor_id: int = None, dates: List[str] =
 
     per_page = per_page_mov
 
-    try:
-        if len(dates) == 1:
-            date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
-            date_2 = date_1
-        else:
-            date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
-            date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
-    except:
+    if dates and len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = date_1
+    elif dates and len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
         date_1 = None
         date_2 = None
 

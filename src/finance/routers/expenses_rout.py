@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select, insert, func, distinct, update, and_, desc
+from typing import List
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select, insert, func, distinct, update, and_, desc, true, false
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -9,6 +10,7 @@ from src.debts.models import cession
 import math
 from datetime import datetime, date
 from src.finance.routers.reports_functions import get_coefficient_cession
+from variables_for_backend import per_page_mov
 
 
 
@@ -83,80 +85,99 @@ router_expenses = APIRouter(
 
 
 @router_expenses.get("/")
-async def get_expenses(page: int, cession_id: int = None, expenses_category_id: int = None, dates1: str = None, dates2: str = None, session: AsyncSession = Depends(get_async_session)):
+async def get_expenses(page: int, cession_id: int = None, expenses_category_id: int = None, dates: List[str] = Query(None, alias="dates[]"), session: AsyncSession = Depends(get_async_session)):
 
-    per_page = 20
+    per_page = per_page_mov
 
-    if dates2 is None:
-        dates2 = dates1
+    if dates and len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = date_1
 
-    if dates1 is not None:
-        dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
-        dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
+    elif dates and len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     try:
-        if cession_id and expenses_category_id is None and dates1 is None:
-            query = await session.execute(select(expenses).where(expenses.c.cession_id == cession_id).
+        if cession_id and expenses_category_id is None and date_1 is None:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(expenses.c.cession_id == cession_id)))
-            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.cession_id == cession_id))
-        elif cession_id and expenses_category_id and dates1 is None:
-            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
-                                                                      expenses.c.expenses_category_id == expenses_category_id)).
-                                          order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
-                                          limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
-                                                                                                            expenses.c.expenses_category_id == expenses_category_id))))
-            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
-                                                                                               expenses.c.expenses_category_id == expenses_category_id)))
-        elif cession_id and expenses_category_id and dates1:
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == true()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == true())))
+        elif cession_id and expenses_category_id and date_1 is None:
             query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
                                                                       expenses.c.expenses_category_id == expenses_category_id,
-                                                                      expenses.c.date >= dates1, expenses.c.date <= dates2)).
+                                                                      expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
             total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
                                                                                                             expenses.c.expenses_category_id == expenses_category_id,
-                                                                                                            expenses.c.date >= dates1, expenses.c.date <= dates2))))
+                                                                                                            expenses.c.status_pay == true()))))
             summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
                                                                                                expenses.c.expenses_category_id == expenses_category_id,
-                                                                                               expenses.c.date >= dates1, expenses.c.date <= dates2)))
-        elif cession_id and expenses_category_id is None and dates1:
+                                                                                               expenses.c.status_pay == true())))
+        elif cession_id and expenses_category_id and date_1:
             query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
-                                                                      expenses.c.date >= dates1, expenses.c.date <= dates2)).
+                                                                      expenses.c.expenses_category_id == expenses_category_id,
+                                                                      expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                      expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
             total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
-                                                                                                            expenses.c.date >= dates1, expenses.c.date <= dates2))))
+                                                                                                            expenses.c.expenses_category_id == expenses_category_id,
+                                                                                                            expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                            expenses.c.status_pay == true()))))
             summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
-                                                                                               expenses.c.date >= dates1, expenses.c.date <= dates2)))
-        elif cession_id is None and expenses_category_id and dates1 is None:
-            query = await session.execute(select(expenses).where(expenses.c.expenses_category_id == expenses_category_id).
+                                                                                               expenses.c.expenses_category_id == expenses_category_id,
+                                                                                               expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                               expenses.c.status_pay == true())))
+        elif cession_id and expenses_category_id is None and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
+                                                                      expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                      expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(expenses.c.expenses_category_id == expenses_category_id)))
-            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.expenses_category_id == expenses_category_id))
-        elif cession_id is None and expenses_category_id and dates1:
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                            expenses.c.status_pay == true()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                               expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                               expenses.c.status_pay == true())))
+        elif cession_id is None and expenses_category_id and date_1 is None:
+            query = await session.execute(select(expenses).where(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == true())).
+                                          order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == true()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == true())))
+        elif cession_id is None and expenses_category_id and date_1:
             query = await session.execute(select(expenses).where(and_(expenses.c.expenses_category_id == expenses_category_id,
-                                                                      expenses.c.date >= dates1, expenses.c.date <= dates2)).
+                                                                      expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                      expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
             total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.expenses_category_id == expenses_category_id,
-                                                                                                            expenses.c.date >= dates1, expenses.c.date <= dates2))))
+                                                                                                            expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                            expenses.c.status_pay == true()))))
             summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == expenses_category_id,
-                                                                                               expenses.c.date >= dates1, expenses.c.date <= dates2)))
-        elif cession_id is None and expenses_category_id is None and dates1:
-            query = await session.execute(select(expenses).where(and_(expenses.c.date >= dates1, expenses.c.date <= dates2)).
+                                                                                               expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                               expenses.c.status_pay == true())))
+        elif cession_id is None and expenses_category_id is None and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                      expenses.c.status_pay == true())).
                                           order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.date >= dates1, expenses.c.date <= dates2))))
-            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= dates1, expenses.c.date <= dates2)))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                            expenses.c.status_pay == true()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                               expenses.c.status_pay == true())))
         else:
-            query = await session.execute(select(expenses).order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
+            query = await session.execute(select(expenses).where(expenses.c.status_pay == true()).order_by(desc(expenses.c.date)).order_by(desc(expenses.c.id)).
                                           limit(per_page).offset((page - 1) * per_page))
-            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id))))
-            summa_query = await session.execute(select(func.sum(expenses.c.summa)))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(expenses.c.status_pay == true())))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.status_pay == true()))
 
         total_item = total_item_query.scalar()
         summa_all = summa_query.scalar() / 100
@@ -169,6 +190,8 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
             summa_expenses = 0
             cession_id = None
             cession_name = None
+            date_pay = None
+            date_accrual = None
 
             expenses_category_query = await session.execute(select(ref_expenses_category).where(ref_expenses_category.c.id == int(item.expenses_category_id)))
             expenses_category_set = expenses_category_query.mappings().fetchone()
@@ -182,15 +205,22 @@ async def get_expenses(page: int, cession_id: int = None, expenses_category_id: 
             if item.summa:
                 summa_expenses = item.summa / 100
 
+            if item.date:
+                date_pay = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_accrual:
+                date_accrual = datetime.strptime(str(item.date_accrual), '%Y-%m-%d').strftime("%d.%m.%Y")
+
             data_expenses.append({
                 "id": item.id,
-                "datePay": datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y"),
+                "datePay": date_pay,
+                "dateAccrual": date_accrual,
                 "summaPay": summa_expenses,
                 "expenses_category_id": expenses_category_set.id,
                 "expenses_category": expenses_category_set.name,
                 "purposePay": item.payment_purpose,
                 "cession_id": cession_id,
                 "cession_name": cession_name,
+                "statusPay": item.status_pay,
 
             })
 
@@ -238,14 +268,14 @@ async def calculation_expenses(req_data, session):
 
     try:
         for data in req_data:
-            if data['expenses_category_id'] is None:
+            if data['cession_id'] and data['expenses_category_id'] is None:
                 return {
                     "status": "error",
                     "data": None,
                     "details": f"Не назначена категория платежа для суммы {data['summaPay']} от {data['datePay']}"
                 }
 
-            if data['cession_id'] is None:
+            if data['cession_id'] == 99999:
                 cession_query = await session.execute(select(cession.c.id))
 
                 for item in cession_query.mappings().all():
@@ -260,15 +290,18 @@ async def calculation_expenses(req_data, session):
                         data_pay = {
                             "id": None,
                             "datePay": data['datePay'],
+                            "dateAccrual": data['dateAccrual'],
                             "summaPay": summa,
                             "expenses_category_id": data['expenses_category_id'],
                             "purposePay": data['purposePay'],
                             "cession_id": cession_id,
+                            "statusPay": data['statusPay']
                         }
                         await save_expenses(data_pay, session)
-
-            else:
+            elif data['cession_id'] and data['cession_id'] != 99999:
                 await save_expenses(data, session)
+            else:
+                pass
     except Exception as ex:
         return {
             "status": "error",
@@ -283,18 +316,185 @@ async def calculation_expenses(req_data, session):
     }
 
 
+# Получить начисленные расходы организации
+router_accrual_expenses = APIRouter(
+    prefix="/v1/AccrualExpenses",
+    tags=["Finance"]
+)
+
+
+@router_accrual_expenses.get("/")
+async def get_accrual_expenses(page: int, cession_id: int = None, expenses_category_id: int = None, dates: List[str] = Query(None, alias="dates[]"), session: AsyncSession = Depends(get_async_session)):
+
+    per_page = per_page_mov
+
+    if dates and len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = date_1
+
+    elif dates and len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
+
+    try:
+        if cession_id and expenses_category_id is None and date_1 is None:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == false())))
+        elif cession_id and expenses_category_id and date_1 is None:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
+                                                                      expenses.c.expenses_category_id == expenses_category_id,
+                                                                      expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.expenses_category_id == expenses_category_id,
+                                                                                                            expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                               expenses.c.expenses_category_id == expenses_category_id,
+                                                                                               expenses.c.status_pay == false())))
+        elif cession_id and expenses_category_id and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
+                                                                      expenses.c.expenses_category_id == expenses_category_id,
+                                                                      expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                      expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.expenses_category_id == expenses_category_id,
+                                                                                                            expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                            expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                               expenses.c.expenses_category_id == expenses_category_id,
+                                                                                               expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                               expenses.c.status_pay == false())))
+        elif cession_id and expenses_category_id is None and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.cession_id == cession_id,
+                                                                      expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                      expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                            expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                               expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                               expenses.c.status_pay == false())))
+        elif cession_id is None and expenses_category_id and date_1 is None:
+            query = await session.execute(select(expenses).where(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == expenses_category_id, expenses.c.status_pay == false())))
+        elif cession_id is None and expenses_category_id and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.expenses_category_id == expenses_category_id,
+                                                                      expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                      expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.expenses_category_id == expenses_category_id,
+                                                                                                            expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                            expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == expenses_category_id,
+                                                                                               expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                               expenses.c.status_pay == false())))
+        elif cession_id is None and expenses_category_id is None and date_1:
+            query = await session.execute(select(expenses).where(and_(expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                      expenses.c.status_pay == false())).
+                                          order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(and_(expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                            expenses.c.status_pay == false()))))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                               expenses.c.status_pay == false())))
+        else:
+            query = await session.execute(select(expenses).where(expenses.c.status_pay == false()).order_by(desc(expenses.c.date_accrual)).order_by(desc(expenses.c.id)).
+                                          limit(per_page).offset((page - 1) * per_page))
+            total_item_query = await session.execute(select(func.count(distinct(expenses.c.id)).filter(expenses.c.status_pay == false())))
+            summa_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.status_pay == false()))
+
+        total_item = total_item_query.scalar()
+        summa_all = summa_query.scalar() / 100
+        num_page_all = int(math.ceil(total_item / per_page))
+
+        data_expenses = []
+
+        for item in query.mappings().all():
+
+            summa_expenses = 0
+            cession_id = None
+            cession_name = None
+            date_pay = None
+            date_accrual = None
+
+            expenses_category_query = await session.execute(select(ref_expenses_category).where(ref_expenses_category.c.id == int(item.expenses_category_id)))
+            expenses_category_set = expenses_category_query.mappings().fetchone()
+
+            if item.cession_id:
+                cession_query = await session.execute(select(cession).where(cession.c.id == int(item.cession_id)))
+                cession_set = cession_query.mappings().fetchone()
+                cession_id = cession_set.id
+                cession_name = cession_set.name
+
+            if item.summa:
+                summa_expenses = item.summa / 100
+
+            if item.date:
+                date_pay = datetime.strptime(str(item.date), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.date_accrual:
+                date_accrual = datetime.strptime(str(item.date_accrual), '%Y-%m-%d').strftime("%d.%m.%Y")
+
+            data_expenses.append({
+                "id": item.id,
+                "datePay": date_pay,
+                "dateAccrual": date_accrual,
+                "summaPay": summa_expenses,
+                "expenses_category_id": expenses_category_set.id,
+                "expenses_category": expenses_category_set.name,
+                "purposePay": item.payment_purpose,
+                "cession_id": cession_id,
+                "cession_name": cession_name,
+                "statusPay": item.status_pay,
+            })
+
+        result = {'data_expenses': data_expenses,
+                  'summa_all': summa_all,
+                  'count_all': total_item,
+                  'num_page_all': num_page_all}
+
+        return result
+    except Exception as ex:
+        return {
+            "status": "error",
+            "data": None,
+            "details": ex
+        }
+
+
 async def save_expenses(req_data, session):
 
-    date_exp = date.today()
+    date_exp = None
+    date_accrual = None
     summa = 0
 
-    if req_data['datePay'] is not None:
+    if req_data['datePay']:
         try:
             date_exp = datetime.strptime(req_data['datePay'], '%Y-%m-%d').date()
         except:
             date_exp = datetime.strptime(req_data['datePay'], '%d.%m.%Y').date()
 
-    if req_data['summaPay'] is not None:
+    if req_data['dateAccrual']:
+        try:
+            date_accrual = datetime.strptime(req_data['dateAccrual'], '%Y-%m-%d').date()
+        except:
+            date_accrual = datetime.strptime(req_data['dateAccrual'], '%d.%m.%Y').date()
+
+    if req_data['summaPay']:
         summa = int(float(req_data['summaPay']) * 100)
 
     if len(req_data['purposePay']) > 150:
@@ -302,10 +502,12 @@ async def save_expenses(req_data, session):
 
     data = {
         "date": date_exp,
+        "date_accrual": date_accrual,
         "summa": summa,
         "expenses_category_id": req_data['expenses_category_id'],
         "payment_purpose": req_data['purposePay'],
         "cession_id": req_data['cession_id'],
+        "status_pay": req_data['statusPay'],
     }
 
     expenses_id: int = req_data["id"]

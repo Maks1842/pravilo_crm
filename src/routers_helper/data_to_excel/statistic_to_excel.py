@@ -126,7 +126,7 @@ def statistic_to_excel_organisation(data):
             "details": f'Ошибка формирования отчета Excel. Ошибка на строке {ex}'
         }
 
-    file = f'{path_main}/src/media/statistic/result/Статистика_на {data["date_2"]}_{current_date.strftime("%d%m%Y_%H%M%S")}.xlsx'
+    file = f'{path_main}/src/media/statistic/result/Статистика_за период с {data["date_1"]} по {data["date_2"]}_{current_date.strftime("%H%M%S")}.xlsx'
     book_template.save(file)
 
     return {

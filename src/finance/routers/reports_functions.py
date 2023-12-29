@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, func, distinct, update, and_, or_
+from sqlalchemy import select, func, distinct, and_, or_, true, false, not_
 from src.debts.models import cession, credit
 from src.payments.models import payment
 from src.finance.models import expenses, ref_expenses_category
@@ -11,16 +11,18 @@ from datetime import datetime, timedelta
 '''
 async def get_revenue(data,  session):
 
-    date_1 = data['date_1']
-    date_2 = data['date_2']
+    dates = data['dates']
     cession_id = data['cession_id']
 
-    if date_2 is None:
+    if len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
         date_2 = date_1
-
-    if date_1 is not None:
-        date_1 = datetime.strptime(date_1, '%Y-%m-%d').date()
-        date_2 = datetime.strptime(date_2, '%Y-%m-%d').date()
+    elif len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     if cession_id:
         cession_query = await session.execute(select(cession).where(cession.c.id == int(cession_id)))
@@ -98,16 +100,18 @@ async def get_coefficient_cession(cession_id: int,  session):
 '''
 async def get_expenses_cession(data,  session):
 
-    date_1 = data['date_1']
-    date_2 = data['date_2']
+    dates = data['dates']
     cession_id = data['cession_id']
 
-    if date_2 is None:
+    if len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
         date_2 = date_1
-
-    if date_1:
-        date_1 = datetime.strptime(date_1, '%Y-%m-%d').date()
-        date_2 = datetime.strptime(date_2, '%Y-%m-%d').date()
+    elif len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     if cession_id:
         cession_query = await session.execute(select(cession).where(cession.c.id == int(cession_id)))
@@ -132,9 +136,14 @@ async def get_expenses_cession(data,  session):
             expenses_name = category.name
 
             if date_1:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id, expenses.c.date >= date_1, expenses.c.date <= date_2)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None),
+                                                                                       expenses.c.cession_id == cession_id),
+                                                                                   expenses.c.expenses_category_id == expenses_cat_id,
+                                                                                   expenses.c.date >= date_1, expenses.c.date <= date_2)))
             else:
-                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None), expenses.c.cession_id == cession_id), expenses.c.expenses_category_id == expenses_cat_id)))
+                expenses_query = await session.execute(select(expenses).where(and_(or_(expenses.c.cession_id.is_(None),
+                                                                                       expenses.c.cession_id == cession_id),
+                                                                                   expenses.c.expenses_category_id == expenses_cat_id)))
 
             summa_exp_category = 0
             for item_exp in expenses_query.mappings().all():
@@ -159,6 +168,8 @@ async def get_expenses_cession(data,  session):
             "data_expenses": data_expenses,
             "total_summa_exp": total_summa_exp
         })
+
+    print(f'{cession_expenses=}')
 
     return cession_expenses
 
@@ -204,8 +215,7 @@ async def get_profit_cession(data,  session):
 
 async def get_statistic(data,  session):
 
-    date_1 = data['date_1']
-    date_2 = data['date_2']
+    dates = data['dates']
     date_format_1 = ''
     date_format_2 = ''
     cession_array = data['cession_array']
@@ -215,14 +225,21 @@ async def get_statistic(data,  session):
     payment_total_query = None
     expenses_total_query = None
 
-    if date_2 is None:
+    if len(dates) == 1:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
         date_2 = date_1
+    elif len(dates) == 2:
+        date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
+        date_2 = datetime.strptime(dates[1], '%Y-%m-%d').date()
+    else:
+        date_1 = None
+        date_2 = None
 
     if date_1 is not None:
-        date_1 = datetime.strptime(date_1, '%Y-%m-%d').date()
-        date_2 = datetime.strptime(date_2, '%Y-%m-%d').date()
         date_format_1 = datetime.strptime(str(date_1), '%Y-%m-%d').strftime("%d.%m.%Y")
         date_format_2 = datetime.strptime(str(date_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+
+    exclude_category = [4, 7, 8, 9]
 
     if len(cession_array) > 0:
         for cession_item in cession_array:
@@ -233,24 +250,25 @@ async def get_statistic(data,  session):
 
             if date_1 is None:
                 payment_total_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
-                expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.cession_id == cession_id))
-
+                expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == true(),
+                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
             else:
                 payment_total_query = await session.execute(select(func.sum(payment.c.summa)).
                                                             filter(and_(payment.c.date >= date_1, payment.c.date <= date_2, payment.c.credit_id.in_(credits_id_list))))
                 expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).
-                                                         filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.cession_id == cession_id)))
-
+                                                         filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                     expenses.c.cession_id == cession_id,
+                                                                     expenses.c.status_pay == true(),
+                                                                     expenses.c.expenses_category_id.not_(exclude_category))))
     else:
         if date_1 is None:
             payment_total_query = await session.execute(select(func.sum(payment.c.summa)))
-            expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)))
-
+            expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.status_pay == true(), not_(expenses.c.expenses_category_id.in_(exclude_category)))))
         else:
             payment_total_query = await session.execute(select(func.sum(payment.c.summa)).
                                                 filter(and_(payment.c.date >= date_1, payment.c.date <= date_2)))
             expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).
-                                                    filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2)))
+                                                    filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2), expenses.c.status_pay == true(), not_(expenses.c.expenses_category_id.in_(exclude_category))))
 
         cession_query = await session.execute(select(cession))
         cession_array = cession_query.mappings().all()
@@ -271,7 +289,6 @@ async def get_statistic(data,  session):
 
         summa_pay_cess = 0
         summa_expenses_cess = 0
-        category_summa = 0
 
         cession_id: int = item.id
         cession_name = item.name
@@ -285,23 +302,31 @@ async def get_statistic(data,  session):
         credits_id_list = credits_id_query.scalars().all()
 
         if len(credits_id_list) > 0:
-            if date_1 is None:
-                summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
+            if date_1:
+                summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= date_1,
+                                                                                                      payment.c.date <= date_2,
+                                                                                                      payment.c.credit_id.in_(credits_id_list))))
             else:
-                summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= date_1, payment.c.date <= date_2, payment.c.credit_id.in_(credits_id_list))))
+                summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
 
             summa_pay = summa_pay_query.scalar()
             if summa_pay:
                 summa_pay_cess = round(summa_pay / 100, 2)
 
-            if date_1 is None:
-                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.cession_id == cession_id))
+            if date_1:
+                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1,
+                                                                                                            expenses.c.date <= date_2,
+                                                                                                            expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.status_pay == true(),
+                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
             else:
-                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.cession_id == cession_id)))
+                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
+                                                                                                            expenses.c.status_pay == true(),
+                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
+
             summa_expenses = summa_expenses_query.scalar()
             if summa_expenses:
                 summa_expenses_cess = round(summa_expenses / 100, 2)
-
 
             data_statistic.append({
                 "cession_id": cession_id,
@@ -321,9 +346,14 @@ async def get_statistic(data,  session):
         category = item_cat.name
 
         if date_1 is None:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.expenses_category_id == category_id, expenses.c.cession_id == cession_id))
+            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id,
+                                                                                                                 expenses.c.status_pay == true(),
+                                                                                                                 not_(expenses.c.expenses_category_id.in_(exclude_category)))))
         else:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2, expenses.c.expenses_category_id == category_id, expenses.c.cession_id == cession_id)))
+            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                                 expenses.c.expenses_category_id == category_id,
+                                                                                                                 expenses.c.status_pay == true(),
+                                                                                                                 not_(expenses.c.expenses_category_id.in_(exclude_category)))))
         category_summa_expenses = category_summa_expenses_query.scalar()
         if category_summa_expenses:
             category_summa = round(category_summa_expenses / 100, 2)
@@ -334,7 +364,7 @@ async def get_statistic(data,  session):
                 "category_summa": category_summa,
             })
 
-    result = {
+    return {
         'date_1': date_format_1,
         'date_2': date_format_2,
         'payment_total': payment_total,
@@ -343,5 +373,3 @@ async def get_statistic(data,  session):
         'data_statistic': data_statistic,
         'data_expenses_category': data_expenses_category
     }
-
-    return result

@@ -4,6 +4,7 @@ from src.payments.models import payment
 from src.finance.models import expenses, ref_expenses_category
 
 from datetime import datetime, timedelta
+from variables_for_backend import VarStatusCD
 
 
 '''
@@ -67,7 +68,7 @@ async def get_revenue(data,  session):
 '''
 async def get_coefficient_cession(cession_id: int,  session):
 
-    status_cd = 7
+    status_cd = VarStatusCD.status_cd_pgsh
 
     cession_number_credit_total_query = await session.execute(select(func.count(distinct(credit.c.id)).filter(credit.c.cession_id == cession_id)))
 
@@ -169,8 +170,6 @@ async def get_expenses_cession(data,  session):
             "total_summa_exp": total_summa_exp
         })
 
-    print(f'{cession_expenses=}')
-
     return cession_expenses
 
 
@@ -221,9 +220,11 @@ async def get_statistic(data,  session):
     cession_array = data['cession_array']
     payment_total = 0
     expenses_total = 0
+    accrual_expenses_total = 0
 
     payment_total_query = None
     expenses_total_query = None
+    accrual_total_query = None
 
     if len(dates) == 1:
         date_1 = datetime.strptime(dates[0], '%Y-%m-%d').date()
@@ -235,11 +236,9 @@ async def get_statistic(data,  session):
         date_1 = None
         date_2 = None
 
-    if date_1 is not None:
+    if date_1:
         date_format_1 = datetime.strptime(str(date_1), '%Y-%m-%d').strftime("%d.%m.%Y")
         date_format_2 = datetime.strptime(str(date_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-
-    exclude_category = [4, 7, 8, 9]
 
     if len(cession_array) > 0:
         for cession_item in cession_array:
@@ -248,33 +247,42 @@ async def get_statistic(data,  session):
             credits_id_query = await session.execute(select(credit.c.id).where(credit.c.cession_id == cession_id))
             credits_id_list = credits_id_query.scalars().all()
 
-            if date_1 is None:
-                payment_total_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
-                expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.status_pay == true(),
-                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-            else:
+            if date_1:
                 payment_total_query = await session.execute(select(func.sum(payment.c.summa)).
                                                             filter(and_(payment.c.date >= date_1, payment.c.date <= date_2, payment.c.credit_id.in_(credits_id_list))))
                 expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).
-                                                         filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
-                                                                     expenses.c.cession_id == cession_id,
-                                                                     expenses.c.status_pay == true(),
-                                                                     expenses.c.expenses_category_id.not_(exclude_category))))
+                                                             filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                         expenses.c.cession_id == cession_id)))
+                accrual_total_query = await session.execute(select(func.sum(expenses.c.summa)).
+                                                            filter(and_(expenses.c.date.is_(None),
+                                                                        expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                        expenses.c.cession_id == cession_id)))
+            else:
+                payment_total_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
+                expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.date.isnot(None))))
+                accrual_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.date.is_(None))))
+
+        cessions_list_for_statistic = cession_array
     else:
-        if date_1 is None:
-            payment_total_query = await session.execute(select(func.sum(payment.c.summa)))
-            expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.status_pay == true(), not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-        else:
+        if date_1:
             payment_total_query = await session.execute(select(func.sum(payment.c.summa)).
-                                                filter(and_(payment.c.date >= date_1, payment.c.date <= date_2)))
+                                                        filter(and_(payment.c.date >= date_1, payment.c.date <= date_2)))
             expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).
-                                                    filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2), expenses.c.status_pay == true(), not_(expenses.c.expenses_category_id.in_(exclude_category))))
+                                                         filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2)))
+            accrual_total_query = await session.execute(select(func.sum(expenses.c.summa)).
+                                                        filter(and_(expenses.c.date.is_(None),
+                                                                    expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2)))
+        else:
+            payment_total_query = await session.execute(select(func.sum(payment.c.summa)))
+            expenses_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.date.isnot(None)))
+            accrual_total_query = await session.execute(select(func.sum(expenses.c.summa)).filter(expenses.c.date.is_(None)))
 
         cession_query = await session.execute(select(cession))
-        cession_array = cession_query.mappings().all()
+        cessions_list_for_statistic = cession_query.mappings().all()
 
     payment_total_ans = payment_total_query.scalar()
     expenses_total_ans = expenses_total_query.scalar()
+    accrual_total_ans = accrual_total_query.scalar()
 
     if payment_total_ans:
         payment_total = payment_total_ans / 100
@@ -282,13 +290,17 @@ async def get_statistic(data,  session):
     if expenses_total_ans:
         expenses_total = expenses_total_ans / 100
 
-    profit_total = round(payment_total - expenses_total, 2)
+    if accrual_total_ans:
+        accrual_expenses_total = accrual_total_ans / 100
+
+    profit_total = round(payment_total - expenses_total - accrual_expenses_total, 2)
 
     data_statistic = []
-    for item in cession_array:
+    for item in cessions_list_for_statistic:
 
         summa_pay_cess = 0
         summa_expenses_cess = 0
+        summa_accrual_cess = 0
 
         cession_id: int = item.id
         cession_name = item.name
@@ -306,27 +318,30 @@ async def get_statistic(data,  session):
                 summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(and_(payment.c.date >= date_1,
                                                                                                       payment.c.date <= date_2,
                                                                                                       payment.c.credit_id.in_(credits_id_list))))
+                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1,
+                                                                                                            expenses.c.date <= date_2,
+                                                                                                            expenses.c.cession_id == cession_id)))
+                summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date_accrual >= date_1,
+                                                                                                           expenses.c.date_accrual <= date_2,
+                                                                                                           expenses.c.cession_id == cession_id,
+                                                                                                           expenses.c.date.is_(None))))
             else:
                 summa_pay_query = await session.execute(select(func.sum(payment.c.summa)).filter(payment.c.credit_id.in_(credits_id_list)))
+                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.date.isnot(None))))
+                summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id, expenses.c.date.is_(None))))
 
             summa_pay = summa_pay_query.scalar()
+            summa_expenses = summa_expenses_query.scalar()
+            summa_accrual = summa_accrual_query.scalar()
+
             if summa_pay:
                 summa_pay_cess = round(summa_pay / 100, 2)
 
-            if date_1:
-                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1,
-                                                                                                            expenses.c.date <= date_2,
-                                                                                                            expenses.c.cession_id == cession_id,
-                                                                                                            expenses.c.status_pay == true(),
-                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-            else:
-                summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.cession_id == cession_id,
-                                                                                                            expenses.c.status_pay == true(),
-                                                                                                            not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-
-            summa_expenses = summa_expenses_query.scalar()
             if summa_expenses:
                 summa_expenses_cess = round(summa_expenses / 100, 2)
+
+            if summa_accrual:
+                summa_accrual_cess = round(summa_accrual / 100, 2)
 
             data_statistic.append({
                 "cession_id": cession_id,
@@ -336,40 +351,125 @@ async def get_statistic(data,  session):
                 "cession_number_credit": cession_number_credit,
                 "summa_pay_cess": summa_pay_cess,
                 "summa_expenses_cess": summa_expenses_cess,
+                "summa_accrual_cess": summa_accrual_cess,
             })
 
     expenses_category_query = await session.execute(select(ref_expenses_category))
 
     data_expenses_category = []
+    data_accrual_expenses_category = []
+    data_total_accrual_category = []
     for item_cat in expenses_category_query.mappings().all():
         category_id: int = item_cat.id
         category = item_cat.name
 
-        if date_1 is None:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id,
-                                                                                                                 expenses.c.status_pay == true(),
-                                                                                                                 not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-        else:
-            category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
-                                                                                                                 expenses.c.expenses_category_id == category_id,
-                                                                                                                 expenses.c.status_pay == true(),
-                                                                                                                 not_(expenses.c.expenses_category_id.in_(exclude_category)))))
-        category_summa_expenses = category_summa_expenses_query.scalar()
-        if category_summa_expenses:
-            category_summa = round(category_summa_expenses / 100, 2)
+        if len(cession_array) > 0:
 
-            data_expenses_category.append({
-                "category_id": category_id,
-                "category": category,
-                "category_summa": category_summa,
-            })
+            cession_id_list = []
+            for cession_item in cession_array:
+                cession_id_list.append(cession_item['id'])
+
+            if date_1:
+                category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                                     expenses.c.cession_id.in_(cession_id_list),
+                                                                                                                     expenses.c.expenses_category_id == category_id)))
+                category_summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date.is_(None),
+                                                                                                                    expenses.c.cession_id.in_(cession_id_list),
+                                                                                                                    expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                                    expenses.c.expenses_category_id == category_id)))
+                category_total_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date.is_(None),
+                                                                                                                    expenses.c.cession_id.in_(cession_id_list),
+                                                                                                                    expenses.c.date_accrual <= date_2,
+                                                                                                                    expenses.c.expenses_category_id == category_id)))
+            else:
+                category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id,
+                                                                                                                     expenses.c.cession_id.in_(cession_id_list),
+                                                                                                                     expenses.c.date.isnot(None))))
+                category_summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id,
+                                                                                                                    expenses.c.cession_id.in_(cession_id_list),
+                                                                                                                    expenses.c.date.is_(None))))
+                category_total_accrual_query = category_summa_accrual_query
+
+            category_summa_expenses = category_summa_expenses_query.scalar()
+            category_summa_accrual = category_summa_accrual_query.scalar()
+            category_total_accrual = category_total_accrual_query.scalar()
+
+            if category_summa_expenses:
+                category_summa = round(category_summa_expenses / 100, 2)
+                data_expenses_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_summa": category_summa,
+                })
+
+            if category_summa_accrual:
+                category_accrual_summa = round(category_summa_accrual / 100, 2)
+                data_accrual_expenses_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_accrual_summa": category_accrual_summa,
+                })
+
+            if category_total_accrual:
+                category_total_accrual_summa = round(category_total_accrual / 100, 2)
+                data_total_accrual_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_total_accrual_summa": category_total_accrual_summa,
+                })
+
+        else:
+            if date_1:
+                category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date >= date_1, expenses.c.date <= date_2,
+                                                                                                                     expenses.c.expenses_category_id == category_id)))
+                category_summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date.is_(None),
+                                                                                                                    expenses.c.date_accrual >= date_1, expenses.c.date_accrual <= date_2,
+                                                                                                                     expenses.c.expenses_category_id == category_id)))
+                category_total_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.date.is_(None),
+                                                                                                                    expenses.c.date_accrual <= date_2,
+                                                                                                                    expenses.c.expenses_category_id == category_id)))
+            else:
+                category_summa_expenses_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id, expenses.c.date.isnot(None))))
+                category_summa_accrual_query = await session.execute(select(func.sum(expenses.c.summa)).filter(and_(expenses.c.expenses_category_id == category_id, expenses.c.date.is_(None))))
+                category_total_accrual_query = category_summa_accrual_query
+
+            category_summa_expenses = category_summa_expenses_query.scalar()
+            category_summa_accrual = category_summa_accrual_query.scalar()
+            category_total_accrual = category_total_accrual_query.scalar()
+
+            if category_summa_expenses:
+                category_summa = round(category_summa_expenses / 100, 2)
+                data_expenses_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_summa": category_summa,
+                })
+
+            if category_summa_accrual:
+                category_accrual_summa = round(category_summa_accrual / 100, 2)
+                data_accrual_expenses_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_accrual_summa": category_accrual_summa,
+                })
+
+            if category_total_accrual:
+                category_total_accrual_summa = round(category_total_accrual / 100, 2)
+                data_total_accrual_category.append({
+                    "category_id": category_id,
+                    "category": category,
+                    "category_total_accrual_summa": category_total_accrual_summa,
+                })
 
     return {
         'date_1': date_format_1,
         'date_2': date_format_2,
         'payment_total': payment_total,
         'expenses_total': expenses_total,
+        'accrual_expenses_total': accrual_expenses_total,
         'profit_total': profit_total,
         'data_statistic': data_statistic,
-        'data_expenses_category': data_expenses_category
+        'data_expenses_category': data_expenses_category,
+        'data_accrual_expenses_category': data_accrual_expenses_category,
+        'data_total_accrual_category': data_total_accrual_category
     }

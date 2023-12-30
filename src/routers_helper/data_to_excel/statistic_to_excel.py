@@ -53,11 +53,15 @@ def statistic_to_excel_organisation(data):
 
         row = 6
         column = 3
+        sheet.cell(row, column).value = data['accrual_expenses_total']
+
+        row = 7
+        column = 3
         sheet.cell(row, column).value = data['profit_total']
         # sheet.cell(row, column).style = style['style_main']
 
 
-        row = 10
+        row = 11
         count = 1
         for item in data['data_statistic']:
 
@@ -89,16 +93,20 @@ def statistic_to_excel_organisation(data):
             sheet.cell(row, column).value = item['summa_expenses_cess']
             sheet.cell(row, column).style = style['style_7']
 
+            column = 8
+            sheet.cell(row, column).value = item['summa_accrual_cess']
+            sheet.cell(row, column).style = style['style_7']
+
             row += 1
             count += 1
 
         row = row + 2
 
         column = 2
-        sheet.cell(row, column).value = f"Расшифровка расходов:"
+        sheet.cell(row, column).value = f"Расшифровка расходов за отчет.период:"
         sheet.cell(row, column).style = style['style_8']
 
-        row = row + 2
+        row = row + 1
         column = 2
         sheet.cell(row, column).value = "Категория"
         sheet.cell(row, column).style = style['style_1_1']
@@ -116,6 +124,34 @@ def statistic_to_excel_organisation(data):
 
             column = 3
             sheet.cell(row, column).value = item_exp['category_summa']
+            sheet.cell(row, column).style = style['style_7']
+
+            row += 1
+
+        row = row + 1
+
+        column = 2
+        sheet.cell(row, column).value = f"Расшифровка начислений за отчет.период:"
+        sheet.cell(row, column).style = style['style_8']
+
+        row = row + 1
+        column = 2
+        sheet.cell(row, column).value = "Категория"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        column = 3
+        sheet.cell(row, column).value = "Сумма"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        row = row + 1
+        for item_exp in data['data_accrual_expenses_category']:
+
+            column = 2
+            sheet.cell(row, column).value = item_exp['category']
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 3
+            sheet.cell(row, column).value = item_exp['category_accrual_summa']
             sheet.cell(row, column).style = style['style_7']
 
             row += 1
@@ -183,11 +219,16 @@ def statistic_to_excel_investor(data):
 
         row = 13
         column = 3
+        sheet.cell(row, column).value = data['accrual_expenses_total']
+        # sheet.cell(row, column).style = style['style_main']
+
+        row = 14
+        column = 3
         sheet.cell(row, column).value = data['profit_total']
         # sheet.cell(row, column).style = style['style_main']
 
 
-        row = 17
+        row = 18
         count = 1
         for item in data['data_statistic']:
 
@@ -215,15 +256,19 @@ def statistic_to_excel_investor(data):
             sheet.cell(row, column).value = item['summa_expenses_cess']
             sheet.cell(row, column).style = style['style_7']
 
+            column = 7
+            sheet.cell(row, column).value = item['summa_accrual_cess']
+            sheet.cell(row, column).style = style['style_7']
+
             row += 1
             count += 1
 
         row = row + 2
         column = 2
-        sheet.cell(row, column).value = f"Расшифровка расходов:"
+        sheet.cell(row, column).value = f"Расшифровка расходов за отчет.период:"
         sheet.cell(row, column).style = style['style_8']
 
-        row = row + 2
+        row = row + 1
         column = 2
         sheet.cell(row, column).value = "Категория"
         sheet.cell(row, column).style = style['style_1_1']
@@ -245,10 +290,64 @@ def statistic_to_excel_investor(data):
 
             row += 1
 
+        row = row + 1
+        column = 2
+        sheet.cell(row, column).value = f"Расшифровка начислений за отчет.период:"
+        sheet.cell(row, column).style = style['style_8']
+
+        row = row + 1
+        column = 2
+        sheet.cell(row, column).value = "Категория"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        column = 3
+        sheet.cell(row, column).value = "Сумма"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        row = row + 1
+        for item_exp in data['data_accrual_expenses_category']:
+
+            column = 2
+            sheet.cell(row, column).value = item_exp['category']
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 3
+            sheet.cell(row, column).value = item_exp['category_accrual_summa']
+            sheet.cell(row, column).style = style['style_7']
+
+            row += 1
+
         row = row + 2
         column = 2
         sheet.cell(row, column).value = f"Дивиденды инвестора:"
         sheet.cell(row, column).style = style['style_8']
+
+        row = row + 2
+        column = 2
+        sheet.cell(row, column).value = f"Примечание, ВСЕГО начислений:"
+        sheet.cell(row, column).style = style['style_8']
+
+        row = row + 1
+        column = 2
+        sheet.cell(row, column).value = "Категория"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        column = 3
+        sheet.cell(row, column).value = "Сумма"
+        sheet.cell(row, column).style = style['style_1_1']
+
+        row = row + 1
+        for item_exp in data['data_total_accrual_category']:
+
+            column = 2
+            sheet.cell(row, column).value = item_exp['category']
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 3
+            sheet.cell(row, column).value = item_exp['category_total_accrual_summa']
+            sheet.cell(row, column).style = style['style_7']
+
+            row += 1
 
 
     except Exception as ex:

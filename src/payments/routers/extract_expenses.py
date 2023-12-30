@@ -76,7 +76,6 @@ async def extract_expenses(file_object: UploadFile):
                 "summaPay": pay['summ_pay'],
                 "purposePay": pay['purpose_pay'],
                 "dateAccrual": None,
-                "statusPay": True,
             })
 
     data_payment_2 = [
@@ -90,7 +89,6 @@ async def extract_expenses(file_object: UploadFile):
             "summaPay": round(sd_summa_pay, 2),
             "purposePay": sd_purpose_pay,
             "dateAccrual": None,
-            "statusPay": True,
         },
         {
             "id": None,
@@ -102,7 +100,6 @@ async def extract_expenses(file_object: UploadFile):
             "summaPay": round(fuel_summa_pay, 2),
             "purposePay": fuel_purpose_pay,
             "dateAccrual": None,
-            "statusPay": True,
         },
         {
             "id": None,
@@ -114,7 +111,6 @@ async def extract_expenses(file_object: UploadFile):
             "summaPay": round(bank_summa_pay, 2),
             "purposePay": bank_purpose_pay,
             "dateAccrual": None,
-            "statusPay": True,
         }]
 
     result = {'data_payment': data_payment_1 + data_payment_2,

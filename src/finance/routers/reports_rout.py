@@ -75,6 +75,13 @@ async def report_for_investor(data_json: dict, session: AsyncSession = Depends(g
     cession_query = await session.execute(select(cession).where(cession.c.lending_id == lending_id))
     data_json["cession_array"] = cession_query.mappings().all()
 
+    if len(data_json["cession_array"]) == 0:
+        return {
+            "status": "error",
+            "data": None,
+            "details": 'У данного инвестора нет Портфелей'
+        }
+
     if profit_check:
 
         try:

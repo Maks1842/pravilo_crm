@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, func, and_, extract, true, false
+from sqlalchemy import select, func, and_, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
@@ -93,8 +93,7 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
         if reg_data['summaTax'] > 0:
             expenses_tax_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.tax_exp_category_id,
                                                                                         expenses.c.cession_id == cession_id,
-                                                                                        expenses.c.date_accrual == date_tax,
-                                                                                        expenses.c.status_pay == false())))
+                                                                                        expenses.c.date_accrual == date_tax)))
             expenses_tax_item = expenses_tax_query.mappings().fetchone()
             if expenses_tax_item:
                 return {
@@ -111,7 +110,6 @@ async def add_taxes(reg_data: dict, session: AsyncSession = Depends(get_async_se
                         "purposePay": f'Подоходный налог за {reg_data["month"]} {reg_data["year"]} г.',
                         "cession_id": reg_data['cession_id'],
                         "dateAccrual": date_join,
-                        "statusPay": False,
                         }
                 await save_expenses(data, session)
     except Exception as ex:
@@ -150,8 +148,7 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
         if reg_data['summaAgent'] > 0:
             expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.agent_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
-                                                                                          expenses.c.date_accrual == date_tax,
-                                                                                          expenses.c.status_pay == false())))
+                                                                                          expenses.c.date_accrual == date_tax)))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
 
             if expenses_agent_item:
@@ -169,7 +166,6 @@ async def agent_pay(reg_data: dict, session: AsyncSession = Depends(get_async_se
                     "purposePay": f'Агентское вознаграждение {reg_data["agency_percent"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
                     "dateAccrual": date_join,
-                    "statusPay": False,
                 }
 
                 await save_expenses(data, session)
@@ -209,8 +205,7 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
         if reg_data['summaLoanRepay'] > 0:
             expenses_agent_query = await session.execute(select(expenses.c.id).where(and_(expenses.c.expenses_category_id == VarReportOrg.loan_repay_exp_category_id,
                                                                                           expenses.c.cession_id == cession_id,
-                                                                                          expenses.c.date_accrual == date_tax,
-                                                                                          expenses.c.status_pay == false())))
+                                                                                          expenses.c.date_accrual == date_tax)))
             expenses_agent_item = expenses_agent_query.mappings().fetchone()
 
             if expenses_agent_item:
@@ -228,7 +223,6 @@ async def agent_loan_repay(reg_data: dict, session: AsyncSession = Depends(get_a
                     "purposePay": f'Возврат займа {reg_data["loan_repay_rate"]}% за {reg_data["month"]} {reg_data["year"]} г.',
                     "cession_id": reg_data['cession_id'],
                     "dateAccrual": date_join,
-                    "statusPay": False,
                 }
 
                 await save_expenses(data, session)

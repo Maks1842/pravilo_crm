@@ -1,5 +1,5 @@
 from openpyxl import load_workbook
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.routers_helper.data_to_excel.style_excel import style_excel
 from src.config import path_main
@@ -317,12 +317,12 @@ def statistic_to_excel_investor(data):
 
             row += 1
 
-        row = row + 2
+        row = row + 1
         column = 2
-        sheet.cell(row, column).value = f"Дивиденды инвестора:"
+        sheet.cell(row, column).value = f"Дивиденды инвестора за отчет.период:"
         sheet.cell(row, column).style = style['style_8']
 
-        row = row + 2
+        row = row + 3
         column = 2
         sheet.cell(row, column).value = f"Примечание, ВСЕГО начислений:"
         sheet.cell(row, column).style = style['style_8']
@@ -348,6 +348,11 @@ def statistic_to_excel_investor(data):
             sheet.cell(row, column).style = style['style_7']
 
             row += 1
+
+        row = row + 2
+        column = 2
+        sheet.cell(row, column).value = f"Дивиденды начисленные, ВСЕГО:"
+        sheet.cell(row, column).style = style['style_8']
 
 
     except Exception as ex:

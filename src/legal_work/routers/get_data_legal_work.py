@@ -35,6 +35,7 @@ async def get_data_legal(legal_id: int, session: AsyncSession = Depends(get_asyn
 
         legal_docs = ''
         legal_docs_id = None
+        legal_date = None
         result_1 = ''
         result_1_id = None
         summa_ed = None
@@ -67,47 +68,49 @@ async def get_data_legal(legal_id: int, session: AsyncSession = Depends(get_asyn
         debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
         debtor_item = debtor_query.mappings().one()
 
-        # if debtor_item.last_name_2 is not None:
+        # if debtor_item.last_name_2:
         #     debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
         #                  f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
         # else:
         #     debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-        if item.legal_docs_id is not None:
+        if item.legal_docs_id:
             name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.legal_docs_id)))
             legal_docs = name_task_query.scalar()
             legal_docs_id = item.legal_docs_id
 
-        if item.result_1_id is not None:
+        if item.result_1_id:
             result_1_id: int = item.result_1_id
             result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
             result_1 = result_1_query.scalar()
 
-        # if item.summa_ed is not None:
+        # if item.summa_ed:
         #     summa_ed = item.summa_ed / 100
-        # if item.summa_state_duty_result is not None:
+        # if item.summa_state_duty_result:
         #     summa_state_duty_result = item.summa_state_duty_result / 100
-        # if item.summa_state_duty_claim is not None:
+        # if item.summa_state_duty_claim:
         #     summa_state_duty_claim = item.summa_state_duty_claim / 100
-        # if item.summa_result_2 is not None:
+        # if item.summa_result_2:
         #     summa_result_2 = item.summa_result_2 / 100
 
-        if item.date_session_1 is not None:
+        if item.date_session_1:
             date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_result_1 is not None:
+        # if item.date_result_1:
         #     date_result_1 = datetime.strptime(str(item.date_result_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_incoming_ed is not None:
+        # if item.date_incoming_ed:
         #     date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_entry_force is not None:
+        # if item.date_entry_force:
         #     date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_cancel_result is not None:
+        # if item.date_cancel_result:
         #     date_cancel_result = datetime.strptime(str(item.date_cancel_result), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_session_2 is not None:
+        # if item.date_session_2:
         #     date_session_2 = datetime.strptime(str(item.date_session_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-        # if item.date_result_2 is not None:
+        # if item.date_result_2:
         #     date_result_2 = datetime.strptime(str(item.date_result_2), '%Y-%m-%d').strftime("%d.%m.%Y")
+        if item.legal_date:
+            legal_date = datetime.strptime(str(item.legal_date), '%Y-%m-%d').strftime("%d.%m.%Y")
 
-        if item.tribunal_1_id is not None:
+        if item.tribunal_1_id:
             tribunal_1_id: int = item.tribunal_1_id
             # tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_1_id))
             # tribunal_1_set = tribunal_1_query.mappings().one()
@@ -122,6 +125,7 @@ async def get_data_legal(legal_id: int, session: AsyncSession = Depends(get_asyn
         result = {
             "id": item.id,
             "legalNumber": item.legal_number,
+            "dateLegal": legal_date,
             "legalSection_id": item.legal_section_id,
             "credit_id": item.credit_id,
             # "credit": credit_set.number,

@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func, distinct, desc, and_
@@ -32,7 +32,7 @@ async def get_appeal(page: int, credit_id: int = None, cession_id: int = None, l
     if dates2 is None:
         dates2 = dates1
 
-    if dates1 is not None:
+    if dates1:
         dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
         dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
 
@@ -77,6 +77,7 @@ async def get_appeal(page: int, credit_id: int = None, cession_id: int = None, l
 
             legal_docs = ''
             legal_docs_id = None
+            legal_date = None
             result_1 = ''
             result_1_id = None
             result_2 = ''
@@ -123,65 +124,67 @@ async def get_appeal(page: int, credit_id: int = None, cession_id: int = None, l
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
 
-            if debtor_item.last_name_2 is not None:
+            if debtor_item.last_name_2:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
                              f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            if item.legal_docs_id is not None:
+            if item.legal_docs_id:
                 name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.legal_docs_id)))
                 legal_docs = name_task_query.scalar()
                 legal_docs_id = item.legal_docs_id
 
-            if item.result_1_id is not None:
+            if item.result_1_id:
                 result_1_id: int = item.result_1_id
                 result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
                 result_1 = result_1_query.scalar()
 
-            if item.result_2_id is not None:
+            if item.result_2_id:
                 result_2_id: int = item.result_2_id
                 result_2_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_2_id))
                 result_2 = result_2_query.scalar()
 
-            if item.result_court_costs_id is not None:
+            if item.result_court_costs_id:
                 result_court_costs_id: int = item.result_court_costs_id
                 result_court_costs_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_court_costs_id))
                 result_court_costs = result_court_costs_query.scalar()
 
-            if item.summa_ed is not None:
+            if item.summa_ed:
                 summa_ed = item.summa_ed / 100
-            if item.summa_state_duty_result is not None:
+            if item.summa_state_duty_result:
                 summa_state_duty_result = item.summa_state_duty_result / 100
-            if item.summa_state_duty_claim is not None:
+            if item.summa_state_duty_claim:
                 summa_state_duty_claim = item.summa_state_duty_claim / 100
-            if item.summa_result_2 is not None:
+            if item.summa_result_2:
                 summa_result_2 = item.summa_result_2 / 100
 
-            if item.date_session_1 is not None:
+            if item.date_session_1:
                 date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_1 is not None:
+            if item.date_result_1:
                 date_result_1 = datetime.strptime(str(item.date_result_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_incoming_ed is not None:
+            if item.date_incoming_ed:
                 date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_entry_force is not None:
+            if item.date_entry_force:
                 date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_cancel_result is not None:
+            if item.date_cancel_result:
                 date_cancel_result = datetime.strptime(str(item.date_cancel_result), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_session_2 is not None:
+            if item.date_session_2:
                 date_session_2 = datetime.strptime(str(item.date_session_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_2 is not None:
+            if item.date_result_2:
                 date_result_2 = datetime.strptime(str(item.date_result_2), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_court_costs is not None:
+            if item.date_court_costs:
                 date_court_costs = datetime.strptime(str(item.date_court_costs), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_collection is not None:
+            if item.date_collection:
                 date_collection = datetime.strptime(str(item.date_collection), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_contract is not None:
+            if item.date_contract:
                 date_contract = datetime.strptime(str(item.date_contract), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_ed is not None:
+            if item.date_ed:
                 date_ed = datetime.strptime(str(item.date_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.legal_date:
+                legal_date = datetime.strptime(str(item.legal_date), '%Y-%m-%d').strftime("%d.%m.%Y")
 
-            if item.tribunal_1_id is not None:
+            if item.tribunal_1_id:
                 tribunal_1_id: int = item.tribunal_1_id
                 tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_1_id))
                 tribunal_1_set = tribunal_1_query.mappings().one()
@@ -193,7 +196,7 @@ async def get_appeal(page: int, credit_id: int = None, cession_id: int = None, l
                 if tribunal_1_set.gaspravosudie == True:
                     gaspravosudie_1 = 'Возможно'
 
-            if item.tribunal_2_id is not None:
+            if item.tribunal_2_id:
                 tribunal_2_id: int = item.tribunal_2_id
                 tribunal_2_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_2_id))
                 tribunal_2_set = tribunal_2_query.mappings().one()
@@ -208,6 +211,7 @@ async def get_appeal(page: int, credit_id: int = None, cession_id: int = None, l
             data_legal.append({
                 "id": item.id,
                 "legalNumber": item.legal_number,
+                "dateLegal": legal_date,
                 "legalSection_id": item.legal_section_id,
                 "credit_id": item.credit_id,
                 "credit": credit_set.number,
@@ -288,35 +292,39 @@ async def add_appeal(data: dict, session: AsyncSession = Depends(get_async_sessi
     date_collection = None
     date_contract = None
     summa_ed = None
+    date_legal = date.today()
 
-    if data['dateSession_1'] is not None:
+    if data['dateLegal']:
+        date_legal = datetime.strptime(data['dateLegal'], '%Y-%m-%d').date()
+
+    if data['dateSession_1']:
         date_session_1 = datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date()
 
-    if data['dateResult_1'] is not None:
+    if data['dateResult_1']:
         date_result_1 = datetime.strptime(data['dateResult_1'], '%Y-%m-%d').date()
 
-    if data['dateEntryIntoForce'] is not None:
+    if data['dateEntryIntoForce']:
         date_entry_force = datetime.strptime(data['dateEntryIntoForce'], '%Y-%m-%d').date()
 
-    if data['dateSession_2'] is not None:
+    if data['dateSession_2']:
         date_session_2 = datetime.strptime(data['dateSession_2'], '%Y-%m-%d').date()
 
-    if data['dateResult_2'] is not None:
+    if data['dateResult_2']:
         date_result_2 = datetime.strptime(data['dateResult_2'], '%Y-%m-%d').date()
 
-    if data['dateCourtCosts'] is not None:
+    if data['dateCourtCosts']:
         date_court_costs = datetime.strptime(data['dateCourtCosts'], '%Y-%m-%d').date()
 
-    if data['dateED'] is not None:
+    if data['dateED']:
         date_ed = datetime.strptime(data['dateED'], '%Y-%m-%d').date()
 
-    if data['dateCollection'] is not None:
+    if data['dateCollection']:
         date_collection = datetime.strptime(data['dateCollection'], '%Y-%m-%d').date()
 
-    if data['dateContract'] is not None:
+    if data['dateContract']:
         date_contract = datetime.strptime(data['dateContract'], '%Y-%m-%d').date()
 
-    if data['summaED'] is not None:
+    if data['summaED']:
         summa_ed = round(float(data['summaED']) * 100)
 
     case_id = data['id']
@@ -327,6 +335,7 @@ async def add_appeal(data: dict, session: AsyncSession = Depends(get_async_sessi
     legal_data = {"legal_number": legal_num,
                  "legal_section_id": data['legalSection_id'],
                  "number_case_1": data['numberCase_1'],
+                  "legal_date": date_legal,
                  "legal_docs_id": data['legalDocs_id'],
                  "date_session_1": date_session_1,
                  "date_result_1": date_result_1,

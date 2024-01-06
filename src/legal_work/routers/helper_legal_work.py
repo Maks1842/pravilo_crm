@@ -40,7 +40,7 @@ async def get_legal_number(credit_id: int = None, legal_section_id: int = None, 
 async def number_case_legal(data, session):
     legal_section = str(data['legalSection_id']).zfill(2)
     legal_num = data['legalNumber']
-    if data['legalNumber'] == None:
+    if data['legalNumber'] is None:
         try:
             legal_section_id: int = data['legalSection_id']
             legal_work_query = await session.execute(select(legal_work).where(legal_work.c.legal_section_id == legal_section_id).order_by(desc(legal_work.c.id)))

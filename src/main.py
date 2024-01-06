@@ -59,6 +59,7 @@ from src.routers_helper.rout_debt_import.import_from_excel import router_import_
 from src.routers_helper.rout_debt_import.upload_to_database import router_post_database
 from src.routers_helper.rout_registry.get_data_for_registry import router_data_registry, router_func_filters
 from src.routers_helper.rout_registry.registry_outgoing_mail import router_reg_outgoing_mail
+from src.routers_helper.rout_registry.registry_legal_work import router_reg_legal_work
 from src.routers_helper.rout_admin.helper_helper import router_helper
 from src.start_srm.routers.welcome_rout import router_welcome, router_export_variables, router_start_functions
 
@@ -213,6 +214,7 @@ app.include_router(router_post_database)
 app.include_router(router_data_registry)
 app.include_router(router_func_filters)
 app.include_router(router_reg_outgoing_mail)
+app.include_router(router_reg_legal_work)
 app.include_router(router_helper)
 app.include_router(router_generator_txt)
 

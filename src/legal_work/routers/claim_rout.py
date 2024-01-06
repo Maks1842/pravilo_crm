@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func, distinct, desc, and_
@@ -32,7 +32,7 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
     if dates2 is None:
         dates2 = dates1
 
-    if dates1 is not None:
+    if dates1:
         dates1 = datetime.strptime(dates1, '%Y-%m-%d').date()
         dates2 = datetime.strptime(dates2, '%Y-%m-%d').date()
 
@@ -77,6 +77,7 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
 
             legal_docs = ''
             legal_docs_id = None
+            legal_date = None
             result_1 = ''
             result_1_id = None
             summa_ed = None
@@ -106,41 +107,43 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
             debtor_query = await session.execute(select(debtor).where(debtor.c.id == debtor_id))
             debtor_item = debtor_query.mappings().one()
 
-            if debtor_item.last_name_2 is not None:
+            if debtor_item.last_name_2:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
                              f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
             else:
                 debtor_fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-            if item.legal_docs_id is not None:
+            if item.legal_docs_id:
                 name_task_query = await session.execute(select(ref_legal_docs.c.name).where(ref_legal_docs.c.id == int(item.legal_docs_id)))
                 legal_docs = name_task_query.scalar()
                 legal_docs_id = item.legal_docs_id
 
-            if item.result_1_id is not None:
+            if item.result_1_id:
                 result_1_id: int = item.result_1_id
                 result_1_query = await session.execute(select(ref_result_statement.c.name).where(ref_result_statement.c.id == result_1_id))
                 result_1 = result_1_query.scalar()
 
-            if item.summa_claim is not None:
+            if item.summa_claim:
                 summa_claim = item.summa_claim / 100
-            if item.summa_ed is not None:
+            if item.summa_ed:
                 summa_ed = item.summa_ed / 100
-            if item.summa_state_duty_result is not None:
+            if item.summa_state_duty_result:
                 summa_state_duty_result = item.summa_state_duty_result / 100
-            if item.summa_state_duty_claim is not None:
+            if item.summa_state_duty_claim:
                 summa_state_duty_claim = item.summa_state_duty_claim / 100
 
-            if item.date_session_1 is not None:
+            if item.date_session_1:
                 date_session_1 = datetime.strptime(str(item.date_session_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_result_1 is not None:
+            if item.date_result_1:
                 date_result_1 = datetime.strptime(str(item.date_result_1), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_incoming_ed is not None:
+            if item.date_incoming_ed:
                 date_incoming_ed = datetime.strptime(str(item.date_incoming_ed), '%Y-%m-%d').strftime("%d.%m.%Y")
-            if item.date_entry_force is not None:
+            if item.date_entry_force:
                 date_entry_force = datetime.strptime(str(item.date_entry_force), '%Y-%m-%d').strftime("%d.%m.%Y")
+            if item.legal_date:
+                legal_date = datetime.strptime(str(item.legal_date), '%Y-%m-%d').strftime("%d.%m.%Y")
 
-            if item.tribunal_1_id is not None:
+            if item.tribunal_1_id:
                 tribunal_1_id: int = item.tribunal_1_id
                 tribunal_1_query = await session.execute(select(ref_tribunal).where(ref_tribunal.c.id == tribunal_1_id))
                 tribunal_1_set = tribunal_1_query.mappings().one()
@@ -155,6 +158,7 @@ async def get_claim(page: int, credit_id: int = None, cession_id: int = None, le
             data_legal.append({
                 "id": item.id,
                 "legalNumber": item.legal_number,
+                "dateLegal": legal_date,
                 "legalSection_id": item.legal_section_id,
                 "credit_id": item.credit_id,
                 "credit": credit_set.number,
@@ -214,23 +218,27 @@ async def add_claim(data: dict, session: AsyncSession = Depends(get_async_sessio
     summa_ed = None
     summa_state_duty_claim = None
     summa_state_duty_result = None
+    date_legal = date.today()
 
-    if data['dateSession_1'] is not None:
+    if data['dateLegal']:
+        date_legal = datetime.strptime(data['dateLegal'], '%Y-%m-%d').date()
+
+    if data['dateSession_1']:
         date_session_1 = datetime.strptime(data['dateSession_1'], '%Y-%m-%d').date()
-    if data['dateResult_1'] is not None:
+    if data['dateResult_1']:
         date_result_1 = datetime.strptime(data['dateResult_1'], '%Y-%m-%d').date()
-    if data['dateEntryIntoForce'] is not None:
+    if data['dateEntryIntoForce']:
         date_entry_force = datetime.strptime(data['dateEntryIntoForce'], '%Y-%m-%d').date()
-    if data['dateIncomingED'] is not None:
+    if data['dateIncomingED']:
         date_incoming_ed = datetime.strptime(data['dateIncomingED'], '%Y-%m-%d').date()
 
-    if data['summaClaim'] is not None:
+    if data['summaClaim']:
         summa_claim = round(float(data['summaClaim']) * 100)
-    if data['summaED'] is not None:
+    if data['summaED']:
         summa_ed = round(float(data['summaED']) * 100)
-    if data['summaStateDutyClaim'] is not None:
+    if data['summaStateDutyClaim']:
         summa_state_duty_claim = round(float(data['summaStateDutyClaim']) * 100)
-    if data['summaStateDutyResult'] is not None:
+    if data['summaStateDutyResult']:
         summa_state_duty_result = round(float(data['summaStateDutyResult']) * 100)
 
 
@@ -242,6 +250,7 @@ async def add_claim(data: dict, session: AsyncSession = Depends(get_async_sessio
     legal_data = {"legal_number": legal_num,
                      "legal_section_id": data['legalSection_id'],
                      "number_case_1": data['numberCase_1'],
+                     "legal_date": date_legal,
                      "legal_docs_id": data['legalDocs_id'],
                      "date_session_1": date_session_1,
                      "date_result_1": date_result_1,

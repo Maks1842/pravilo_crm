@@ -11,6 +11,7 @@ legal_work = Table(
     "legal_work",
     metadata,
     Column("id", Integer, primary_key=True),
+    Column("legal_date", DATE, doc='Дата судебного кейса'),
     Column("legal_number", String(15), nullable=False, unique=True, doc='Уникальный номер кейса'),
     Column("legal_section_id",  Integer, ForeignKey(ref_legal_section.c.id), doc='Раздел юридической работы'),
     Column("duplicate_case", String(10), doc='Признак дубликат (описка)'),

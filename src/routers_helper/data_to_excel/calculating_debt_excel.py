@@ -152,6 +152,10 @@ def calculating_debt_to_excel(data):
 
 def calculating_annuity_to_excel(data):
 
+    print(f'{data=}')
+
+    summ_percent_total = data["summ_percent_total"]
+
     date_start = data['date_start_cd']
     date_start_format = datetime.strptime(str(date_start), '%Y-%m-%d').strftime("%d.%m.%Y")
 
@@ -161,7 +165,7 @@ def calculating_annuity_to_excel(data):
 
     timeline = int(data['timeline'])
     summa_stop = data['summa_cd'] * 1.5
-    annuity_list = data['result']
+
 
     new_date_calculat_law = datetime.strptime('2023-07-01', '%Y-%m-%d').strftime("%d.%m.%Y")
 
@@ -225,52 +229,84 @@ def calculating_annuity_to_excel(data):
         sheet.cell(row, 9).style = style['style_7']
 
         row = 14
-        summ_pay_total = 0
-        date_start_2 = None
 
-        for item in annuity_list:
-            count = item['count']
-            date_pay = item['date_pay'].date().strftime("%d.%m.%Y")
-            annuity_pay = item['annuity_pay']
-            pay_od = item['pay_od']
-            pay_percent = item['pay_percent']
-            remains_debt = item['remains_debt']
-            summ_pay_total = item['summ_pay_total']
+        summa_percent_all = 0
+        summa_perc_second = 0
+        date_start_2 = None
+        if data['date_end_pay']:
+            annuity_list = data['result']
+            for item in annuity_list:
+
+                date_pay = item['date_pay'].date().strftime("%d.%m.%Y")
+                pay_od = item['pay_od']
+                pay_percent = item['pay_percent']
+                remains_debt = item['remains_debt']
+
+                column = 1
+                sheet.cell(row, column).value = remains_debt
+                sheet.cell(row, column).style = style['style_7']
+                sheet.cell(row, column).number_format = '0.00'
+
+                column = 2
+                sheet.cell(row, column).value = pay_od
+                sheet.cell(row, column).style = style['style_7']
+                sheet.cell(row, column).number_format = '0.00'
+
+                column = 3
+                sheet.cell(row, column).value = pay_percent
+                sheet.cell(row, column).style = style['style_7']
+                sheet.cell(row, column).number_format = '0.00'
+
+                column = 4
+                sheet.cell(row, column).value = date_pay
+                sheet.cell(row, column).style = style['style_7']
+
+                sheet.cell(row, 5).style = style['style_7']
+                sheet.cell(row, 6).style = style['style_7']
+                sheet.cell(row, 7).style = style['style_7']
+                sheet.cell(row, 8).style = style['style_7']
+                sheet.cell(row, 9).style = style['style_7']
+
+                date_start_2 = item['date_pay']
+
+                row += 1
+        else:
+            date_start_pay = datetime.strptime(str(data['date_start_pay']), '%Y-%m-%d').strftime("%d.%m.%Y")
 
             column = 1
-            sheet.cell(row, column).value = remains_debt
+            sheet.cell(row, column).value = data['summa_cd']
             sheet.cell(row, column).style = style['style_7']
             sheet.cell(row, column).number_format = '0.00'
 
-            column = 2
-            sheet.cell(row, column).value = pay_od
+            column = 5
+            sheet.cell(row, column).value = date_start_format
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 6
+            sheet.cell(row, column).value = date_start_pay
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 7
+            sheet.cell(row, column).value = timeline
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 8
+            sheet.cell(row, column).value = f"{data['overdue_od']}x{timeline}/365x{data['interest_rate']}%"
+            sheet.cell(row, column).style = style['style_7']
+
+            column = 9
+            sheet.cell(row, column).value = data['summa_percent_start']
             sheet.cell(row, column).style = style['style_7']
             sheet.cell(row, column).number_format = '0.00'
 
-            column = 3
-            sheet.cell(row, column).value = pay_percent
-            sheet.cell(row, column).style = style['style_7']
-            sheet.cell(row, column).number_format = '0.00'
-
-            column = 4
-            sheet.cell(row, column).value = date_pay
-            sheet.cell(row, column).style = style['style_7']
-
-            sheet.cell(row, 5).style = style['style_7']
-            sheet.cell(row, 6).style = style['style_7']
-            sheet.cell(row, 7).style = style['style_7']
-            sheet.cell(row, 8).style = style['style_7']
-            sheet.cell(row, 9).style = style['style_7']
-
-            date_start_2 = item['date_pay']
+            summa_perc_second = summ_percent_total = data['summa_percent_start']
+            date_start_2 = datetime.strptime(data['date_start_pay'], '%Y-%m-%d')
 
             row += 1
 
         date_start_2 = date_start_2 + timedelta(days=1)
         date_start_2_formar = date_start_2.date().strftime("%d.%m.%Y")
 
-        summa_perc_second = 0
-        summa_percent_all = 0
         while summa_percent_all < summa_stop:
             sheet.cell(row, 2).style = style['style_7']
             sheet.cell(row, 3).style = style['style_7']
@@ -282,7 +318,7 @@ def calculating_annuity_to_excel(data):
             summa_percent = round(data['overdue_od'] * timeline / 365 * int(data['interest_rate']) / 100, 2)
 
             summa_perc_second += summa_percent
-            summa_percent_all = summa_perc_second + data["summ_percent_total"]
+            summa_percent_all = summa_perc_second + summ_percent_total
 
             column = 1
             sheet.cell(row, column).value = data['overdue_od']

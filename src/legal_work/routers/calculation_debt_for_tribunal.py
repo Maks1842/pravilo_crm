@@ -107,15 +107,15 @@ async def calculation_annuity_payment(data: dict, session: AsyncSession = Depend
     cession_query = await session.execute(select(cession.c.date).where(cession.c.id == cession_id))
     cession_date = cession_query.scalar()
 
-    if debtor_item.last_name_2 is not None and debtor_item.last_name_2 != '':
+    if debtor_item.last_name_2 and debtor_item.last_name_2 != '':
         fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}" \
               f" ({debtor_item.last_name_2} {debtor_item.first_name_2} {debtor_item.second_name_2 or ''})"
     else:
         fio = f"{debtor_item.last_name_1} {debtor_item.first_name_1} {debtor_item.second_name_1 or ''}"
 
-    if credit_set.summa is not None:
+    if credit_set.summa:
         summa = credit_set.summa / 100
-    if credit_set.overdue_od is not None:
+    if credit_set.overdue_od:
         overdue_od = credit_set.overdue_od / 100
 
     if credit_set.date_start is None:
@@ -139,21 +139,40 @@ async def calculation_annuity_payment(data: dict, session: AsyncSession = Depend
             'timeline': timeline
             }
 
-    result = get_calculation_annuity(data_func)
+    if date_end_pay:
+        result = get_calculation_annuity(data_func)
 
-    data_to_exl = {
-        "fio": fio,
-        "number_cd": credit_set.number,
-        "date_start_cd": credit_set.date_start,
-        "summa_cd": summa,
-        'overdue_od': overdue_od,
-        "interest_rate": credit_set.interest_rate,
-        "date_end": credit_set.date_end,
-        "cession_date": cession_date,
-        "result": result['annuity_list'],
-        "summ_percent_total": result['summ_percent_total'],
-        'timeline': timeline
-    }
+        data_to_exl = {
+            "fio": fio,
+            "number_cd": credit_set.number,
+            "date_start_cd": credit_set.date_start,
+            'date_end_pay': date_end_pay,
+            "summa_cd": summa,
+            'overdue_od': overdue_od,
+            "interest_rate": credit_set.interest_rate,
+            "date_end": credit_set.date_end,
+            "cession_date": cession_date,
+            "result": result['annuity_list'],
+            "summ_percent_total": result['summ_percent_total'],
+            'timeline': timeline
+        }
+    else:
+        data_to_exl = {
+            "fio": fio,
+            "number_cd": credit_set.number,
+            "date_start_cd": credit_set.date_start,
+            'date_start_pay': date_start_pay,
+            'date_end_pay': date_end_pay,
+            "summa_cd": summa,
+            'summa_pay_start': float(summa_pay_start),
+            'summa_percent_start': float(summa_percent_start),
+            'overdue_od': overdue_od,
+            "interest_rate": credit_set.interest_rate,
+            "date_end": credit_set.date_end,
+            "cession_date": cession_date,
+            "summ_percent_total": 0,
+            'timeline': timeline
+        }
 
     result_calculator = calculating_annuity_to_excel(data_to_exl)
 
